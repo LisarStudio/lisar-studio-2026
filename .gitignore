@@ -1,0 +1,19 @@
+# Dependencias de Node (si usas build tools)
+node_modules/
+
+# Archivos de sistema Windows
+Thumbs.db
+Desktop.ini
+
+# Mac .DS_Store
+.DS_Store
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+
+# Entorno Python (servidor de desarrollo local)
+__pycache__/
+*.pyc

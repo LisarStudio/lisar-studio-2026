@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diseño 3D, Animación y Reels Virales | Lisar Studio 2026</title>
+  <meta name="description" content="Lisar Studio: Estudio vanguardista de Diseño 3D, Animación 3D, Visualización Arquitectónica y Reels Virales de Instagram (@lisarstudiooficial). Visualiza tus proyectos con impacto visual.">
+  <meta name="theme-color" content="#08090a">
+  
+  <!-- Favicon & Icons -->
+  <link rel="icon" href="assets/img/lisar-studio-logo-white.webp" type="image/webp">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+  <!-- Google Fonts: Outfit & Manrope -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Framework 4 / Bootstrap 4 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+  
+  <!-- Custom Futuristic Styles -->
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+  <!-- Background 3D Canvas -->
+  <canvas id="bg-canvas-3d"></canvas>
+
+  <!-- ==========================================================================
+       HEADER & NAVIGATION (WITH LIGHT/DARK THEME SWITCHER & ENLARGED LOGO)
+       ========================================================================== -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar navbar-expand-lg navbar-dark px-0 py-2">
+        <a class="brand-logo-wrap" href="#inicio" aria-label="Lisar Studio Inicio">
+          <!-- Logo Image with Dynamic Light/Dark Switch & Enlarged Size -->
+          <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio - Diseño & Animación 3D" class="site-header-logo" id="headerLogoImg">
+        </a>
+
+        <!-- Header Actions: Theme Toggle, Instagram, WhatsApp & Mobile Menu -->
+        <div class="d-flex align-items-center order-lg-3 ml-auto ml-lg-3">
+          <!-- Theme Switcher Button (Top Right) -->
+          <button class="btn-theme-toggle mr-2" id="themeToggleBtn" aria-label="Cambiar Tema" title="Cambiar a Modo Claro">
+            <i class="bi bi-sun-fill"></i>
+          </button>
+
+          <a href="https://www.instagram.com/lisarstudiooficial/" target="_blank" class="btn btn-sm btn-gold-outline mr-2 d-none d-md-inline-flex">
+            <i class="bi bi-instagram text-danger"></i> @lisarstudiooficial
+          </a>
+          <a href="https://api.whatsapp.com/send?phone=56912345678&text=Hola%20Lisar%20Studio,%20quisiera%20cotizar%20un%20proyecto%203D" target="_blank" class="btn btn-sm btn-gold-primary d-none d-sm-inline-flex">
+            <i class="bi bi-whatsapp"></i> Cotizar 3D
+          </a>
+
+          <button class="navbar-toggler btn-icon-custom border-0 p-2" type="button" data-toggle="collapse" data-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Menu">
+            <i class="bi bi-list font-size-1-5rem text-warning"></i>
+          </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="collapse navbar-collapse" id="mainNavbar">
+          <ul class="navbar-nav ml-auto align-items-lg-center">
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom active" href="#inicio">Inicio</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom" href="#servicios">Servicios 3D</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom" href="#portafolio">Portafolio & Reels</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom" href="#proceso">Proceso</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link nav-link-custom" href="#contacto">Contacto</a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ==========================================================================
+         HERO SHOWCASE SECTION
+         ========================================================================== -->
+    <section class="hero-section" id="inicio">
+      <div class="container">
+        <div class="row align-items-center gy-5">
+          <div class="col-lg-7">
+            <div class="hero-glow-tag">
+              <i class="bi bi-fire"></i> Reels Virales & Renderizado 3D Fotorrealista
+            </div>
+            <h1 class="hero-title">
+              Visualiza tus Ideas en <span>3D de Alto Impacto</span>
+            </h1>
+            <p class="hero-subtitle">
+              Lisar Studio es un estudio creativo especializado en diseño 3D profesional, animación publicitaria, los mejores **Reels Virales en Instagram** (@lisarstudiooficial), renders arquitectónicos y desarrollo web vanguardista.
+            </p>
+            <div class="d-flex flex-wrap gap-3 mt-4">
+              <a href="#portafolio" class="btn-gold-primary">
+                Ver Reels Virales <i class="bi bi-play-circle-fill font-size-1-2rem ml-1"></i>
+              </a>
+              <a href="https://www.instagram.com/lisarstudiooficial/" target="_blank" class="btn-gold-outline">
+                Síguenos en Instagram <i class="bi bi-instagram text-danger"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="col-lg-5 mt-5 mt-lg-0">
+            <div class="glass-card text-center">
+              <div class="service-icon-box mx-auto mb-3">
+                <i class="bi bi-instagram text-danger"></i>
+              </div>
+              <h3 class="h4 font-weight-bold mb-2">@lisarstudiooficial</h3>
+              <p class="text-muted font-size-0-95rem mb-4">
+                Más de 2 Millones de reproducciones en nuestros Reels 3D de animación, CGI y desglose de producción.
+              </p>
+              <div class="d-flex align-items-center justify-content-center gap-3 pt-3 border-top border-secondary">
+                <span class="badge badge-warning text-dark p-2"><i class="bi bi-eye-fill"></i> +2M Views</span>
+                <span class="badge badge-outline-warning text-warning p-2 border border-warning"><i class="bi bi-heart-fill text-danger"></i> Viral Content</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         SERVICES SECTION
+         ========================================================================== -->
+    <section class="section-padding" id="servicios">
+      <div class="container">
+        <div class="row mb-5 text-center text-lg-left">
+          <div class="col-lg-7">
+            <span class="section-eyebrow">Soluciones Visuales Avanzadas</span>
+            <h2 class="section-title">Nuestros Servicios 3D & Digitales</h2>
+          </div>
+          <div class="col-lg-5 align-self-end">
+            <p class="text-muted">
+              Combinamos tecnología 3D de última generación con animación publicitaria para crear contenidos virales y de alto valor para tu marca.
+            </p>
+          </div>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-lg-3 col-md-6 mb-4">
+            <div class="glass-card h-100">
+              <div class="service-icon-box"><i class="bi bi-box"></i></div>
+              <h3 class="h5 font-weight-bold mb-3">Modelado 3D & Publicidad</h3>
+              <p class="text-muted font-size-0-9rem mb-4">
+                Creación de productos, envases, packshots 3D e ilustraciones publicitarias con texturizado hiperrealista.
+              </p>
+              <a href="#contacto" class="btn btn-sm btn-gold-outline w-100">Saber más</a>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6 mb-4">
+            <div class="glass-card h-100">
+              <div class="service-icon-box"><i class="bi bi-play-circle-fill"></i></div>
+              <h3 class="h5 font-weight-bold mb-3">Animación 3D & Reels</h3>
+              <p class="text-muted font-size-0-9rem mb-4">
+                Videos publicitarios animados en 3D optimizados para Reels de Instagram, TikTok y televisión.
+              </p>
+              <a href="#contacto" class="btn btn-sm btn-gold-outline w-100">Saber más</a>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6 mb-4">
+            <div class="glass-card h-100">
+              <div class="service-icon-box"><i class="bi bi-buildings"></i></div>
+              <h3 class="h5 font-weight-bold mb-3">Arquitectura & Renders 3D</h3>
+              <p class="text-muted font-size-0-9rem mb-4">
+                Visualización fotorrealista exterior e interiorismo para proyectos inmobiliarios y comerciales.
+              </p>
+              <a href="#contacto" class="btn btn-sm btn-gold-outline w-100">Saber más</a>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6 mb-4">
+            <div class="glass-card h-100">
+              <div class="service-icon-box"><i class="bi bi-laptop"></i></div>
+              <h3 class="h5 font-weight-bold mb-3">Diseño Web & E-Commerce</h3>
+              <p class="text-muted font-size-0-9rem mb-4">
+                Desarrollo de páginas web modernas, tiendas virtuales y experiencias interactivas a medida.
+              </p>
+              <a href="#contacto" class="btn btn-sm btn-gold-outline w-100">Saber más</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         PORTFOLIO SECTION WITH INSTAGRAM REELS
+         ========================================================================== -->
+    <section class="section-padding bg-surface" id="portafolio">
+      <div class="container">
+        <div class="row align-items-end mb-4">
+          <div class="col-lg-8">
+            <span class="section-eyebrow">Portafolio Destacado & Instagram @lisarstudiooficial</span>
+            <h2 class="section-title">Los Reels Virales & Trabajos 3D Más Vistos</h2>
+          </div>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="d-flex flex-wrap gap-2 mb-5">
+          <button class="portfolio-pill active" data-category="Todos"><i class="bi bi-grid-fill"></i> Todos</button>
+          <button class="portfolio-pill" data-category="Reels Virales"><i class="bi bi-fire text-warning"></i> Reels Virales Instagram</button>
+          <button class="portfolio-pill" data-category="Publicidad 3D"><i class="bi bi-box-seam"></i> Publicidad 3D</button>
+          <button class="portfolio-pill" data-category="Animación 3D"><i class="bi bi-camera-reels"></i> Animación 3D</button>
+          <button class="portfolio-pill" data-category="Arquitectura"><i class="bi bi-houses"></i> Arquitectura</button>
+          <button class="portfolio-pill" data-category="Diseño Web"><i class="bi bi-code-slash"></i> Diseño Web</button>
+        </div>
+
+        <!-- Portfolio Dynamic Grid Container -->
+        <div class="row" id="portfolio-grid-container">
+          <!-- Populated dynamically via app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================================================
+         CONTACT & QUOTATION FORM
+         ========================================================================== -->
+    <section class="section-padding bg-surface" id="contacto">
+      <div class="container">
+        <div class="row gy-5">
+          <div class="col-lg-5">
+            <span class="section-eyebrow">Hablemos de tu Proyecto</span>
+            <h2 class="section-title">Cotiza con Nosotros</h2>
+            <p class="text-muted mb-5">
+              ¿Quieres crear un Reel 3D viral o una animación publicitaria para tu marca? Cuéntanos tus requerimientos y te enviaremos una propuesta.
+            </p>
+
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="service-icon-box"><i class="bi bi-instagram text-danger"></i></div>
+              <div>
+                <small class="text-muted d-block">Instagram Oficial</small>
+                <a href="https://www.instagram.com/lisarstudiooficial/" target="_blank" class="font-weight-bold text-decoration-none font-size-1-1rem">@lisarstudiooficial</a>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="service-icon-box"><i class="bi bi-whatsapp"></i></div>
+              <div>
+                <small class="text-muted d-block">WhatsApp Comercial</small>
+                <a href="https://api.whatsapp.com/send?phone=56912345678" target="_blank" class="font-weight-bold text-decoration-none font-size-1-1rem">+56 9 1234 5678</a>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 mb-4">
+              <div class="service-icon-box"><i class="bi bi-globe"></i></div>
+              <div>
+                <small class="text-muted d-block">Sitio Web Oficial</small>
+                <a href="https://lisarstudio.cl/" target="_blank" class="font-weight-bold text-decoration-none font-size-1-1rem">www.LisarStudio.cl</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-7">
+            <div class="glass-card">
+              <h3 class="font-weight-bold mb-4">Formulario de Cotización 3D</h3>
+              <form id="quote-form" onsubmit="alert('¡Gracias por comunicarte con Lisar Studio! Te contactaremos a la brevedad.'); return false;">
+                <div class="row">
+                  <div class="col-md-6 form-group mb-3">
+                    <label class="font-weight-600">Nombre Completo</label>
+                    <input type="text" class="form-control form-cyber-control" required placeholder="Ej. Carlos Mendoza">
+                  </div>
+                  <div class="col-md-6 form-group mb-3">
+                    <label class="font-weight-600">Correo Electrónico</label>
+                    <input type="email" class="form-control form-cyber-control" required placeholder="nombre@empresa.cl">
+                  </div>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label class="font-weight-600">Tipo de Servicio Requerido</label>
+                  <select class="form-control form-cyber-control" required>
+                    <option value="">Selecciona una categoría...</option>
+                    <option value="Reel 3D Viral">Reel 3D Viral para Instagram / Redes</option>
+                    <option value="Modelado 3D & Publicidad">Modelado 3D & Publicidad</option>
+                    <option value="Animación 3D">Animación 3D & Motion Graphics</option>
+                    <option value="Renders Arquitectónicos">Visualización Arquitectónica / Renders</option>
+                    <option value="Diseño Web">Diseño & Desarrollo Web</option>
+                  </select>
+                </div>
+
+                <div class="form-group mb-4">
+                  <label class="font-weight-600">Detalles del Proyecto</label>
+                  <textarea class="form-control form-cyber-control" rows="4" required placeholder="Describe brevemente el alcance de tu proyecto 3D o Reel publicitario..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-gold-primary w-100 justify-content-center">
+                  Enviar Solicitud de Cotización <i class="bi bi-send-fill ml-2"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==========================================================================
+       FOOTER
+       ========================================================================== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="row align-items-center mb-4">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <a class="brand-logo-wrap" href="#inicio">
+            <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio 2026" id="footerLogoImg" style="height: 48px; width: auto;">
+          </a>
+        </div>
+        <div class="col-md-6 text-md-right">
+          <small class="text-muted">© 2026 Lisar Studio. Todos los derechos reservados. www.LisarStudio.cl | Instagram: @lisarstudiooficial</small>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================================================
+       MODAL DE DETALLE DE PROYECTO / REEL (BOOTSTRAP 4 MODAL)
+       ========================================================================== -->
+  <div class="modal fade modal-cyber" id="projectDetailModal" tabindex="-1" role="dialog" aria-labelledby="modalProjectTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <span class="badge badge-warning text-dark mb-2" id="modalProjectCategory">Categoría</span>
+            <h4 class="modal-title font-weight-bold" id="modalProjectTitle">Título del Proyecto</h4>
+            <small class="text-warning font-weight-bold" id="modalProjectClient">Instagram</small>
+          </div>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-4 text-center position-relative">
+            <img id="modalProjectImg" src="" class="img-fluid rounded" style="max-height: 380px; width: 100%; object-fit: cover;" alt="Proyecto Lisar Studio">
+          </div>
+          <h5 class="font-weight-bold mb-2">Descripción del Reel / Proyecto</h5>
+          <p class="text-muted font-size-1-0rem" id="modalProjectDescription">Detalles...</p>
+
+          <h5 class="font-weight-bold mb-2 mt-4">Herramientas & Software Utilizado</h5>
+          <div id="modalProjectTools"></div>
+        </div>
+        <div class="modal-footer border-top border-secondary">
+          <button type="button" class="btn btn-gold-outline" data-dismiss="modal">Cerrar</button>
+          <a href="https://www.instagram.com/lisarstudiooficial/" id="modalInstagramLink" target="_blank" class="btn btn-gold-primary">Ver en Instagram @lisarstudiooficial <i class="bi bi-instagram ml-1"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Framework 4 / Bootstrap 4 Scripts (jQuery, Popper.js, Bootstrap JS) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+
+  <!-- Google model-viewer — Visor 3D interactivo GLB/GLTF con auto-rotate 360° -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+
+  <!-- Three.js CDN para la animación 3D del Fondo -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- App Custom Scripts -->
+  <script src="assets/js/3d-bg.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
+
