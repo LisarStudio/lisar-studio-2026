@@ -658,6 +658,7 @@ class LisarRunner {
     if(!this.isJumping) {
       this.isJumping = true;
       this.velocityY = this.jumpForce;
+      this.playJumpVoice();
     }
   }
   
@@ -815,6 +816,43 @@ class LisarRunner {
     osc.stop(this.audioContext.currentTime + 0.3);
   }
 
+  playFootstepSound() {
+    if(!this.audioContext || this.audioContext.state !== 'running') return;
+    const osc = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    osc.type = 'sine';
+    // Rampa de frecuencia ultrarrápida estilo DBZ de 600Hz a 120Hz en 0.04s
+    osc.frequency.setValueAtTime(600, this.audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, this.audioContext.currentTime + 0.04);
+    
+    gainNode.gain.setValueAtTime(0.015, this.audioContext.currentTime); // muy sutil para no molestar
+    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.04);
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    osc.start();
+    osc.stop(this.audioContext.currentTime + 0.04);
+  }
+
+  playJumpVoice() {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel(); // Cancelar voz anterior
+        const voices = ['Yah!', 'Wuh!', 'Huup!', 'Haah!'];
+        const randomVoice = voices[Math.floor(Math.random() * voices.length)];
+        const utterance = new SpeechSynthesisUtterance(randomVoice);
+        utterance.lang = 'en-US';
+        utterance.rate = 1.9; // Hablar muy rápido
+        utterance.pitch = 0.8 + Math.random() * 0.5; // Variar tono por salto
+        utterance.volume = 0.5;
+        window.speechSynthesis.speak(utterance);
+      } catch(e) {
+        console.log("SpeechSynthesis error:", e);
+      }
+    }
+  }
+
   startGame() {
     const overlay = document.getElementById('game-overlay');
     if(overlay) overlay.style.display = 'none';
@@ -822,6 +860,13 @@ class LisarRunner {
     this.initAudio();
     if(this.audioContext && this.audioContext.state === 'suspended') {
       this.audioContext.resume();
+    }
+    
+    // Pre-reproducción silenciosa para desbloquear el audio en móviles Chrome/Safari
+    if(this.bgMusic) {
+      this.bgMusic.volume = 0;
+      this.bgMusic.currentTime = 0;
+      this.bgMusic.play().catch(e => console.log("Audio unlock error:", e));
     }
     
     this.uiContainer.style.display = 'flex';
@@ -973,9 +1018,12 @@ class LisarRunner {
     this.isPromoActive = true;
     this.msgEl.style.fontSize = '50px'; // reset font size
     
-    // Play music
-    this.bgMusic.currentTime = 0;
-    this.bgMusic.play().catch(e => console.log("Music play blocked by browser:", e));
+    // Activar volumen y reproducir la música
+    if(this.bgMusic) {
+      this.bgMusic.volume = 0.5;
+      this.bgMusic.currentTime = 0;
+      this.bgMusic.play().catch(e => console.log("Music play blocked by browser:", e));
+    }
   }
 
   levelComplete() {
@@ -1156,6 +1204,13 @@ class LisarRunner {
             if(this.model) this.model.rotation.x = 0;
           }
         } else {
+          // Sonido de pisadas sincronizadas al correr
+          let prevWobble = Math.sin((this.playerTime - 0.1) * 1.5);
+          let currWobble = Math.sin(this.playerTime * 1.5);
+          if ((prevWobble < 0 && currWobble >= 0) || (prevWobble > 0 && currWobble <= 0)) {
+            this.playFootstepSound();
+          }
+          
           this.player.position.y = baseY + Math.abs(Math.sin(this.playerTime * 1.5)) * 0.25;
           // Fake running wobble since GLB has no animations
           if(this.model) {
