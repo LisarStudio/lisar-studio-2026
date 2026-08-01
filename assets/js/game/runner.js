@@ -146,7 +146,6 @@ class LisarRunner {
     this.scoreEl.style.fontFamily = "'Orbitron', sans-serif";
     this.scoreEl.style.fontSize = '22px';
     this.scoreEl.style.fontWeight = 'bold';
-    this.scoreEl.style.marginRight = '20px';
     this.totalCoins = this.totalCoins || 0;
     
     this.energyContainer = document.createElement('div');
@@ -168,13 +167,19 @@ class LisarRunner {
     const rightBar = document.createElement('div');
     rightBar.style.display = 'flex';
     rightBar.style.alignItems = 'center';
-    rightBar.appendChild(this.scoreEl);
     rightBar.appendChild(this.pauseBtn);
 
     const leftBar = document.createElement('div');
     leftBar.style.display = 'flex';
     leftBar.style.flexDirection = 'column';
     leftBar.style.alignItems = 'flex-start';
+    
+    const topRow = document.createElement('div');
+    topRow.style.display = 'flex';
+    topRow.style.alignItems = 'center';
+    topRow.style.gap = '20px';
+    topRow.appendChild(this.energyContainer);
+    topRow.appendChild(this.scoreEl);
     
     // Progress Bar (Song Meta)
     this.progressContainer = document.createElement('div');
@@ -211,7 +216,7 @@ class LisarRunner {
     this.progressContainer.appendChild(this.progressBar);
     this.progressContainer.appendChild(this.progressIcon);
     
-    leftBar.appendChild(this.energyContainer);
+    leftBar.appendChild(topRow);
     leftBar.appendChild(this.progressContainer);
 
     this.uiContainer.appendChild(leftBar);
@@ -585,6 +590,38 @@ class LisarRunner {
     this.obstacles.push(obs);
   }
   
+  createBillboardTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = 'bold 36px "Orbitron", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#00f3ff';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = '#ffffff';
+    for(let i=0; i<3; i++) {
+        ctx.fillText('@lisarstudiooficial', canvas.width/2, canvas.height/2);
+    }
+    return new THREE.CanvasTexture(canvas);
+  }
+  
+  spawnBillboard() {
+    if(!this.billboardTexture) {
+       this.billboardTexture = this.createBillboardTexture();
+       this.billboardMat = new THREE.SpriteMaterial({ map: this.billboardTexture, color: 0xffffff, transparent: true, opacity: 0.5 });
+    }
+    const sprite = new THREE.Sprite(this.billboardMat);
+    sprite.scale.set(40, 10, 1);
+    const side = Math.random() > 0.5 ? 1 : -1;
+    sprite.position.set(side * 20, 5, -80); 
+    this.scene.add(sprite);
+    if(!this.billboards) this.billboards = [];
+    this.billboards.push(sprite);
+  }
+
   spawnCoin() {
     let lane;
     let attempts = 0;
@@ -1036,6 +1073,24 @@ class LisarRunner {
       }
       if(!coinSpawned && Math.random() < 0.005) {
         this.spawnCoin();
+      }
+      
+      if(this.isPlaying && !this.isLevelCompleteAnim && Math.random() < 0.003) { 
+         if(!this.billboards) this.billboards = [];
+         if(this.billboards.length < 2) {
+             this.spawnBillboard();
+         }
+      }
+      
+      if(this.billboards) {
+          for(let i = this.billboards.length - 1; i >= 0; i--) {
+              let b = this.billboards[i];
+              b.position.z += this.speed; 
+              if(b.position.z > 20) {
+                  this.scene.remove(b);
+                  this.billboards.splice(i, 1);
+              }
+          }
       }
       
       // Song Progress, Meta, and Dynamic Intensity
