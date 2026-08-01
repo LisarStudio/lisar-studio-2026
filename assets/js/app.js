@@ -308,21 +308,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
     camera.position.set(0, 0, 3);
 
-    // Lighting — cálida dorada para concordar con la paleta
-    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    // Lighting — fuerte iluminación difusa para que todos los materiales PBR muestren sus texturas
+    const ambient = new THREE.AmbientLight(0xffffff, 2.5);
     scene.add(ambient);
 
-    const dirLight = new THREE.DirectionalLight(0xffd166, 1.8);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
     dirLight.position.set(5, 10, 7);
-    dirLight.castShadow = true;
     scene.add(dirLight);
 
-    const fillLight = new THREE.DirectionalLight(0xfb8500, 0.5);
-    fillLight.position.set(-5, -2, -5);
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    fillLight.position.set(-5, 2, -5);
     scene.add(fillLight);
 
-    const rimLight = new THREE.PointLight(0xffb703, 0.8, 20);
-    rimLight.position.set(0, 3, -4);
+    const rimLight = new THREE.DirectionalLight(0xffb703, 0.8);
+    rimLight.position.set(0, -5, -4);
     scene.add(rimLight);
 
     // Estado de órbita (drag para rotar)
@@ -368,19 +367,11 @@ document.addEventListener('DOMContentLoaded', () => {
         model.scale.setScalar(scale);
         model.position.sub(center.multiplyScalar(scale));
 
-        // Activar sombras y arreglar texturas metálicas en meshes
+        // Activar sombras — preservar todos los mapas de textura originales del GLB
         model.traverse(child => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            if (child.material) {
-               // Evitar que se vea negro en celulares si no hay mapa de entorno
-               child.material.envMapIntensity = 0;
-               if (child.material.metalness > 0.5) {
-                   child.material.metalness = 0.5; // Reducir un poco el metalness para que refleje luz difusa
-               }
-               child.material.needsUpdate = true;
-            }
           }
         });
 
