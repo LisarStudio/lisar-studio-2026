@@ -174,7 +174,7 @@ class LisarRunner {
 
     this.msgEl = document.createElement('div');
     this.msgEl.style.position = 'absolute';
-    this.msgEl.style.top = '40%';
+    this.msgEl.style.top = '50%';
     this.msgEl.style.left = '50%';
     this.msgEl.style.transform = 'translate(-50%, -50%)';
     this.msgEl.style.color = '#ff8800';
@@ -250,7 +250,7 @@ class LisarRunner {
          @keyframes shoot6 { to { transform: translate(250px, 300px) rotate(90deg); opacity: 0; } }
          
          .ready-futuristic {
-           font-size: clamp(40px, 10vw, 70px);
+           font-size: clamp(25px, 6vw, 45px);
            font-weight: 900;
            color: #ffffff;
            text-shadow: 0 0 20px #ff8800, 0 0 40px #ff8800;
@@ -695,7 +695,7 @@ class LisarRunner {
         // Agregar la moneda 3D exactamente al centro como fondo del READY
         if (this.coinModel) {
             this.readyCoin = this.coinModel.clone();
-            this.readyCoin.scale.setScalar(0.5);
+            this.readyCoin.scale.setScalar(0.9);
             this.readyCoin.position.set(0, 0, -2.5); // Exactamente al centro de la cámara
             this.camera.add(this.readyCoin);
             this.scene.add(this.camera); 
