@@ -643,8 +643,8 @@ class LisarRunner {
     this.isShowingInstructions = true;
     
     if(this.player) {
-        this.player.visible = true;
-        this.player.position.set(this.lanes[this.currentLane], 0, 50); // Empieza lejos para venir corriendo
+        this.player.visible = false; // Permanece invisible mientras se leen las instrucciones
+        this.player.position.set(this.lanes[this.currentLane], 0, 50); // Empieza lejos
     }
     
     // Posición inicial de cámara para Intro
@@ -673,7 +673,10 @@ class LisarRunner {
   
   startCountdownAndIntro() {
     this.isShowingInstructions = false;
-    if(this.player) this.player.position.z = 0; // Lock en posición base
+    
+    if(this.player) {
+        this.player.visible = true; // Ahora sí aparece y viene corriendo
+    }
     
     // Activa la animación de la cámara simultánea al contador
     this.isIntro = true; 
@@ -831,15 +834,15 @@ class LisarRunner {
       this.camera.position.lerpVectors(startPos, endPos, ease);
       const currentLook = new THREE.Vector3().lerpVectors(startLook, endLook, ease);
       this.camera.lookAt(currentLook);
+      
+      if (this.player) {
+         // El personaje viene llegando desde atrás hacia su posición durante el 3..2..1
+         this.player.position.z += (0 - this.player.position.z) * 0.035;
+      }
     }
     
     if (this.readyCoin) {
         this.readyCoin.rotation.y += 0.15; // Girar la moneda del READY
-    }
-    
-    if (this.isShowingInstructions && !this.isPaused && this.player) {
-       // El personaje viene llegando desde atrás hacia su posición
-       this.player.position.z += (0 - this.player.position.z) * 0.05;
     }
     
     if (this.isLevelCompleteAnim && !this.isPaused && this.player) {
