@@ -177,11 +177,11 @@ class LisarRunner {
     this.msgEl.style.top = '40%';
     this.msgEl.style.left = '50%';
     this.msgEl.style.transform = 'translate(-50%, -50%)';
-    this.msgEl.style.color = '#00ffff';
+    this.msgEl.style.color = '#ff8800';
     this.msgEl.style.fontFamily = "'Orbitron', sans-serif";
     this.msgEl.style.fontSize = '60px';
     this.msgEl.style.fontWeight = '900';
-    this.msgEl.style.textShadow = '0 0 20px #00ffff, 0 0 40px #00ffff';
+    this.msgEl.style.textShadow = '0 0 20px #ff8800, 0 0 40px #ff8800';
     this.msgEl.style.display = 'none';
     this.msgEl.style.zIndex = '100';
     this.container.appendChild(this.msgEl);
@@ -195,11 +195,11 @@ class LisarRunner {
     this.controlsBubbleEl.style.color = '#fff';
     this.controlsBubbleEl.style.padding = '15px 30px';
     this.controlsBubbleEl.style.borderRadius = '20px';
-    this.controlsBubbleEl.style.border = '2px solid #00ffff';
-    this.controlsBubbleEl.style.boxShadow = '0 0 15px #00ffff';
+    this.controlsBubbleEl.style.border = '2px solid #ff8800';
+    this.controlsBubbleEl.style.boxShadow = '0 0 15px #ff8800';
     this.controlsBubbleEl.style.fontFamily = "'Orbitron', sans-serif";
     this.controlsBubbleEl.style.fontSize = '16px';
-    this.controlsBubbleEl.style.textAlign = 'justify';
+    this.controlsBubbleEl.style.textAlign = 'center';
     this.controlsBubbleEl.style.display = 'none';
     this.controlsBubbleEl.style.zIndex = '100';
     this.controlsBubbleEl.style.pointerEvents = 'none';
@@ -346,7 +346,7 @@ class LisarRunner {
   initFloor() {
     const geo = new THREE.PlaneGeometry(20, 100, 10, 50);
     const mat = new THREE.MeshBasicMaterial({ 
-      color: 0x00ffff, 
+      color: 0xff8800, 
       wireframe: true,
       transparent: true,
       opacity: 0.3
@@ -466,7 +466,7 @@ class LisarRunner {
         this.audioContext = new AudioContext();
         const source = this.audioContext.createMediaElementSource(this.bgMusic);
         this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 256;
+        this.analyser.fftSize = 2048;
         source.connect(this.analyser);
         this.analyser.connect(this.audioContext.destination);
         this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
@@ -494,7 +494,6 @@ class LisarRunner {
        let maxVal = 0;
        let maxIndex = 10;
        
-       // Encontrar la frecuencia de mayor volumen (ignorando bajos < 10)
        for (let i = 10; i < this.dataArray.length; i++) {
            if (this.dataArray[i] > maxVal) {
                maxVal = this.dataArray[i];
@@ -502,20 +501,22 @@ class LisarRunner {
            }
        }
        
-       // Convertir bin index a Hertz (Nyquist / (fftSize/2))
        const nyquist = this.audioContext.sampleRate / 2;
        const binSize = nyquist / (this.analyser.fftSize / 2);
        let fundamentalFreq = maxIndex * binSize;
        
-       // Multiplicar por octavas (x2) para que suene como campana brillante
        if (fundamentalFreq > 0) {
            freq = fundamentalFreq;
            while(freq < 800) { freq *= 2; }
            while(freq > 2400) { freq /= 2; }
+           
+           // Alinear a nota musical estándar (Escala cromática basada en A4 = 440Hz)
+           const semitonesFromA4 = Math.round(12 * Math.log2(freq / 440));
+           freq = 440 * Math.pow(2, semitonesFromA4 / 12);
        }
     }
     
-    osc.type = 'sine';
+    osc.type = 'triangle'; // Un sonido tipo campana/sintetizador más suave
     osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
     
     gainNode.gain.setValueAtTime(0.05, this.audioContext.currentTime); // Volumen suave
@@ -606,22 +607,22 @@ class LisarRunner {
       } else {
         clearInterval(countInterval);
         
-        // Mostrar "READY!" con texto HTML y preparar la moneda 3D
+        // Mostrar "READY!" con texto HTML y logo, y preparar la moneda 3D
         this.msgEl.style.fontSize = '60px';
-        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite alternate; padding-left: 100px;">
+        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite alternate; padding-left: 80px;">
+                                  <img src="assets/img/lisar-studio-logo-white.webp" style="height: 60px; margin-right: 15px; object-fit: contain; filter: drop-shadow(0 0 10px #ff8800);">
                                   <span style="line-height: 1; letter-spacing: 5px;">READY!</span>
                                 </div>`;
         this.msgEl.style.display = 'block';
         this.speak("Ready!");
         
         // Agregar la moneda 3D a la izquierda usando Three.js
-        if (this.models['assets/models/coin.glb']) {
-            this.readyCoin = this.models['assets/models/coin.glb'].scene.clone();
+        if (this.coinModel) {
+            this.readyCoin = this.coinModel.clone();
             this.readyCoin.scale.setScalar(0.4);
-            // Posicionar relativo a la cámara: Izquierda (-0.8), Abajo (-0.1), Frente (-2.5)
             this.readyCoin.position.set(-0.8, -0.1, -2.5);
             this.camera.add(this.readyCoin);
-            this.scene.add(this.camera); // Asegurar que la cámara esté en la escena para ver sus hijos
+            this.scene.add(this.camera); 
         }
         
         setTimeout(() => {
@@ -888,7 +889,6 @@ class LisarRunner {
         coin.position.y = 1 + Math.sin(this.playerTime * 2 + i) * 0.2;
         
         if(this.player && Math.abs(coin.position.z - this.player.position.z) < 1.5 && Math.abs(coin.position.x - this.player.position.x) < 1.0) {
-          this.scene.remove(coin);
           
           this.totalCoins++;
           this.scoreEl.innerText = 'MONEDAS: ' + this.totalCoins;
