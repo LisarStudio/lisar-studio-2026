@@ -46,7 +46,7 @@ class LisarRunner {
     // Game State
     this.isPlaying = false;
     this.score = 0;
-    this.speed = 0.2;
+    this.speed = 0.12; // Velocidad reducida
     this.lanes = [-2, 0, 2];
     this.currentLane = 1; // Middle lane
     
@@ -138,13 +138,13 @@ class LisarRunner {
     this.player.position.set(this.lanes[this.currentLane], 0.5, 0);
     this.scene.add(this.player);
     
-    // Try to load GLB (wukonglisar.glb)
-    if(window.THREE && window.THREE.GLTFLoader) {
-      const loader = new THREE.GLTFLoader();
-      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.glb', (gltf) => {
+    // Try to load FBX (wukonglisar.fbx)
+    if(window.THREE && window.THREE.FBXLoader) {
+      const loader = new THREE.FBXLoader();
+      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.fbx', (object) => {
         this.scene.remove(this.player);
         
-        this.model = gltf.scene;
+        this.model = object;
         this.model.scale.set(0.7, 0.7, 0.7); // Escala corregida
         this.model.rotation.y = Math.PI; // Face forward
         
@@ -167,18 +167,17 @@ class LisarRunner {
         this.player.add(this.model);
         
         // Handle Animations
-        if (gltf.animations && gltf.animations.length > 0) {
+        if (object.animations && object.animations.length > 0) {
           this.mixer = new THREE.AnimationMixer(this.model);
-          // Buscar animacion 'run', si no usar la 0
-          let runClip = gltf.animations.find(a => a.name.toLowerCase().includes('run'));
-          if(!runClip) runClip = gltf.animations[0];
+          let runClip = object.animations.find(a => a.name.toLowerCase().includes('run'));
+          if(!runClip) runClip = object.animations[0];
           const action = this.mixer.clipAction(runClip);
           action.play();
         }
         
         this.scene.add(this.player);
       }, undefined, (err) => {
-        console.warn("Could not load wukonglisar.glb for minigame, using placeholder", err);
+        console.warn("Could not load wukonglisar.fbx for minigame, using placeholder", err);
       });
     }
   }
@@ -270,7 +269,7 @@ class LisarRunner {
     this.coins = [];
     
     this.score = 0;
-    this.speed = 0.2;
+    this.speed = 0.12; // Velocidad reducida
     this.currentLane = 1;
     this.isPlaying = true;
   }
