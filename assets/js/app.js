@@ -237,216 +237,63 @@ document.addEventListener('DOMContentLoaded', () => {
       activeCategory === 'Todos' || item.category === activeCategory
     );
 
-    portfolioContainer.innerHTML = filtered.map(item => `
-      <div class="col-lg-4 col-md-6 mb-4">
+    portfolioContainer.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    filtered.forEach(item => {
+      const col = document.createElement('div');
+      col.className = 'col-lg-4 col-md-6 mb-4';
+
+      // Build card inner HTML (safe for non-custom-element content)
+      let mediaHTML = '';
+      if (item.type === 'video') {
+        mediaHTML = `<video class="w-100 h-100" style="object-fit:cover;border-radius:10px;" autoplay muted loop playsinline preload="metadata"><source src="${item.videoFile}" type="video/mp4"></video>`;
+      } else if (item.type === 'iframe') {
+        mediaHTML = `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
+      }
+      // For 3D models, we'll append the <model-viewer> element via DOM API below
+
+      col.innerHTML = `
         <div class="glass-card portfolio-card h-100">
           <div class="model-viewer-wrapper" id="wrapper-${item.id}">
             <span class="model-viewer-badge">
-              <i class="bi bi-badge-3d-fill"></i> ${item.type === 'video' ? 'Video · ' : 'Visor 3D · '}${item.title}
+              <i class="bi bi-badge-3d-fill"></i> ${item.type === 'video' ? 'Video' : 'Visor 3D'} &middot; ${item.title}
             </span>
-            ${item.type === 'video' 
-              ? `<video class="w-100 h-100" style="object-fit:cover;border-radius:10px;" autoplay muted loop playsinline preload="metadata">
-                   <source src="${item.videoFile}" type="video/mp4">
-                 </video>`
-              : item.type === 'iframe'
-                ? `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`
-                : `<canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
-                   <div class="model-loading-bar" id="loading-${item.id}">
-                     <div class="loading-bar-fill"></div>
-                     <span>Cargando modelo 3D...</span>
-                   </div>`
-            }
+            ${mediaHTML}
           </div>
-
           <h3 class="h5 font-weight-bold text-main mb-1 mt-2">${item.title}</h3>
           <span class="badge badge-sm" style="background:rgba(255,183,3,0.15);color:var(--lisar-gold);border:1px solid rgba(255,183,3,0.3);font-size:0.7rem;padding:3px 8px;border-radius:20px;margin-bottom:8px;display:inline-block;">${item.category}</span>
           <p class="text-muted font-size-0-9rem mb-3">${item.description}</p>
-
           <div class="d-flex flex-wrap gap-1 mb-3">
             ${item.tools.map(t => `<span style="font-size:0.7rem;background:rgba(255,183,3,0.08);border:1px solid rgba(255,183,3,0.2);color:var(--lisar-gold);padding:2px 8px;border-radius:20px;">${t}</span>`).join('')}
           </div>
-
           <div class="d-flex align-items-center pt-3 border-top border-secondary mt-auto">
             <span class="text-muted" style="font-size:0.75rem;"><i class="bi bi-instagram text-danger mr-1"></i>@lisarstudiooficial</span>
           </div>
         </div>
-      </div>
-    `).join('');
+      `;
 
-    // Inicializar visor 3D Three.js para cada tarjeta que no sea video ni iframe
-    filtered.forEach(item => {
-      if (item.type !== 'video' && item.type !== 'iframe') {
-        initGLBViewer(`canvas-${item.id}`, `loading-${item.id}`, item.glbFile);
+      // For 3D models: create <model-viewer> via DOM API so it upgrades as a real custom element
+      if (!item.type || item.type === '3d') {
+        const wrapper = col.querySelector(`#wrapper-${item.id}`);
+        const mv = document.createElement('model-viewer');
+        mv.setAttribute('src', item.glbFile);
+        mv.setAttribute('alt', item.title);
+        mv.setAttribute('auto-rotate', '');
+        mv.setAttribute('auto-rotate-delay', '0');
+        mv.setAttribute('rotation-per-second', '30deg');
+        mv.setAttribute('camera-controls', '');
+        mv.setAttribute('shadow-intensity', '1');
+        mv.setAttribute('environment-image', 'neutral');
+        mv.setAttribute('exposure', '1');
+        mv.style.cssText = 'width:100%;height:100%;border-radius:10px;background:transparent;--poster-color:transparent;';
+        wrapper.appendChild(mv);
       }
+
+      fragment.appendChild(col);
     });
-  }
 
-  // ============================================================
-  // 5. VISOR 3D GLB CON THREE.JS + GLTFLoader
-  // ============================================================
-  function initGLBViewer(canvasId, loadingId, glbPath) {
-    const canvas  = document.getElementById(canvasId);
-    const loadBar = document.getElementById(loadingId);
-    if (!canvas || !window.THREE) return;
-
-    const THREE = window.THREE;
-    const wrapper = canvas.parentElement;
-    const W = wrapper.clientWidth  || 320;
-    const H = wrapper.clientHeight || 320;
-
-    // Renderer
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setSize(W, H);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping    = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    renderer.shadowMap.enabled = true;
-
-    // Scene
-    const scene  = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
-    camera.position.set(0, 0, 3);
-
-    // Lighting — fuerte iluminación difusa para que todos los materiales PBR muestren sus texturas
-    const ambient = new THREE.AmbientLight(0xffffff, 2.5);
-    scene.add(ambient);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    dirLight.position.set(5, 10, 7);
-    scene.add(dirLight);
-
-    const fillLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    fillLight.position.set(-5, 2, -5);
-    scene.add(fillLight);
-
-    const rimLight = new THREE.DirectionalLight(0xffb703, 0.8);
-    rimLight.position.set(0, -5, -4);
-    scene.add(rimLight);
-
-    // Estado de órbita (drag para rotar)
-    let isDragging = false, prevX = 0, prevY = 0;
-    let rotX = 0, rotY = 0;
-    let autoRotate = true;
-
-    canvas.addEventListener('mousedown',  e => { isDragging = true;  autoRotate = false; prevX = e.clientX; prevY = e.clientY; canvas.style.cursor = 'grabbing'; });
-    canvas.addEventListener('mousemove',  e => { if (!isDragging) return; rotY += (e.clientX - prevX) * 0.008; rotX += (e.clientY - prevY) * 0.005; prevX = e.clientX; prevY = e.clientY; });
-    canvas.addEventListener('mouseup',    () => { isDragging = false; canvas.style.cursor = 'grab'; setTimeout(() => { autoRotate = true; }, 2000); });
-    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; setTimeout(() => { autoRotate = true; }, 2000); });
-
-    // Touch
-    canvas.addEventListener('touchstart', e => { isDragging = true; autoRotate = false; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; });
-    canvas.addEventListener('touchmove',  e => { if (!isDragging) return; rotY += (e.touches[0].clientX - prevX) * 0.008; rotX += (e.touches[0].clientY - prevY) * 0.005; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; e.preventDefault(); }, { passive: false });
-    canvas.addEventListener('touchend',   () => { isDragging = false; setTimeout(() => { autoRotate = true; }, 2000); });
-
-    // Cargar GLB con GLTFLoader
-    if (!THREE.GLTFLoader) {
-      // Fallback: mostrar placeholder dorado si no hay loader
-      showGoldenPlaceholder(scene, camera, renderer, canvas, autoRotate, rotX, rotY);
-      if (loadBar) loadBar.style.display = 'none';
-      return;
-    }
-
-    const loader = new THREE.GLTFLoader();
-    loader.load(
-      glbPath,
-      (gltf) => {
-        if (loadBar) loadBar.style.display = 'none';
-
-        const model = gltf.scene;
-
-        const pivot = new THREE.Group();
-        scene.add(pivot);
-
-        const box    = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size   = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale  = 2.0 / maxDim;
-
-        model.scale.setScalar(scale);
-        model.position.sub(center.multiplyScalar(scale));
-
-        // Activar sombras — preservar todos los mapas de textura originales del GLB
-        model.traverse(child => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-
-        pivot.add(model);
-
-        // Ajustar cámara según tamaño real
-        camera.position.z = 2.5;
-
-        // Reproducir animaciones si el GLB las trae
-        let mixer = null;
-        if (gltf.animations && gltf.animations.length > 0) {
-          mixer = new THREE.AnimationMixer(model);
-          gltf.animations.forEach(clip => mixer.clipAction(clip).play());
-        }
-
-        const clock = new THREE.Clock();
-
-        function animate() {
-          requestAnimationFrame(animate);
-          const delta = clock.getDelta();
-          if (mixer) mixer.update(delta);
-          if (autoRotate) rotY += 0.005;
-          pivot.rotation.y = rotY;
-          pivot.rotation.x = rotX * 0.3;
-          renderer.render(scene, camera);
-        }
-        animate();
-      },
-      (progress) => {
-        if (loadBar && progress.total) {
-          const pct = (progress.loaded / progress.total * 100).toFixed(0);
-          const fill = loadBar.querySelector('.loading-bar-fill');
-          if (fill) fill.style.width = pct + '%';
-          const span = loadBar.querySelector('span');
-          if (span) span.textContent = `Cargando ${pct}%...`;
-        }
-      },
-      (error) => {
-        console.error('Error cargando GLB:', glbPath, error);
-        if (loadBar) loadBar.style.display = 'none';
-        showGoldenPlaceholder(scene, camera, renderer, canvas);
-      }
-    );
-  }
-
-  // Placeholder dorado si falla la carga
-  function showGoldenPlaceholder(scene, camera, renderer, canvas) {
-    const THREE = window.THREE;
-    const geo  = new THREE.IcosahedronGeometry(0.8, 0);
-    const mat  = new THREE.MeshStandardMaterial({ color: 0xffb703, metalness: 0.9, roughness: 0.2, wireframe: false });
-    const mesh = new THREE.Mesh(geo, mat);
-    scene.add(mesh);
-    // Scroll to top button functionality
-    const scrollTopBtn = document.getElementById('scrollTopBtn');
-    if (scrollTopBtn) {
-      scrollTopBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 200) {
-          scrollTopBtn.classList.add('show');
-        } else {
-          scrollTopBtn.classList.remove('show');
-        }
-      });
-    }
-    let t = 0;
-    function animate() {
-      requestAnimationFrame(animate);
-      t += 0.01;
-      mesh.rotation.y += 0.01;
-      mesh.rotation.x += 0.003;
-      renderer.render(scene, camera);
-    }
-    animate();
+    portfolioContainer.appendChild(fragment);
   }
 
   // Scroll to top button functionality
