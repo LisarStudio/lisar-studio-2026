@@ -70,6 +70,11 @@ class LisarRunner {
     // Floor
     this.initFloor();
     
+    // Audio
+    this.bgMusic = new Audio('assets/audio/level1.mp3');
+    this.bgMusic.loop = true;
+    this.bgMusic.volume = 0.5;
+    
     // UI
     this.initUI();
     
@@ -272,10 +277,15 @@ class LisarRunner {
     this.speed = 0.12; // Velocidad reducida
     this.currentLane = 1;
     this.isPlaying = true;
+    
+    // Play music
+    this.bgMusic.currentTime = 0;
+    this.bgMusic.play().catch(e => console.log("Music play blocked by browser:", e));
   }
   
   gameOver() {
     this.isPlaying = false;
+    this.bgMusic.pause();
     const overlay = document.getElementById('game-overlay');
     if(overlay) {
       overlay.style.display = 'flex';
