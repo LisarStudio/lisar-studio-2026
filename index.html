@@ -47,7 +47,7 @@
           </button>
 
             <a href="https://www.instagram.com/lisarstudiooficial/" target="_blank" class="btn btn-sm btn-instagram mr-2 d-none d-md-inline-flex">
-              <i class="bi bi-instagram" style="color:#fff;"></i> @lisarstudiooficial
+              <i class="bi bi-instagram" style="color:#fff;"></i> <span class="text-white">@lisarstudiooficial</span>
             </a>
             <a href="https://api.whatsapp.com/send?phone=56964486208&text=Hola%20Lisar%20Studio%20cotizando%20un%20proyecto%203D" target="_blank" class="btn btn-sm btn-gold-primary d-none d-sm-inline-flex">
               <i class="bi bi-whatsapp"></i> Cotizar 3D
@@ -120,6 +120,10 @@
               <p class="text-muted font-size-0-95rem mb-4">
                 Más de 2 Millones de reproducciones en nuestros Reels 3D de animación, CGI y desglose de producción.
               </p>
+              <div class="mt-3">
+                <video src="assets/videos/hero-video.mp4" controls muted loop class="w-100 rounded" style="max-height: 250px; object-fit: cover;"></video>
+                <small class="text-muted d-block mt-1">(Video Placeholder)</small>
+              </div>
               <div class="d-flex align-items-center justify-content-center gap-3 pt-3 border-top border-secondary">
                 <span class="badge badge-warning text-dark p-2"><i class="bi bi-eye-fill"></i> +2M Views</span>
                 <span class="badge badge-outline-warning text-warning p-2 border border-warning"><i class="bi bi-heart-fill text-danger"></i> Viral Content</span>
@@ -253,10 +257,13 @@
          ========================================================================== -->
     <section class="section-padding bg-surface" id="portafolio">
       <div class="container">
-        <div class="row align-items-end mb-4">
-          <div class="col-lg-8">
-            <span class="section-eyebrow">Portafolio Destacado & Instagram @lisarstudiooficial</span>
-            <h2 class="section-title">Los Reels Virales & Trabajos 3D Más Vistos</h2>
+        <div class="row align-items-center mb-4">
+          <div class="col-lg-12 d-flex align-items-center flex-wrap">
+            <div>
+              <span class="section-eyebrow">Portafolio Destacado & Instagram @lisarstudiooficial</span>
+              <h2 class="section-title mb-0">Modelos 3D para Videojuegos y Realidad Virtual</h2>
+            </div>
+            <img src="assets/img/helmets.png" alt="Cascos 3D" class="ml-auto mt-3 mt-md-0" style="height: 100px; object-fit: contain;">
           </div>
         </div>
 
@@ -265,7 +272,7 @@
           <button class="portfolio-pill active" data-category="Todos"><i class="bi bi-grid-fill"></i> Todos</button>
           <button class="portfolio-pill" data-category="Publicidad 3D"><i class="bi bi-box-seam"></i> Publicidad 3D</button>
           <button class="portfolio-pill" data-category="Animación 3D"><i class="bi bi-camera-reels"></i> Animación 3D</button>
-          <button class="portfolio-pill" data-category="Motion Graphics"><i class="bi bi-layers"></i> Motion Graphics</button>
+          <button class="portfolio-pill" data-category="VFX y Motion Graphics"><i class="bi bi-layers"></i> VFX y Motion Graphics</button>
         </div>
 
 
@@ -362,16 +369,48 @@
   <!-- ==========================================================================
        FOOTER
        ========================================================================== -->
-  <footer class="site-footer">
+  <footer class="site-footer bg-surface py-5 border-top border-secondary mt-5">
     <div class="container">
-      <div class="row align-items-center mb-4">
-        <div class="col-md-6 mb-3 mb-md-0">
-          <a class="brand-logo-wrap" href="#inicio">
-            <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio 2026" id="footerLogoImg" style="height: 48px; width: auto;">
-          </a>
+      <div class="row gy-4">
+        <div class="col-lg-4 mb-4 mb-lg-0">
+          <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" class="mb-3" style="max-width: 150px;">
+          <p class="text-muted font-size-0-9rem">
+            Diseño WEB, Diseño UX, Mantención WEB, Diseño de Cursos Web, Marketing Digital, Publicidad, Diseño Gráfico, Fotografía de Productos, Modelado 3D, Cursos para Empresas.
+          </p>
         </div>
-        <div class="col-md-6 text-md-right">
-          <small class="text-muted">© 2026 Lisar Studio. Todos los derechos reservados. www.LisarStudio.cl | Instagram: @lisarstudiooficial</small>
+        <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+          <h5 class="text-white mb-3">Páginas</h5>
+          <ul class="list-unstyled font-size-0-9rem">
+            <li><a href="#inicio" class="text-muted text-decoration-none">Home</a></li>
+            <li><a href="#portafolio" class="text-muted text-decoration-none">Portafolio</a></li>
+            <li><a href="#contacto" class="text-muted text-decoration-none">Contacto</a></li>
+            <li><a href="#" class="text-muted text-decoration-none">Preguntas Frecuentes</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-3 col-md-4 mb-4 mb-md-0">
+          <h5 class="text-white mb-3">Contacto Comercial</h5>
+          <ul class="list-unstyled text-muted font-size-0-9rem">
+            <li class="mb-2"><i class="bi bi-clock mr-2"></i>9:30 AM A 18:30 PM</li>
+            <li class="mb-2"><a href="mailto:peter@lisarstudio.cl" class="text-muted text-decoration-none"><i class="bi bi-envelope mr-2"></i>peter@lisarstudio.cl</a></li>
+            <li class="mb-2"><a href="tel:+56964486208" class="text-muted text-decoration-none"><i class="bi bi-telephone mr-2"></i>+56 9 6448 6208</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-3 col-md-4">
+          <h5 class="text-white mb-3">Legal</h5>
+          <ul class="list-unstyled font-size-0-9rem">
+            <li><a href="#" class="text-muted text-decoration-none">Proveedor de Factura Electrónica</a></li>
+            <li><a href="#" class="text-muted text-decoration-none">Políticas y Privacidad</a></li>
+            <li><a href="#" class="text-muted text-decoration-none">Términos y Condiciones</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="row border-top border-secondary pt-4 mt-4">
+        <div class="col-md-6 text-center text-md-left">
+          <p class="text-muted font-size-0-8rem mb-0">Copyright © 2026 Lisar Studio | Powered by Lisar Studio©</p>
+        </div>
+        <div class="col-md-6 text-center text-md-right mt-3 mt-md-0">
+          <a href="#" class="text-muted mr-3"><i class="bi bi-facebook font-size-1-2rem"></i></a>
+          <a href="https://www.instagram.com/lisarstudiooficial/" class="text-muted"><i class="bi bi-instagram font-size-1-2rem"></i></a>
         </div>
       </div>
     </div>

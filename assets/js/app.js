@@ -71,10 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       id: 3,
-      title: "Flutter",
-      category: "Motion Graphics",
+      title: "Flutter VFX",
+      category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/Flutter.glb",
+      type: "video",
+      videoFile: "assets/videos/vfx-video.mp4",
       description: "Animación fluida con sistema de partículas y simulación de movimiento orgánico dinámico.",
       tools: ["Houdini FX", "After Effects", "DaVinci Resolve"],
     },
@@ -108,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       id: 7,
       title: "Tron",
-      category: "Motion Graphics",
+      category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
       glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/tron.glb",
       description: "Concept art 3D con estética cyberpunk, iluminación neón emisiva y materiales translúcidos futuristas.",
@@ -139,13 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="glass-card portfolio-card h-100">
           <div class="model-viewer-wrapper" id="wrapper-${item.id}">
             <span class="model-viewer-badge">
-              <i class="bi bi-badge-3d-fill"></i> Visor 3D · ${item.title}
+              <i class="bi bi-badge-3d-fill"></i> ${item.type === 'video' ? 'Video · ' : 'Visor 3D · '}${item.title}
             </span>
-            <canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
-            <div class="model-loading-bar" id="loading-${item.id}">
-              <div class="loading-bar-fill"></div>
-              <span>Cargando modelo 3D...</span>
-            </div>
+            ${item.type === 'video' 
+              ? `<video src="${item.videoFile}" class="w-100 h-100" style="object-fit:cover;border-radius:10px;" controls muted loop></video>`
+              : `<canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
+                 <div class="model-loading-bar" id="loading-${item.id}">
+                   <div class="loading-bar-fill"></div>
+                   <span>Cargando modelo 3D...</span>
+                 </div>`
+            }
           </div>
 
           <h3 class="h5 font-weight-bold text-main mb-1 mt-2">${item.title}</h3>
@@ -166,9 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `).join('');
 
-    // Inicializar visor 3D Three.js para cada tarjeta
+    // Inicializar visor 3D Three.js para cada tarjeta que no sea video
     filtered.forEach(item => {
-      initGLBViewer(`canvas-${item.id}`, `loading-${item.id}`, item.glbFile);
+      if (item.type !== 'video') {
+        initGLBViewer(`canvas-${item.id}`, `loading-${item.id}`, item.glbFile);
+      }
     });
   }
 
