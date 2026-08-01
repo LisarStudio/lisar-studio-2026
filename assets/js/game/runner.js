@@ -145,7 +145,7 @@ class LisarRunner {
         this.scene.remove(this.player);
         
         this.model = gltf.scene;
-        this.model.scale.set(2.5, 2.5, 2.5); // Ajustar escala para modelos Mixamo
+        this.model.scale.set(0.7, 0.7, 0.7); // Escala corregida
         this.model.rotation.y = Math.PI; // Face forward
         
         // Ensure materials display correctly
@@ -161,7 +161,7 @@ class LisarRunner {
 
         // Wrapper group to separate procedural movement from GLTF animation
         this.player = new THREE.Group();
-        this.player.position.set(this.lanes[this.currentLane], 0, 0);
+        this.player.position.set(this.lanes[this.currentLane], 0, 0); // Ajuste vertical
         this.player.add(this.model);
         
         // Handle Animations
