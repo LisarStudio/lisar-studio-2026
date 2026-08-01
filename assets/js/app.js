@@ -400,56 +400,58 @@ document.addEventListener('DOMContentLoaded', () => {
   renderPortfolio();
 
   // ============================================================
-  // VIDEO AUTOPLAY — IntersectionObserver
-  // Reproduce el video más visible (≥60%), pausa los demás.
-  // Se reconfigura al cambiar el filtro de categorías.
+  // VIDEO AUTOPLAY — IntersectionObserver (play simultáneo)
+  // Cada video se reproduce de forma independiente cuando entra
+  // al viewport (≥20%). No se pausa cuando otro también es visible.
+  // Solo se pausa si el video sale completamente de pantalla.
   // ============================================================
   let _videoObserver = null;
 
   function setupVideoObserver() {
-    // Desconectar observer previo si existe (evitar duplicados al filtrar)
+    // Desconectar observer previo para evitar duplicados al filtrar
     if (_videoObserver) {
       _videoObserver.disconnect();
       _videoObserver = null;
     }
 
-    const videos = document.querySelectorAll('.video-social');
+    const videos = portfolioContainer
+      ? portfolioContainer.querySelectorAll('.video-social')
+      : [];
     if (!videos.length) return;
 
     _videoObserver = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         const video = entry.target;
 
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
-          // Pausar todos los demás videos primero
-          document.querySelectorAll('.video-social').forEach((other) => {
-            if (other !== video && !other.paused) {
-              other.pause();
-            }
-          });
-
-          // Garantizar muted antes de play() (requisito de autoplay)
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.2) {
+          // Solo reiniciar si el video no ha arrancado todavía
+          if (video.paused && video.currentTime === 0) {
+            video.currentTime = 0;
+          }
+          // Garantizar muted (requisito de autoplay en todos los browsers)
           video.muted = true;
 
           const playPromise = video.play();
           if (playPromise !== undefined) {
             playPromise.catch((err) => {
-              console.warn('[VideoObserver] Autoplay bloqueado por el navegador:', err.message);
+              // Autoplay bloqueado por política del navegador — silencioso
+              console.warn('[VideoObserver] Autoplay bloqueado:', err.message);
             });
           }
-        } else {
+        } else if (!entry.isIntersecting) {
+          // Solo pausar cuando el video está completamente fuera de la pantalla
           if (!video.paused) {
             video.pause();
           }
         }
+        // Si está parcialmente visible (0 < ratio < 0.2) → no hacer nada,
+        // dejar que el estado actual continúe
       });
     }, {
-      threshold: [0, 0.3, 0.6, 1.0]
+      threshold: [0, 0.2, 0.5, 1.0]
     });
 
     videos.forEach((video) => {
-      // Reiniciar al principio si está detenido
-      video.currentTime = 0;
       _videoObserver.observe(video);
     });
   }
