@@ -186,25 +186,81 @@ class LisarRunner {
     this.msgEl.style.zIndex = '100';
     this.container.appendChild(this.msgEl);
     
+    // Inject custom CSS for animations if not exists
+    if (!document.getElementById('lisar-game-styles')) {
+       const style = document.createElement('style');
+       style.id = 'lisar-game-styles';
+       style.innerHTML = `
+         @keyframes rotateNeon {
+           0% { transform: rotate(0deg); }
+           100% { transform: rotate(360deg); }
+         }
+         .neon-bubble {
+           position: absolute;
+           overflow: hidden;
+           border-radius: 20px;
+           background: rgba(0, 0, 0, 0.7);
+           padding: 20px 30px;
+           color: #fff;
+           font-family: 'Orbitron', sans-serif;
+           font-size: 16px;
+           text-align: center;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           z-index: 100;
+           pointer-events: none;
+           opacity: 0;
+           transition: opacity 0.5s ease-in-out;
+         }
+         .neon-bubble::before {
+           content: "";
+           position: absolute;
+           top: -50%; left: -50%;
+           width: 200%; height: 200%;
+           background: conic-gradient(transparent, transparent, transparent, #ff8800);
+           animation: rotateNeon 2s linear infinite;
+           z-index: -2;
+         }
+         .neon-bubble::after {
+           content: "";
+           position: absolute;
+           inset: 3px;
+           background: rgba(0,0,0,0.85);
+           border-radius: 17px;
+           z-index: -1;
+         }
+         .neon-bubble-content {
+           position: relative;
+           z-index: 1;
+         }
+         
+         @keyframes readyZoomIn {
+           0% { transform: scale(0.2); opacity: 0; }
+           80% { transform: scale(1.1); opacity: 1; }
+           100% { transform: scale(1); opacity: 1; }
+         }
+         .ready-futuristic {
+           font-size: 80px;
+           font-weight: 900;
+           color: transparent;
+           -webkit-text-stroke: 2px #ff8800;
+           text-shadow: 0 0 20px #ff8800, 0 0 40px #ff8800;
+           animation: readyZoomIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+           letter-spacing: 15px;
+           text-align: center;
+         }
+       `;
+       document.head.appendChild(style);
+    }
+
     this.controlsBubbleEl = document.createElement('div');
-    this.controlsBubbleEl.style.position = 'absolute';
+    this.controlsBubbleEl.className = 'neon-bubble';
     this.controlsBubbleEl.style.top = '25%';
     this.controlsBubbleEl.style.left = '50%';
     this.controlsBubbleEl.style.transform = 'translate(-50%, -50%)';
-    this.controlsBubbleEl.style.background = 'rgba(0, 0, 0, 0.7)';
-    this.controlsBubbleEl.style.color = '#fff';
-    this.controlsBubbleEl.style.padding = '15px 30px';
-    this.controlsBubbleEl.style.borderRadius = '20px';
-    this.controlsBubbleEl.style.border = '2px solid #ff8800';
-    this.controlsBubbleEl.style.boxShadow = '0 0 15px #ff8800';
-    this.controlsBubbleEl.style.fontFamily = "'Orbitron', sans-serif";
-    this.controlsBubbleEl.style.fontSize = '16px';
-    this.controlsBubbleEl.style.textAlign = 'center';
     this.controlsBubbleEl.style.display = 'none';
-    this.controlsBubbleEl.style.zIndex = '100';
-    this.controlsBubbleEl.style.pointerEvents = 'none';
-    this.controlsBubbleEl.style.opacity = '0';
-    this.controlsBubbleEl.style.transition = 'opacity 0.5s ease-in-out';
     this.container.appendChild(this.controlsBubbleEl);
   }
 
@@ -567,9 +623,11 @@ class LisarRunner {
     
     // Primero mostrar las instrucciones
     const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
-    this.controlsBubbleEl.innerHTML = isMobile 
+    this.controlsBubbleEl.innerHTML = `<div class="neon-bubble-content">` + 
+       (isMobile 
        ? '👆 Toca los lados para moverte<br><br>👆 Desliza arriba para saltar'
-       : '⌨️ Flechas / A-D moverte<br><br>⌨️ Espacio saltar<br><br>⌨️ P para pausar';
+       : '⌨️ Flechas / A-D moverte<br><br>⌨️ Espacio saltar<br><br>⌨️ P para pausar') +
+       `</div>`;
     this.controlsBubbleEl.style.display = 'block';
     setTimeout(() => { this.controlsBubbleEl.style.opacity = '1'; }, 10);
     
@@ -607,20 +665,17 @@ class LisarRunner {
       } else {
         clearInterval(countInterval);
         
-        // Mostrar "READY!" con texto HTML y logo, y preparar la moneda 3D
+        // Mostrar "READY!" superpuesto con animación futurista
         this.msgEl.style.fontSize = '60px';
-        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite alternate; padding-left: 80px;">
-                                  <img src="assets/img/lisar-studio-logo-white.webp" style="height: 60px; margin-right: 15px; object-fit: contain; filter: drop-shadow(0 0 10px #ff8800);">
-                                  <span style="line-height: 1; letter-spacing: 5px;">READY!</span>
-                                </div>`;
+        this.msgEl.innerHTML = `<div class="ready-futuristic">READY!</div>`;
         this.msgEl.style.display = 'block';
         this.speak("Ready!");
         
-        // Agregar la moneda 3D a la izquierda usando Three.js
+        // Agregar la moneda 3D exactamente al centro como fondo del READY
         if (this.coinModel) {
             this.readyCoin = this.coinModel.clone();
-            this.readyCoin.scale.setScalar(0.4);
-            this.readyCoin.position.set(-0.8, -0.1, -2.5);
+            this.readyCoin.scale.setScalar(0.5);
+            this.readyCoin.position.set(0, 0, -2.5); // Exactamente al centro de la cámara
             this.camera.add(this.readyCoin);
             this.scene.add(this.camera); 
         }
