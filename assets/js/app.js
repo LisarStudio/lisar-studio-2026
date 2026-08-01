@@ -366,8 +366,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3000);
   }
 
-  // Render inicial
-  renderPortfolio();
+  // Render inicial — esperar a que model-viewer esté definido para garantizar texturas
+  if (customElements && customElements.whenDefined) {
+    customElements.whenDefined('model-viewer').then(() => {
+      renderPortfolio();
+    });
+    // Fallback: si tarda más de 3 segundos, renderizar igual
+    setTimeout(() => {
+      if (!portfolioContainer.hasChildNodes()) renderPortfolio();
+    }, 3000);
+  } else {
+    renderPortfolio();
+  }
 
   // ============================================================
   // 9. PROACTIVE AI PERSUASION (SCROLL SPY)
