@@ -20,8 +20,8 @@ class LisarRunner {
     
     // Aumentamos el FOV (de 60 a 75) para hacer un efecto de "zoom out"
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100);
-    this.camera.position.set(0, 2.5, 3.5); // Cámara más cerca en Z y un poco alta
-    this.camera.lookAt(0, 1.5, -10); // Mirar a lo lejos para que el personaje baje al borde de la pantalla
+    this.camera.position.set(0, 4.0, 6.0); // Cámara un 30% más lejos y más alta
+    this.camera.lookAt(0, 1.0, -10); // Vista inclinada de arriba a abajo, pero viendo lejos para apreciar el cohete y el cielo
     
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(this.width, this.height);
@@ -281,7 +281,7 @@ class LisarRunner {
         this.rocketModel.scale.set(2.0, 2.0, 2.0); 
         this.rocketModel.position.set(-40, 12, -20);
         this.rocketModel.rotation.y = -Math.PI / 2; // Apuntar hacia la derecha (espejo en X)
-        this.rocketModel.rotation.z = -0.15; // Inclinación ligera hacia arriba
+        // Eliminamos la inclinación Z para que vuele totalmente horizontal
         
         this.rocketModel.traverse((child) => {
           if (child.isMesh) {
@@ -471,24 +471,18 @@ class LisarRunner {
       } else {
         clearInterval(countInterval);
         
-        // Mostrar "READY!"
+        // Mostrar "READY!" con isotipo (estilo Megaman X6)
         this.msgEl.style.fontSize = '60px';
-        this.msgEl.innerText = "READY!";
+        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; gap: 20px; animation: pulse 1s infinite alternate;">
+                                  <img src="assets/img/lisar-studio-logo-white.webp" style="height: 70px; object-fit: contain; filter: drop-shadow(0 0 10px #ff8800);">
+                                  <span>READY!</span>
+                                </div>`;
         this.msgEl.style.display = 'block';
         this.speak("Ready!");
         
-        // Agregar moneda 3D enfrente de la cámara
-        if (this.coinModel) {
-            this.readyCoin = this.coinModel.clone();
-            this.readyCoin.scale.set(1.5, 1.5, 1.5);
-            this.readyCoin.position.set(1.5, 1.5, -2); // Posicionar a la derecha del texto, frente a la cámara
-            this.camera.add(this.readyCoin);
-            this.scene.add(this.camera); // Asegurar que la cámara está en la escena para ver sus hijos
-        }
-        
         setTimeout(() => {
            this.msgEl.style.display = 'none';
-           if(this.readyCoin) this.camera.remove(this.readyCoin);
+           this.msgEl.innerHTML = ''; // reset
            this.beginGame();
         }, 1500);
       }
@@ -722,11 +716,6 @@ class LisarRunner {
       
       // Increase speed slightly
       this.speed += 0.00005;
-    } else {
-      // Girar la moneda de READY cuando el juego no ha empezado aún
-      if(this.readyCoin) {
-         this.readyCoin.children[0].rotation.y += 0.05;
-      }
     }
     
     this.renderer.render(this.scene, this.camera);
