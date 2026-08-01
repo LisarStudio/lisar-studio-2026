@@ -138,14 +138,14 @@ class LisarRunner {
     this.player.position.set(this.lanes[this.currentLane], 0.5, 0);
     this.scene.add(this.player);
     
-    // Try to load FBX (WUKONGLISAR.fbx)
-    if(window.THREE && window.THREE.FBXLoader) {
-      const loader = new THREE.FBXLoader();
-      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/WUKONGLISAR.fbx', (object) => {
+    // Try to load GLB (wukonglisar.glb)
+    if(window.THREE && window.THREE.GLTFLoader) {
+      const loader = new THREE.GLTFLoader();
+      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.glb', (gltf) => {
         this.scene.remove(this.player);
         
-        this.model = object;
-        this.model.scale.set(0.007, 0.007, 0.007); // Escala para FBX de Mixamo (que viene x100)
+        this.model = gltf.scene;
+        this.model.scale.set(0.7, 0.7, 0.7); // Escala para GLB
         this.model.rotation.y = Math.PI; // Face forward
         
         // Ensure materials display correctly (fix Blender default metalness)
@@ -167,17 +167,17 @@ class LisarRunner {
         this.player.add(this.model);
         
         // Handle Animations
-        if (object.animations && object.animations.length > 0) {
+        if (gltf.animations && gltf.animations.length > 0) {
           this.mixer = new THREE.AnimationMixer(this.model);
-          let runClip = object.animations.find(a => a.name.toLowerCase().includes('run'));
-          if(!runClip) runClip = object.animations[0];
+          let runClip = gltf.animations.find(a => a.name.toLowerCase().includes('run'));
+          if(!runClip) runClip = gltf.animations[0];
           const action = this.mixer.clipAction(runClip);
           action.play();
         }
         
         this.scene.add(this.player);
       }, undefined, (err) => {
-        console.warn("Could not load WUKONGLISAR.fbx for minigame, using placeholder", err);
+        console.warn("Could not load wukonglisar.glb for minigame, using placeholder", err);
       });
     }
   }
