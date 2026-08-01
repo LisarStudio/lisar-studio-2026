@@ -1,7 +1,7 @@
 /**
  * LISAR STUDIO 2026 - INTERACTIVE APPLICATION LOGIC
- * Tema Claro / Oscuro, alternancia dinámica de logotipo,
- * visor 3D GLB con <model-viewer> de Google, filtros de portafolio y modales.
+ * Tema Claro / Oscuro, visor 3D GLB con Three.js nativo,
+ * filtros de portafolio y sticky header.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('lisar_theme', theme);
-
     if (theme === 'light') {
       if (headerLogoImg) headerLogoImg.src = LOGO_BLACK;
       if (footerLogoImg) footerLogoImg.src = LOGO_BLACK;
@@ -49,87 +48,70 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ============================================================
-  // 2. PORTFOLIO DATA — Array de proyectos 3D reales de Lisar Studio
-  //    Campo glbFile: ruta relativa al .glb dentro de assets/models/
-  //    Si glbFile está vacío (''), se muestra un placeholder elegante.
-  //    Cuando subas tus archivos GLB, rellena glbFile con el nombre del archivo.
+  // 2. PORTFOLIO DATA — Proyectos 3D reales con archivos GLB
   // ============================================================
   const portfolioData = [
     {
       id: 1,
-      title: "Boss — Personaje 3D Publicitario",
+      title: "Boss",
       category: "Publicidad 3D",
-      views: "890.5K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/Boss.glb",
-      placeholderIcon: "bi-person-bounding-box",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/Boss.glb",
       description: "Personaje 3D hiperrealista con texturizado PBR avanzado y rigging completo. Ideal para campañas publicitarias de alto impacto.",
       tools: ["Blender 3D", "Substance Painter", "Octane Render"],
     },
     {
       id: 2,
-      title: "Crab — Criatura 3D Animada",
+      title: "Crab",
       category: "Animación 3D",
-      views: "620.8K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/crab.glb",
-      placeholderIcon: "bi-camera-reels",
-      description: "Modelado orgánico de criatura marina con simulación de movimiento natural, ideal para reels virales y contenido animado.",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/crab.glb",
+      description: "Modelado orgánico de criatura marina con simulación de movimiento natural y animaciones fluidas.",
       tools: ["ZBrush", "Cinema 4D", "Redshift"],
     },
     {
       id: 3,
-      title: "Flutter — Animación 3D Dinámica",
+      title: "Flutter",
       category: "Motion Graphics",
-      views: "780.1K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/Flutter.glb",
-      placeholderIcon: "bi-layers",
-      description: "Animación fluida con sistema de partículas y simulación de movimiento orgánico. Breakdowns completos de producción CGI.",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/Flutter.glb",
+      description: "Animación fluida con sistema de partículas y simulación de movimiento orgánico dinámico.",
       tools: ["Houdini FX", "After Effects", "DaVinci Resolve"],
     },
     {
       id: 4,
-      title: "Helmet 1 — Diseño Industrial 3D",
+      title: "Helmet 1",
       category: "Publicidad 3D",
-      views: "540.3K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/helmet1.glb",
-      placeholderIcon: "bi-box-seam",
-      description: "Renderizado de producto industrial con materiales PBR metálicos, reflejos realistas y estudio de iluminación fotográfica.",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/helmet1.glb",
+      description: "Renderizado de producto industrial con materiales PBR metálicos y estudio de iluminación fotográfica profesional.",
       tools: ["Blender 3D", "Substance Painter", "V-Ray"],
     },
     {
       id: 5,
-      title: "Helmet 2 — Variante de Diseño 3D",
+      title: "Helmet 2",
       category: "Publicidad 3D",
-      views: "415.2K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/Helmet2.glb",
-      placeholderIcon: "bi-shield-fill",
-      description: "Segunda variante de renderizado con acabados cromados y mapeado UV de alta resolución para presentaciones comerciales.",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/Helmet2.glb",
+      description: "Variante con acabados cromados y mapeado UV de alta resolución para presentaciones comerciales.",
       tools: ["3ds Max", "Corona Renderer", "Photoshop"],
     },
     {
       id: 6,
-      title: "Helmet 3 — Edición Premium",
+      title: "Helmet 3",
       category: "Publicidad 3D",
-      views: "310.9K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/helmet3.glb",
-      placeholderIcon: "bi-shield-fill-check",
-      description: "Versión premium con detalles de lujo, materiales de carbono y pintura metálica especializada. Proyecto de alta gama.",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/helmet3.glb",
+      description: "Edición premium con detalles de lujo, materiales de carbono y pintura metálica especializada.",
       tools: ["Blender 3D", "Cycles X", "Substance 3D"],
     },
     {
       id: 7,
-      title: "Tron — Concept Art 3D Futurista",
+      title: "Tron",
       category: "Motion Graphics",
-      views: "950.2K",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/tron.glb",
-      placeholderIcon: "bi-cpu",
-      description: "Concept art 3D inspirado en estética cyberpunk, con iluminación neón emisiva y materiales translúcidos de ciencia ficción.",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/tron.glb",
+      description: "Concept art 3D con estética cyberpunk, iluminación neón emisiva y materiales translúcidos futuristas.",
       tools: ["Blender 3D", "Unreal Engine 5", "After Effects"],
     }
   ];
@@ -140,73 +122,225 @@ document.addEventListener('DOMContentLoaded', () => {
   const portfolioContainer = document.getElementById('portfolio-grid-container');
   const portfolioPills     = document.querySelectorAll('.portfolio-pill');
   const header             = document.querySelector('.site-header');
-
   let activeCategory = 'Todos';
 
   // ============================================================
-  // 4. RENDER PORTFOLIO — con <model-viewer> o placeholder elegante
+  // 4. RENDER PORTFOLIO — Tarjetas con visor 3D integrado
   // ============================================================
   function renderPortfolio() {
     if (!portfolioContainer) return;
 
-    const filtered = portfolioData.filter(item => {
-      return activeCategory === 'Todos' || item.category === activeCategory;
-    });
+    const filtered = portfolioData.filter(item =>
+      activeCategory === 'Todos' || item.category === activeCategory
+    );
 
-    portfolioContainer.innerHTML = filtered.map(item => {
-      // Visor 3D si hay GLB disponible, placeholder si no
-      const viewerHTML = item.glbFile
-        ? `<model-viewer
-              src="${item.glbFile}"
-              alt="${item.title}"
-              auto-rotate
-              auto-rotate-delay="0"
-              rotation-per-second="30deg"
-              camera-controls
-              shadow-intensity="1.5"
-              shadow-softness="1"
-              environment-image="neutral"
-              exposure="1"
-              style="width:100%;height:100%;">
-           </model-viewer>`
-        : `<div class="model-placeholder-card">
-             <i class="bi ${item.placeholderIcon} placeholder-icon"></i>
-             <strong style="font-size:0.85rem;opacity:0.7;">Modelo 3D próximamente</strong>
-             <p>Sube tu archivo .glb a<br><code style="font-size:0.7rem;">assets/models/</code></p>
-           </div>`;
-
-      return `
-        <div class="col-lg-4 col-md-6 mb-4">
-          <div class="glass-card portfolio-card h-100">
-            <div class="model-viewer-wrapper">
-              <span class="model-viewer-badge">
-                <i class="bi bi-badge-3d-fill"></i> Visor 3D
-              </span>
-              ${viewerHTML}
-            </div>
-
-            <span class="model-3d-label">
-              <i class="bi bi-instagram text-danger"></i> @lisarstudiooficial &nbsp;·&nbsp;
-              <i class="bi bi-eye-fill"></i> ${item.views} views
+    portfolioContainer.innerHTML = filtered.map(item => `
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="glass-card portfolio-card h-100">
+          <div class="model-viewer-wrapper" id="wrapper-${item.id}">
+            <span class="model-viewer-badge">
+              <i class="bi bi-badge-3d-fill"></i> Visor 3D · ${item.title}
             </span>
-
-            <h3 class="h5 font-weight-bold text-main mb-2">${item.title}</h3>
-            <p class="text-muted font-size-0-9rem mb-3">${item.description}</p>
-
-            <div class="d-flex align-items-center justify-content-between pt-3 border-top border-secondary mt-auto">
-              <span class="text-muted font-size-0-8rem font-weight-600">${item.category}</span>
-              <a href="${item.instagramUrl}" target="_blank" class="btn btn-sm btn-gold-outline">
-                <i class="bi bi-instagram mr-1 text-danger"></i> Ver en Instagram
-              </a>
+            <canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
+            <div class="model-loading-bar" id="loading-${item.id}">
+              <div class="loading-bar-fill"></div>
+              <span>Cargando modelo 3D...</span>
             </div>
           </div>
+
+          <h3 class="h5 font-weight-bold text-main mb-1 mt-2">${item.title}</h3>
+          <span class="badge badge-sm" style="background:rgba(255,183,3,0.15);color:var(--lisar-gold);border:1px solid rgba(255,183,3,0.3);font-size:0.7rem;padding:3px 8px;border-radius:20px;margin-bottom:8px;display:inline-block;">${item.category}</span>
+          <p class="text-muted font-size-0-9rem mb-3">${item.description}</p>
+
+          <div class="d-flex flex-wrap gap-1 mb-3">
+            ${item.tools.map(t => `<span style="font-size:0.7rem;background:rgba(255,183,3,0.08);border:1px solid rgba(255,183,3,0.2);color:var(--lisar-gold);padding:2px 8px;border-radius:20px;">${t}</span>`).join('')}
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between pt-3 border-top border-secondary mt-auto">
+            <span class="text-muted" style="font-size:0.75rem;"><i class="bi bi-instagram text-danger mr-1"></i>@lisarstudiooficial</span>
+            <a href="${item.instagramUrl}" target="_blank" class="btn btn-sm btn-gold-outline">
+              Ver en Instagram <i class="bi bi-instagram ml-1 text-danger"></i>
+            </a>
+          </div>
         </div>
-      `;
-    }).join('');
+      </div>
+    `).join('');
+
+    // Inicializar visor 3D Three.js para cada tarjeta
+    filtered.forEach(item => {
+      initGLBViewer(`canvas-${item.id}`, `loading-${item.id}`, item.glbFile);
+    });
   }
 
   // ============================================================
-  // 5. FILTROS DE CATEGORÍAS
+  // 5. VISOR 3D GLB CON THREE.JS + GLTFLoader
+  // ============================================================
+  function initGLBViewer(canvasId, loadingId, glbPath) {
+    const canvas  = document.getElementById(canvasId);
+    const loadBar = document.getElementById(loadingId);
+    if (!canvas || !window.THREE) return;
+
+    const THREE = window.THREE;
+    const wrapper = canvas.parentElement;
+    const W = wrapper.clientWidth  || 320;
+    const H = wrapper.clientHeight || 320;
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping    = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.shadowMap.enabled = true;
+
+    // Scene
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
+    camera.position.set(0, 0, 3);
+
+    // Lighting — cálida dorada para concordar con la paleta
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+
+    const dirLight = new THREE.DirectionalLight(0xffd166, 1.8);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xfb8500, 0.5);
+    fillLight.position.set(-5, -2, -5);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.PointLight(0xffb703, 0.8, 20);
+    rimLight.position.set(0, 3, -4);
+    scene.add(rimLight);
+
+    // Estado de órbita (drag para rotar)
+    let isDragging = false, prevX = 0, prevY = 0;
+    let rotX = 0, rotY = 0;
+    let autoRotate = true;
+
+    canvas.addEventListener('mousedown',  e => { isDragging = true;  autoRotate = false; prevX = e.clientX; prevY = e.clientY; canvas.style.cursor = 'grabbing'; });
+    canvas.addEventListener('mousemove',  e => { if (!isDragging) return; rotY += (e.clientX - prevX) * 0.008; rotX += (e.clientY - prevY) * 0.005; prevX = e.clientX; prevY = e.clientY; });
+    canvas.addEventListener('mouseup',    () => { isDragging = false; canvas.style.cursor = 'grab'; setTimeout(() => { autoRotate = true; }, 2000); });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; setTimeout(() => { autoRotate = true; }, 2000); });
+
+    // Touch
+    canvas.addEventListener('touchstart', e => { isDragging = true; autoRotate = false; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; });
+    canvas.addEventListener('touchmove',  e => { if (!isDragging) return; rotY += (e.touches[0].clientX - prevX) * 0.008; rotX += (e.touches[0].clientY - prevY) * 0.005; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchend',   () => { isDragging = false; setTimeout(() => { autoRotate = true; }, 2000); });
+
+    // Cargar GLB con GLTFLoader
+    if (!THREE.GLTFLoader) {
+      // Fallback: mostrar placeholder dorado si no hay loader
+      showGoldenPlaceholder(scene, camera, renderer, canvas, autoRotate, rotX, rotY);
+      if (loadBar) loadBar.style.display = 'none';
+      return;
+    }
+
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      glbPath,
+      (gltf) => {
+        if (loadBar) loadBar.style.display = 'none';
+
+        const model = gltf.scene;
+
+        // Centrar y escalar el modelo automáticamente
+        const box    = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size   = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale  = 2.0 / maxDim;
+
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+
+        // Activar sombras en meshes
+        model.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow    = true;
+            child.receiveShadow = true;
+          }
+        });
+
+        scene.add(model);
+
+        // Ajustar cámara según tamaño real
+        camera.position.z = 2.5;
+
+        // Reproducir animaciones si el GLB las trae
+        let mixer = null;
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(model);
+          gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+          requestAnimationFrame(animate);
+          const delta = clock.getDelta();
+          if (mixer) mixer.update(delta);
+          if (autoRotate) rotY += 0.005;
+          model.rotation.y = rotY;
+          model.rotation.x = rotX * 0.3;
+          renderer.render(scene, camera);
+        }
+        animate();
+      },
+      (progress) => {
+        if (loadBar && progress.total) {
+          const pct = (progress.loaded / progress.total * 100).toFixed(0);
+          const fill = loadBar.querySelector('.loading-bar-fill');
+          if (fill) fill.style.width = pct + '%';
+          const span = loadBar.querySelector('span');
+          if (span) span.textContent = `Cargando ${pct}%...`;
+        }
+      },
+      (error) => {
+        console.error('Error cargando GLB:', glbPath, error);
+        if (loadBar) loadBar.style.display = 'none';
+        showGoldenPlaceholder(scene, camera, renderer, canvas);
+      }
+    );
+  }
+
+  // Placeholder dorado si falla la carga
+  function showGoldenPlaceholder(scene, camera, renderer, canvas) {
+    const THREE = window.THREE;
+    const geo  = new THREE.IcosahedronGeometry(0.8, 0);
+    const mat  = new THREE.MeshStandardMaterial({ color: 0xffb703, metalness: 0.9, roughness: 0.2, wireframe: false });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    // Scroll to top button functionality
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+    if (scrollTopBtn) {
+      scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) {
+          scrollTopBtn.classList.add('show');
+        } else {
+          scrollTopBtn.classList.remove('show');
+        }
+      });
+    }
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.01;
+      mesh.rotation.y += 0.01;
+      mesh.rotation.x += 0.003;
+      renderer.render(scene, camera);
+    }
+    animate();
+  }
+
+  // ============================================================
+  // 6. FILTROS DE CATEGORÍAS
   // ============================================================
   portfolioPills.forEach(pill => {
     pill.addEventListener('click', () => {
@@ -218,11 +352,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ============================================================
-  // 6. STICKY HEADER
+  // 7. STICKY HEADER
   // ============================================================
-  window.addEventListener('scroll', () => {
-    if (header) header.classList.toggle('scrolled', window.scrollY > 50);
-  });
+  if (header) {
+    window.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', window.scrollY > 50);
+    });
+  }
 
   // Render inicial
   renderPortfolio();
