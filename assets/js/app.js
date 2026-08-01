@@ -281,12 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
         mv.setAttribute('alt', item.title);
         mv.setAttribute('auto-rotate', '');
         mv.setAttribute('auto-rotate-delay', '0');
-        mv.setAttribute('rotation-per-second', '30deg');
+        mv.setAttribute('rotation-per-second', '25deg');
         mv.setAttribute('camera-controls', '');
-        mv.setAttribute('shadow-intensity', '1');
-        mv.setAttribute('environment-image', 'https://modelviewer.dev/shared-assets/environments/spruit_sunrise_1k_HDR.hdr');
-        mv.setAttribute('exposure', '1.2');
-        mv.setAttribute('tone-mapping', 'commerce');
+        mv.setAttribute('shadow-intensity', '0.5');
+        mv.setAttribute('environment-image', 'legacy');
+        mv.setAttribute('exposure', '1.8');
+        mv.setAttribute('tone-mapping', 'neutral');
         mv.style.cssText = 'width:100%;height:100%;border-radius:10px;background:transparent;--poster-color:transparent;';
         wrapper.appendChild(mv);
       }
