@@ -153,15 +153,35 @@ class LisarRunner {
     this.energyContainer.style.gap = '6px';
     
     this.pauseBtn = document.createElement('div');
-    this.pauseBtn.innerHTML = '<i class="bi bi-pause-circle-fill" style="filter: drop-shadow(0 0 5px #ff8800);"></i>';
-    this.pauseBtn.style.fontSize = '32px';
-    this.pauseBtn.style.color = '#ff8800';
+    this.pauseBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+    this.pauseBtn.style.fontSize = '24px';
+    this.pauseBtn.style.color = '#fff';
+    this.pauseBtn.style.background = 'rgba(0, 0, 0, 0.4)';
+    this.pauseBtn.style.border = '1px solid rgba(255, 136, 0, 0.5)';
+    this.pauseBtn.style.backdropFilter = 'blur(10px)';
+    this.pauseBtn.style.width = '45px';
+    this.pauseBtn.style.height = '45px';
+    this.pauseBtn.style.display = 'flex';
+    this.pauseBtn.style.alignItems = 'center';
+    this.pauseBtn.style.justifyContent = 'center';
+    this.pauseBtn.style.borderRadius = '12px';
+    this.pauseBtn.style.boxShadow = '0 0 15px rgba(255, 136, 0, 0.3)';
     this.pauseBtn.style.cursor = 'pointer';
     this.pauseBtn.style.pointerEvents = 'auto';
-    this.pauseBtn.style.marginLeft = '5px';
-    this.pauseBtn.style.transition = 'transform 0.2s';
-    this.pauseBtn.addEventListener('mouseenter', () => this.pauseBtn.style.transform = 'scale(1.1)');
-    this.pauseBtn.addEventListener('mouseleave', () => this.pauseBtn.style.transform = 'scale(1)');
+    this.pauseBtn.style.transition = 'all 0.3s ease';
+    
+    this.pauseBtn.addEventListener('mouseenter', () => {
+        this.pauseBtn.style.transform = 'scale(1.1)';
+        this.pauseBtn.style.background = 'rgba(255, 136, 0, 0.2)';
+        this.pauseBtn.style.boxShadow = '0 0 20px rgba(255, 136, 0, 0.6)';
+    });
+    
+    this.pauseBtn.addEventListener('mouseleave', () => {
+        this.pauseBtn.style.transform = 'scale(1)';
+        this.pauseBtn.style.background = 'rgba(0, 0, 0, 0.4)';
+        this.pauseBtn.style.boxShadow = '0 0 15px rgba(255, 136, 0, 0.3)';
+    });
+    
     this.pauseBtn.addEventListener('click', () => this.togglePause());
 
     const rightBar = document.createElement('div');
@@ -225,6 +245,27 @@ class LisarRunner {
     this.updateScoreDisplay();
     this.updateLivesDisplay();
     this.container.appendChild(this.uiContainer);
+
+    this.watermarkEl = document.createElement('a');
+    this.watermarkEl.href = 'https://www.lisarstudio.cl';
+    this.watermarkEl.target = '_blank';
+    this.watermarkEl.innerText = 'www.LisarStudio.cl';
+    this.watermarkEl.style.position = 'absolute';
+    this.watermarkEl.style.bottom = '20px';
+    this.watermarkEl.style.left = '50%';
+    this.watermarkEl.style.transform = 'translateX(-50%)';
+    this.watermarkEl.style.color = 'rgba(255, 255, 255, 0.7)';
+    this.watermarkEl.style.fontFamily = "'Orbitron', sans-serif";
+    this.watermarkEl.style.fontSize = '14px';
+    this.watermarkEl.style.fontWeight = 'bold';
+    this.watermarkEl.style.letterSpacing = '3px';
+    this.watermarkEl.style.textDecoration = 'none';
+    this.watermarkEl.style.textShadow = '0 0 10px rgba(0, 243, 255, 0.8)';
+    this.watermarkEl.style.opacity = '0';
+    this.watermarkEl.style.transition = 'opacity 2s ease-in-out';
+    this.watermarkEl.style.zIndex = '100';
+    this.watermarkEl.style.pointerEvents = 'auto';
+    this.container.appendChild(this.watermarkEl);
 
     this.msgEl = document.createElement('div');
     this.msgEl.style.position = 'absolute';
@@ -599,24 +640,22 @@ class LisarRunner {
     ctx.font = 'bold 36px "Orbitron", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#00f3ff';
-    ctx.shadowBlur = 15;
-    ctx.fillStyle = '#ffffff';
-    for(let i=0; i<3; i++) {
-        ctx.fillText('@lisarstudiooficial', canvas.width/2, canvas.height/2);
-    }
+    ctx.shadowColor = 'rgba(0, 243, 255, 0.5)';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText('@lisarstudiooficial', canvas.width/2, canvas.height/2);
     return new THREE.CanvasTexture(canvas);
   }
   
   spawnBillboard() {
     if(!this.billboardTexture) {
        this.billboardTexture = this.createBillboardTexture();
-       this.billboardMat = new THREE.SpriteMaterial({ map: this.billboardTexture, color: 0xffffff, transparent: true, opacity: 0.5 });
+       this.billboardMat = new THREE.SpriteMaterial({ map: this.billboardTexture, color: 0xffffff, transparent: true, opacity: 0.25 });
     }
     const sprite = new THREE.Sprite(this.billboardMat);
     sprite.scale.set(40, 10, 1);
     const side = Math.random() > 0.5 ? 1 : -1;
-    sprite.position.set(side * 20, 5, -80); 
+    sprite.position.set(side * 22, 4, -120); 
     this.scene.add(sprite);
     if(!this.billboards) this.billboards = [];
     this.billboards.push(sprite);
@@ -739,6 +778,7 @@ class LisarRunner {
     }
     
     this.uiContainer.style.display = 'flex';
+    if(this.watermarkEl) this.watermarkEl.style.opacity = '0';
     this.lives = 3;
     this.totalCoins = 0;
     this.updateScoreDisplay();
@@ -1075,7 +1115,7 @@ class LisarRunner {
         this.spawnCoin();
       }
       
-      if(this.isPlaying && !this.isLevelCompleteAnim && Math.random() < 0.003) { 
+      if(this.isPlaying && !this.isLevelCompleteAnim && Math.random() < 0.001) { 
          if(!this.billboards) this.billboards = [];
          if(this.billboards.length < 2) {
              this.spawnBillboard();
