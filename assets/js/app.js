@@ -159,33 +159,13 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       id: 12,
-      title: "Reel Comercial Animado",
+      title: "Motion Graphics & Identidad",
       category: "VFX y Motion Graphics",
-      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      instagramUrl: "https://www.instagram.com/p/DSz1I0NkqnR/",
       type: "video",
-      videoFile: "https://res.cloudinary.com/demo/video/upload/rooster.mp4",
-      description: "Integración de personajes animados y motion graphics para material promocional y publicidad dinámica.",
-      tools: ["After Effects", "Nuke", "Cinema 4D"],
-    },
-    {
-      id: 13,
-      title: "Motion Graphics Narrativo",
-      category: "VFX y Motion Graphics",
-      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      type: "video",
-      videoFile: "https://res.cloudinary.com/demo/video/upload/snow_deer.mp4",
-      description: "Pieza audiovisual dinámica utilizando recursos de animación tradicional con estética 3D cartoon.",
-      tools: ["After Effects", "Illustrator", "Blender"],
-    },
-    {
-      id: 14,
-      title: "VFX: Simulación Dinámica",
-      category: "VFX y Motion Graphics",
-      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      type: "video",
-      videoFile: "https://res.cloudinary.com/demo/video/upload/ski_jump.mp4",
-      description: "Desglose de efectos visuales implementados en metraje animado. Composición multicapa y etalonaje.",
-      tools: ["Nuke", "Houdini FX", "DaVinci Resolve"],
+      videoFile: "assets/video/vfx_ig_2.mp4",
+      description: "Desarrollo de piezas de motion graphics y animación publicitaria con alto impacto visual.",
+      tools: ["After Effects", "Cinema 4D", "Illustrator"],
     }
   ];
 
