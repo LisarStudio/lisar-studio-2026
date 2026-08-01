@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let mediaHTML = '';
       if (item.type === 'video') {
-        mediaHTML = `<video class="w-100 h-100" style="object-fit:cover;border-radius:10px;" autoplay muted loop playsinline preload="metadata"><source src="${item.videoFile}" type="video/mp4"></video>`;
+        mediaHTML = `<video class="w-100 h-100" style="object-fit:cover;border-radius:10px;" src="${item.videoFile}" autoplay muted loop playsinline preload="metadata" type="video/mp4"></video>`;
       } else if (item.type === 'iframe') {
         mediaHTML = `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
       }
