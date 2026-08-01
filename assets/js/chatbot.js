@@ -237,29 +237,28 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function sendEmailNotification() {
-    /* 
-      Para enviar el correo, puedes usar EmailJS (https://www.emailjs.com/).
-      Debes registrarte gratis y reemplazar "TU_SERVICE_ID", "TU_TEMPLATE_ID" y "TU_PUBLIC_KEY".
-    */
-    /*
-    emailjs.send("TU_SERVICE_ID", "TU_TEMPLATE_ID", {
-      to_email: "peter@lisarstudio.cl",
-      client_name: quoteData.name,
-      client_email: quoteData.email,
-      quote_total: quoteData.total,
-      duration: quoteData.duration,
-      message: `El cliente ${quoteData.name} (${quoteData.email}) ha generado una cotización de animación 3D por $${quoteData.total} USD. Duración: ${quoteData.duration}s.`
-    }, "TU_PUBLIC_KEY")
-    .then(() => {
-      console.log("Correo enviado!");
+    fetch('https://formspree.io/f/mpqvgwjv', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: quoteData.email,
+        name: quoteData.name,
+        message: `Nueva cotización 3D: $${quoteData.total} USD. Duración: ${quoteData.duration}s. Complejidad: ${quoteData.complexity}. Estilo: ${quoteData.style}. Urgencia: ${quoteData.urgency}.`
+      })
     })
-    .catch((err) => {
-      console.error("Error al enviar el correo:", err);
+    .then(response => {
+      if (response.ok) {
+        addBotMsg("✅ ¡Cotización guardada exitosamente y PDF descargado! He notificado a peter@lisarstudio.cl con tus datos para agendar una reunión y afinar los detalles de tu proyecto.");
+      } else {
+        addBotMsg("✅ ¡PDF descargado! Hubo un detalle al enviar el correo automático, pero puedes contactarnos directamente al WhatsApp o al correo peter@lisarstudio.cl.");
+      }
+    })
+    .catch(error => {
+      console.error('Error enviando a formspree:', error);
+      addBotMsg("✅ ¡PDF descargado! Hubo un detalle de red al enviar el correo automático, pero puedes contactarnos directamente al WhatsApp o al correo peter@lisarstudio.cl.");
     });
-    */
-
-    setTimeout(() => {
-      addBotMsg("✅ ¡Cotización guardada exitosamente y PDF descargado! He notificado a peter@lisarstudio.cl con tus datos para agendar una reunión y afinar los detalles de tu proyecto.");
-    }, 1500);
   }
 });
