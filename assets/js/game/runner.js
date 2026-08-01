@@ -59,6 +59,16 @@ class LisarRunner {
     this.obstacles = [];
     this.coins = [];
     
+    // Game/Audio State
+    this.lives = 3;
+    this.totalCoins = 0;
+    this.audioContext = null;
+    this.analyser = null;
+    this.dataArray = null;
+    this.lastBeatTime = 0;
+    this.audioInitialized = false;
+    this.coinModel = null;
+    
     // Player
     this.player = null;
     // Load Logo Texture
@@ -117,18 +127,65 @@ class LisarRunner {
   }
   
   initUI() {
+    this.uiContainer = document.createElement('div');
+    this.uiContainer.style.position = 'absolute';
+    this.uiContainer.style.top = '10px';
+    this.uiContainer.style.left = '10px';
+    this.uiContainer.style.right = '10px';
+    this.uiContainer.style.display = 'none';
+    this.uiContainer.style.justifyContent = 'space-between';
+    this.uiContainer.style.zIndex = '100';
+    this.uiContainer.style.pointerEvents = 'none';
+    
     this.scoreEl = document.createElement('div');
-    this.scoreEl.style.position = 'absolute';
-    this.scoreEl.style.top = '10px';
-    this.scoreEl.style.left = '10px';
     this.scoreEl.style.color = '#ffb703';
     this.scoreEl.style.fontFamily = 'monospace';
     this.scoreEl.style.fontSize = '20px';
     this.scoreEl.style.fontWeight = 'bold';
-    this.scoreEl.style.zIndex = '100';
     this.scoreEl.innerText = 'SCORE: 0';
-    this.scoreEl.style.display = 'none';
-    this.container.appendChild(this.scoreEl);
+    
+    this.livesEl = document.createElement('div');
+    this.livesEl.style.color = '#ff0055';
+    this.livesEl.style.fontFamily = 'monospace';
+    this.livesEl.style.fontSize = '20px';
+    this.livesEl.style.fontWeight = 'bold';
+    this.updateLivesDisplay();
+
+    this.uiContainer.appendChild(this.scoreEl);
+    this.uiContainer.appendChild(this.livesEl);
+    this.container.appendChild(this.uiContainer);
+
+    this.msgEl = document.createElement('div');
+    this.msgEl.style.position = 'absolute';
+    this.msgEl.style.top = '50%';
+    this.msgEl.style.left = '50%';
+    this.msgEl.style.transform = 'translate(-50%, -50%)';
+    this.msgEl.style.color = '#00ffff';
+    this.msgEl.style.textShadow = '0 0 10px #00ffff';
+    this.msgEl.style.fontFamily = 'monospace';
+    this.msgEl.style.fontSize = '40px';
+    this.msgEl.style.fontWeight = 'bold';
+    this.msgEl.style.display = 'none';
+    this.msgEl.style.zIndex = '100';
+    this.msgEl.style.pointerEvents = 'none';
+    this.container.appendChild(this.msgEl);
+  }
+
+  updateLivesDisplay() {
+    if(this.livesEl) {
+      let text = '';
+      for(let i=0; i<this.lives; i++) text += '❤️ ';
+      this.livesEl.innerHTML = text;
+    }
+  }
+  
+  showMessage(text, duration = 2000) {
+    if(!this.msgEl) return;
+    this.msgEl.innerText = text;
+    this.msgEl.style.display = 'block';
+    setTimeout(() => {
+      this.msgEl.style.display = 'none';
+    }, duration);
   }
 
   initPlayer() {
@@ -184,19 +241,29 @@ class LisarRunner {
       }, undefined, (err) => {
         console.warn("Could not load wukonglisar.glb for minigame, using placeholder", err);
       });
+      
+      loader.load('assets/models/lisar 2.0 coin.glb', (gltf) => {
+        this.coinModel = gltf.scene;
+        this.coinModel.scale.set(0.015, 0.015, 0.015);
+      });
     }
   }
   
   initFloor() {
     const geo = new THREE.PlaneGeometry(20, 100, 10, 50);
     const mat = new THREE.MeshBasicMaterial({ 
-      color: 0x111111, 
-      wireframe: true 
+      color: 0x00ffff, 
+      wireframe: true,
+      transparent: true,
+      opacity: 0.3
     });
     this.floor = new THREE.Mesh(geo, mat);
     this.floor.rotation.x = -Math.PI / 2;
     this.floor.position.z = -30;
     this.scene.add(this.floor);
+    
+    this.scene.background = new THREE.Color(0x000000);
+    this.scene.fog = new THREE.Fog(0x000000, 10, 50);
   }
   
   moveLeft() {
@@ -227,7 +294,12 @@ class LisarRunner {
   
   spawnObstacle() {
     const geo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: 0xff00ff, 
+      emissive: 0xff00ff, 
+      emissiveIntensity: 0.8,
+      wireframe: true
+    });
     const obs = new THREE.Mesh(geo, mat);
     const lane = Math.floor(Math.random() * 3);
     obs.position.set(this.lanes[lane], 0.75, -40);
@@ -236,24 +308,23 @@ class LisarRunner {
   }
   
   spawnCoin() {
-    // Moneda con Logo Lisar 3D
-    const geo = new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32);
-    
-    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.3 });
-    const faceMat = new THREE.MeshStandardMaterial({ 
-      map: this.logoTexture,
-      emissive: 0xffffff,
-      emissiveMap: this.logoTexture,
-      emissiveIntensity: 0.5,
-      transparent: true
-    });
-    
-    // El orden de materiales en CylinderGeometry es [lateral, arriba, abajo]
-    const coinMesh = new THREE.Mesh(geo, [edgeMat, faceMat, faceMat]);
-    coinMesh.rotation.x = Math.PI / 2; // Hacer que mire hacia la camara
+    let coinObj;
+    if(this.coinModel) {
+      coinObj = this.coinModel.clone();
+      coinObj.position.set(0, 0, 0);
+    } else {
+      // Fallback
+      const geo = new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32);
+      const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.3 });
+      const faceMat = new THREE.MeshStandardMaterial({ 
+        map: this.logoTexture, emissive: 0xffffff, emissiveMap: this.logoTexture, emissiveIntensity: 0.5, transparent: true
+      });
+      coinObj = new THREE.Mesh(geo, [edgeMat, faceMat, faceMat]);
+      coinObj.rotation.x = Math.PI / 2;
+    }
     
     const coinGroup = new THREE.Group();
-    coinGroup.add(coinMesh);
+    coinGroup.add(coinObj);
     
     const lane = Math.floor(Math.random() * 3);
     coinGroup.position.set(this.lanes[lane], 1, -40);
@@ -261,11 +332,40 @@ class LisarRunner {
     this.coins.push(coinGroup);
   }
   
+  initAudio() {
+    if (!this.audioInitialized) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.audioContext = new AudioContext();
+        const source = this.audioContext.createMediaElementSource(this.bgMusic);
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 256;
+        source.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+        this.audioInitialized = true;
+        this.bgMusic.loop = false; // Solo una vuelta, luego se gana el nivel
+        this.bgMusic.onended = () => this.levelComplete();
+      } catch (e) {
+        console.error("Audio API no soportada", e);
+      }
+    }
+  }
+
   startGame() {
     const overlay = document.getElementById('game-overlay');
     if(overlay) overlay.style.display = 'none';
     
-    this.scoreEl.style.display = 'block';
+    this.initAudio();
+    if(this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+    
+    this.uiContainer.style.display = 'flex';
+    this.scoreEl.innerText = 'SCORE: 0';
+    this.lives = 3;
+    this.totalCoins = 0;
+    this.updateLivesDisplay();
     
     // Clear old
     this.obstacles.forEach(o => this.scene.remove(o));
@@ -274,13 +374,35 @@ class LisarRunner {
     this.coins = [];
     
     this.score = 0;
-    this.speed = 0.12; // Velocidad reducida
+    this.speed = 0.12;
     this.currentLane = 1;
     this.isPlaying = true;
     
     // Play music
     this.bgMusic.currentTime = 0;
     this.bgMusic.play().catch(e => console.log("Music play blocked by browser:", e));
+  }
+
+  levelComplete() {
+    this.isPlaying = false;
+    this.bgMusic.pause();
+    const overlay = document.getElementById('game-overlay');
+    if(overlay) {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <h3 class="text-success mb-2" style="text-shadow: 0 0 10px #00ff00;">¡NIVEL COMPLETADO!</h3>
+        <p class="text-white mb-3">Puntuación Final: ${this.score}</p>
+        <button id="restart-game-btn" class="btn btn-gold-primary mt-2"><i class="bi bi-arrow-clockwise"></i> Volver a Jugar</button>
+      `;
+      document.getElementById('restart-game-btn').addEventListener('click', () => {
+        overlay.innerHTML = `
+          <h3 class="text-white mb-2 font-weight-bold">Lisar Runner 3D</h3>
+          <button id="start-game-btn" class="btn btn-gold-primary mt-3"><i class="bi bi-play-fill"></i> Jugar Ahora</button>
+        `;
+        document.getElementById('start-game-btn').addEventListener('click', () => this.startGame());
+        this.startGame();
+      });
+    }
   }
   
   gameOver() {
@@ -354,8 +476,29 @@ class LisarRunner {
       this.floor.position.z += this.speed;
       if(this.floor.position.z > 10) this.floor.position.z = -30;
       
-      // Spawn logic
-      if(Math.random() < 0.02) this.spawnObstacle();
+      // Spawn logic with Audio Beat Detection
+      if(this.analyser && this.isPlaying) {
+        this.analyser.getByteFrequencyData(this.dataArray);
+        // Promedio de frecuencias bajas para detectar golpes (beats)
+        let sum = 0;
+        const lowFreqCount = 10;
+        for(let j = 0; j < lowFreqCount; j++){
+           sum += this.dataArray[j];
+        }
+        const avg = sum / lowFreqCount;
+        
+        const now = performance.now();
+        // Si el volumen bajo supera el umbral y pasaron al menos 400ms desde el último obstáculo
+        if(avg > 210 && (now - this.lastBeatTime > 400)) {
+           this.lastBeatTime = now;
+           this.spawnObstacle();
+        }
+      } else {
+        // Fallback si no hay audio
+        if(Math.random() < 0.02) this.spawnObstacle();
+      }
+      
+      // Spawn coins aleatoriamente
       if(Math.random() < 0.03) this.spawnCoin();
       
       // Update obstacles
@@ -364,17 +507,28 @@ class LisarRunner {
         obs.position.z += this.speed;
         
         // Collision (simple AABB distance check)
-        if(this.player && Math.abs(obs.position.z - this.player.position.z) < 1.5 && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
+        if(this.player && !obs.hit && Math.abs(obs.position.z - this.player.position.z) < 1.5 && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
           if (this.player.position.y < 1.5) {
-            this.gameOver();
+            obs.hit = true; // prevent multiple hits from same obstacle
+            this.lives--;
+            this.updateLivesDisplay();
+            
+            // Visual feedback for hit
+            obs.material.color.setHex(0xff0000);
+            
+            if (this.lives <= 0) {
+              this.gameOver();
+            }
           }
         }
         
         if(obs.position.z > 10) {
           this.scene.remove(obs);
           this.obstacles.splice(i, 1);
-          this.score += 10; // points for dodging
-          this.scoreEl.innerText = 'SCORE: ' + this.score;
+          if(!obs.hit) {
+            this.score += 10; // points for dodging
+            this.scoreEl.innerText = 'SCORE: ' + this.score;
+          }
         }
       }
       
@@ -382,13 +536,26 @@ class LisarRunner {
       for(let i = this.coins.length - 1; i >= 0; i--) {
         let coin = this.coins[i];
         coin.position.z += this.speed;
-        coin.rotation.y += 0.05;
+        coin.children[0].rotation.y += 0.05;
+        // Make coin float slightly
+        coin.position.y = 1 + Math.sin(this.playerTime * 2 + i) * 0.2;
         
         if(this.player && Math.abs(coin.position.z - this.player.position.z) < 1.5 && Math.abs(coin.position.x - this.player.position.x) < 1.0) {
           this.scene.remove(coin);
           this.coins.splice(i, 1);
-          this.score += 50; // points for coin
+          this.score += 50; 
+          this.totalCoins++;
           this.scoreEl.innerText = 'SCORE: ' + this.score;
+          
+          // Recompensas
+          if (this.totalCoins % 1000 === 0) {
+            this.showMessage("¡Increíble! " + this.totalCoins + " Monedas");
+          } else if (this.totalCoins % 100 === 0) {
+            this.lives++;
+            this.updateLivesDisplay();
+            this.showMessage("¡Vida Extra! 💚");
+          }
+
         } else if(coin.position.z > 10) {
           this.scene.remove(coin);
           this.coins.splice(i, 1);
@@ -396,7 +563,7 @@ class LisarRunner {
       }
       
       // Increase speed slightly
-      this.speed += 0.0001;
+      this.speed += 0.00005;
     }
     
     this.renderer.render(this.scene, this.camera);
