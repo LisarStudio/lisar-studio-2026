@@ -253,12 +253,13 @@ document.addEventListener('DOMContentLoaded', () => {
         mediaHTML = `
           <video
             class="video-social"
-            controls
+            autoplay
+            muted
+            loop
             playsinline
             preload="metadata"
           >
             <source src="${item.videoFile}" type="video/mp4">
-            Tu navegador no puede reproducir este video.
           </video>`;
       } else if (item.type === 'iframe') {
         mediaHTML = `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
@@ -295,12 +296,25 @@ document.addEventListener('DOMContentLoaded', () => {
         mv.setAttribute('auto-rotate-delay', '0');
         mv.setAttribute('rotation-per-second', '25deg');
         mv.setAttribute('camera-controls', '');
-        mv.setAttribute('shadow-intensity', '0.5');
-        mv.setAttribute('exposure', '1.0');
-        mv.setAttribute('tone-mapping', 'neutral');
+        mv.setAttribute('shadow-intensity', '1');
+        mv.setAttribute('exposure', '1.2');
+        mv.setAttribute('tone-mapping', 'commerce');
+        mv.setAttribute('environment-image', 'neutral');
         mv.style.cssText = 'width:100%;height:100%;border-radius:10px;background:transparent;--poster-color:transparent;';
-        
 
+        // Loading indicator inside the wrapper
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'mv-loading-indicator';
+        loadingDiv.innerHTML = '<span class="mv-spinner"></span>';
+        wrapper.appendChild(loadingDiv);
+
+        mv.addEventListener('load', () => {
+          loadingDiv.remove();
+        });
+        mv.addEventListener('error', (e) => {
+          console.error(`[model-viewer] Error cargando ${item.glbFile}:`, e);
+          loadingDiv.remove();
+        });
 
         wrapper.appendChild(mv);
       }
@@ -335,6 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
       pill.classList.add('active');
       activeCategory = pill.getAttribute('data-category');
       renderPortfolio();
+      // Re-attach video observer after DOM is repopulated
+      setTimeout(setupVideoObserver, 50);
     });
   });
 
@@ -382,6 +398,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render inicial
   renderPortfolio();
+
+  // ============================================================
+  // VIDEO AUTOPLAY — IntersectionObserver
+  // Reproduce el video más visible (≥60%), pausa los demás.
+  // Se reconfigura al cambiar el filtro de categorías.
+  // ============================================================
+  let _videoObserver = null;
+
+  function setupVideoObserver() {
+    // Desconectar observer previo si existe (evitar duplicados al filtrar)
+    if (_videoObserver) {
+      _videoObserver.disconnect();
+      _videoObserver = null;
+    }
+
+    const videos = document.querySelectorAll('.video-social');
+    if (!videos.length) return;
+
+    _videoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const video = entry.target;
+
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          // Pausar todos los demás videos primero
+          document.querySelectorAll('.video-social').forEach((other) => {
+            if (other !== video && !other.paused) {
+              other.pause();
+            }
+          });
+
+          // Garantizar muted antes de play() (requisito de autoplay)
+          video.muted = true;
+
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+              console.warn('[VideoObserver] Autoplay bloqueado por el navegador:', err.message);
+            });
+          }
+        } else {
+          if (!video.paused) {
+            video.pause();
+          }
+        }
+      });
+    }, {
+      threshold: [0, 0.3, 0.6, 1.0]
+    });
+
+    videos.forEach((video) => {
+      // Reiniciar al principio si está detenido
+      video.currentTime = 0;
+      _videoObserver.observe(video);
+    });
+  }
+
+  // Llamar setup tras el primer render
+  setupVideoObserver();
 
   // ============================================================
   // 9. PROACTIVE AI PERSUASION (SCROLL SPY)
