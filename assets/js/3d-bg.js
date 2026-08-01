@@ -19,6 +19,12 @@
   const windowHalfY = window.innerHeight / 2;
 
   function initThree() {
+    if (window.innerWidth <= 768) {
+      console.warn('Pantalla móvil detectada. Saltando WebGL de fondo para optimizar memoria.');
+      initFallbackCanvas();
+      return;
+    }
+
     if (typeof THREE === 'undefined') {
       console.warn('Three.js no detectado. Cargando fallback Canvas 2D.');
       initFallbackCanvas();

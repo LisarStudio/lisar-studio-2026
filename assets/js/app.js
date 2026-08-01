@@ -280,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mv = document.createElement('model-viewer');
         mv.setAttribute('src', item.glbFile);
         mv.setAttribute('alt', item.title);
+        mv.setAttribute('loading', 'lazy');
         mv.setAttribute('autoplay', '');
         mv.setAttribute('auto-rotate', '');
         mv.setAttribute('auto-rotate-delay', '0');
@@ -290,20 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         mv.setAttribute('tone-mapping', 'neutral');
         mv.style.cssText = 'width:100%;height:100%;border-radius:10px;background:transparent;--poster-color:transparent;';
         
-        // Ajustamos la metalidad del material al cargar para evitar que el visor actúe como espejo blanco
-        mv.addEventListener('load', () => {
-          const model = mv.model;
-          if (model && model.materials) {
-            model.materials.forEach(material => {
-              const pbr = material.pbrMetallicRoughness;
-              if (pbr) {
-                // Ajustamos metalidad/rugosidad del modelo PBR para visualizar texturas correctamente
-                pbr.setMetallicFactor(0.2);
-                pbr.setRoughnessFactor(0.8);
-              }
-            });
-          }
-        });
+
 
         wrapper.appendChild(mv);
       }
