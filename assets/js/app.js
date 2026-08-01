@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerLogoImg  = document.getElementById('headerLogoImg');
   const footerLogoImg  = document.getElementById('footerLogoImg');
 
-  const LOGO_WHITE = 'assets/img/lisar-studio-logo-white.webp';
-  const LOGO_BLACK = 'assets/img/lisar-studio-logo-scaled.webp';
+  const LOGO_WHITE = 'assets/img/logo-lisar-studio.png';
+  const LOGO_BLACK = 'assets/img/logo-lisar-studio.png';
 
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);

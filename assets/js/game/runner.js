@@ -1100,7 +1100,7 @@ class LisarRunner {
                    <span style="color: #00f3ff; font-size: 14px; font-weight: bold;">Sácale una captura a esta pantalla</span><br>
                    y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800; font-size: 14px;">30% de Descuento</strong>.
                 </p>
-                <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" style="max-height: 30px; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00f3ff);">
+                <img src="assets/img/logo-lisar-studio.png" alt="Lisar Studio" style="max-height: 30px; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00f3ff);">
                 <button id="continue-game-btn" class="btn btn-gold-primary" style="width: 90%; max-width: 220px; display: flex; justify-content: center; align-items: center; gap: 8px; margin: 0 auto; font-size: 14px; padding: 8px;"><i class="bi bi-play-fill" style="font-size: 18px;"></i> Continuar Jugando</button>
                 <div style="font-size: 10px; color: #ffffff; margin-top: 10px; opacity: 0.8; letter-spacing: 1px;">www.LisarStudio.cl</div>
             </div>
