@@ -138,14 +138,14 @@ class LisarRunner {
     this.player.position.set(this.lanes[this.currentLane], 0.5, 0);
     this.scene.add(this.player);
     
-    // Try to load FBX (wukonglisar.fbx)
+    // Try to load FBX (WUKONGLISAR.fbx)
     if(window.THREE && window.THREE.FBXLoader) {
       const loader = new THREE.FBXLoader();
-      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.fbx', (object) => {
+      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/WUKONGLISAR.fbx', (object) => {
         this.scene.remove(this.player);
         
         this.model = object;
-        this.model.scale.set(0.7, 0.7, 0.7); // Escala corregida
+        this.model.scale.set(0.007, 0.007, 0.007); // Escala para FBX de Mixamo (que viene x100)
         this.model.rotation.y = Math.PI; // Face forward
         
         // Ensure materials display correctly (fix Blender default metalness)
@@ -177,7 +177,7 @@ class LisarRunner {
         
         this.scene.add(this.player);
       }, undefined, (err) => {
-        console.warn("Could not load wukonglisar.fbx for minigame, using placeholder", err);
+        console.warn("Could not load WUKONGLISAR.fbx for minigame, using placeholder", err);
       });
     }
   }
