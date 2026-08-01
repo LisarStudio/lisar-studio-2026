@@ -671,3 +671,32 @@ model-viewer::part(default-ar-button) {
   margin-bottom: 8px;
 }
 
+/* ==========================================================================
+   LISAR STUDIO 2026 - RESPONSIVE MOBILE FIXES & ENHANCEMENTS
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Center Services section icons and text */
+  #servicios .glass-card {
+    text-align: center;
+  }
+  #servicios .service-icon-box {
+    margin-left: auto;
+    margin-right: auto;
+    width: 65px;
+    height: 65px;
+    font-size: 2.1rem;
+  }
+
+  /* Explicit height for portfolio items to avoid collapse on older mobile browsers */
+  .model-viewer-wrapper {
+    height: 300px !important;
+  }
+}
+
+/* Fix dropdown vertical clipping for select inputs on mobile */
+select.form-cyber-control {
+  height: 54px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+

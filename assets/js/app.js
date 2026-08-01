@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerLogoImg  = document.getElementById('headerLogoImg');
   const footerLogoImg  = document.getElementById('footerLogoImg');
 
-  const LOGO_WHITE = 'assets/img/logo-lisar-studio.png';
-  const LOGO_BLACK = 'assets/img/logo-lisar-studio.png';
+  const LOGO_WHITE = 'assets/img/lisar-studio-logo-white.webp';
+  const LOGO_BLACK = 'assets/img/lisar-studio-logo-scaled.webp';
 
   function setTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -280,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mv = document.createElement('model-viewer');
         mv.setAttribute('src', item.glbFile);
         mv.setAttribute('alt', item.title);
+        mv.setAttribute('autoplay', '');
         mv.setAttribute('auto-rotate', '');
         mv.setAttribute('auto-rotate-delay', '0');
         mv.setAttribute('rotation-per-second', '25deg');
