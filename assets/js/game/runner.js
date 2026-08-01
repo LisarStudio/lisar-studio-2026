@@ -661,7 +661,7 @@ class LisarRunner {
     this.billboards.push(sprite);
   }
 
-  spawnCoin() {
+  spawnCoin(count = 1) {
     let lane;
     let attempts = 0;
     do {
@@ -675,27 +675,29 @@ class LisarRunner {
        if (!conflict) break;
     } while(attempts < 10);
     
-    let coinObj;
-    if(this.coinModel) {
-      coinObj = this.coinModel.clone();
-      coinObj.position.set(0, 0, 0);
-    } else {
-      // Fallback
-      const geo = new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32);
-      const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.3 });
-      const faceMat = new THREE.MeshStandardMaterial({ 
-        map: this.logoTexture, emissive: 0xffffff, emissiveMap: this.logoTexture, emissiveIntensity: 0.5, transparent: true
-      });
-      coinObj = new THREE.Mesh(geo, [edgeMat, faceMat, faceMat]);
-      coinObj.rotation.x = Math.PI / 2;
+    for(let i=0; i<count; i++) {
+        let coinObj;
+        if(this.coinModel) {
+          coinObj = this.coinModel.clone();
+          coinObj.position.set(0, 0, 0);
+        } else {
+          // Fallback
+          const geo = new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32);
+          const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.3 });
+          const faceMat = new THREE.MeshStandardMaterial({ 
+            map: this.logoTexture, emissive: 0xffffff, emissiveMap: this.logoTexture, emissiveIntensity: 0.5, transparent: true
+          });
+          coinObj = new THREE.Mesh(geo, [edgeMat, faceMat, faceMat]);
+          coinObj.rotation.x = Math.PI / 2;
+        }
+        
+        const coinGroup = new THREE.Group();
+        coinGroup.add(coinObj);
+        
+        coinGroup.position.set(this.lanes[lane], 1, -40 - (i * 3.5));
+        this.scene.add(coinGroup);
+        this.coins.push(coinGroup);
     }
-    
-    const coinGroup = new THREE.Group();
-    coinGroup.add(coinObj);
-    
-    coinGroup.position.set(this.lanes[lane], 1, -40);
-    this.scene.add(coinGroup);
-    this.coins.push(coinGroup);
   }
   
   initAudio() {
@@ -898,6 +900,7 @@ class LisarRunner {
                setTimeout(() => {
                    this.msgEl.style.display = 'none';
                    this.msgEl.innerHTML = '';
+                   this.isPromoActive = false;
                }, 6000);
            }, 500);
            
@@ -919,6 +922,7 @@ class LisarRunner {
   beginGame() {
     this.isIntro = false;
     this.isPlaying = true;
+    this.isPromoActive = true;
     this.msgEl.style.fontSize = '50px'; // reset font size
     
     // Play music
@@ -1115,7 +1119,7 @@ class LisarRunner {
       let obstacleSpawned = false;
       let coinSpawned = false;
       
-      if(this.analyser && this.isPlaying) {
+      if(this.analyser && this.isPlaying && !this.isPromoActive) {
         this.analyser.getByteFrequencyData(this.dataArray);
         
         // Analizar bajos para Obstáculos (bins 0 a 4)
@@ -1144,17 +1148,19 @@ class LisarRunner {
         // Generar Monedas al compás de las melodías fuertes/cajas
         if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 300)) {
            this.lastCoinBeatTime = now;
-           this.spawnCoin();
+           this.spawnCoin(Math.floor(Math.random() * 2) + 1);
            coinSpawned = true;
         }
       }
       
       // Fallback mínimo para que nunca haya silencios totales
-      if(!obstacleSpawned && Math.random() < 0.002) {
-        this.spawnObstacle();
-      }
-      if(!coinSpawned && Math.random() < 0.005) {
-        this.spawnCoin();
+      if(!this.isPromoActive) {
+          if(!obstacleSpawned && Math.random() < 0.002) {
+            this.spawnObstacle();
+          }
+          if(!coinSpawned && Math.random() < 0.012) {
+            this.spawnCoin(Math.floor(Math.random() * 3) + 3);
+          }
       }
       
       if(this.isPlaying && !this.isLevelCompleteAnim && Math.random() < 0.001) { 
