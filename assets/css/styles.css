@@ -162,6 +162,7 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   border-radius: var(--radius-sm);
   transition: all 0.25s ease;
   position: relative;
+  white-space: nowrap;
 }
 
 .nav-link-custom:hover, .nav-link-custom.active {
@@ -234,6 +235,7 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   align-items: center;
   gap: 10px;
   text-decoration: none !important;
+  white-space: nowrap;
 }
 
 .btn-gold-primary:hover {
@@ -254,6 +256,7 @@ h1, h2, h3, h4, h5, h6, .brand-font {
   align-items: center;
   gap: 10px;
   text-decoration: none !important;
+  white-space: nowrap;
 }
 
 .btn-gold-outline:hover {
