@@ -132,9 +132,9 @@ class LisarRunner {
   initUI() {
     this.uiContainer = document.createElement('div');
     this.uiContainer.style.position = 'absolute';
-    this.uiContainer.style.top = '10px';
-    this.uiContainer.style.left = '10px';
-    this.uiContainer.style.right = '10px';
+    this.uiContainer.style.top = '20px';
+    this.uiContainer.style.left = '20px';
+    this.uiContainer.style.right = '20px';
     this.uiContainer.style.display = 'none';
     this.uiContainer.style.justifyContent = 'space-between';
     this.uiContainer.style.zIndex = '100';
@@ -183,7 +183,7 @@ class LisarRunner {
     this.progressContainer.style.background = 'rgba(0,0,0,0.6)';
     this.progressContainer.style.border = '2px solid #a200ff';
     this.progressContainer.style.borderRadius = '6px';
-    this.progressContainer.style.marginTop = '8px';
+    this.progressContainer.style.marginTop = '25px';
     this.progressContainer.style.position = 'relative';
     this.progressContainer.style.boxShadow = '0 0 8px #a200ff';
     this.progressContainer.style.pointerEvents = 'auto'; // Si el usuario quiere verla
