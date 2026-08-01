@@ -46,6 +46,12 @@ class LisarRunner {
     this.lanes = [-2, 0, 2];
     this.currentLane = 1; // Middle lane
     
+    // Jump State
+    this.isJumping = false;
+    this.velocityY = 0;
+    this.gravity = -0.015;
+    this.jumpForce = 0.25;
+    
     this.obstacles = [];
     this.coins = [];
     
@@ -71,15 +77,31 @@ class LisarRunner {
     
     // Touch Controls
     let touchStartX = 0;
+    let touchStartY = 0;
     this.container.addEventListener('touchstart', (e) => {
       touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
     }, {passive: true});
     
     this.container.addEventListener('touchend', (e) => {
       if(!this.isPlaying) return;
       let touchEndX = e.changedTouches[0].screenX;
-      if (touchEndX < touchStartX - 30) this.moveLeft();
-      if (touchEndX > touchStartX + 30) this.moveRight();
+      let touchEndY = e.changedTouches[0].screenY;
+      
+      // Si desliza hacia arriba (Salto)
+      if (touchStartY - touchEndY > 40) {
+        this.jump();
+      } 
+      // Si fue un tap (sin mucho movimiento), mover a los lados basado en mitad de pantalla
+      else if (Math.abs(touchEndX - touchStartX) < 20 && Math.abs(touchEndY - touchStartY) < 20) {
+        if (touchEndX < this.width / 2) this.moveLeft();
+        else this.moveRight();
+      }
+      // O deslizar a los lados
+      else {
+        if (touchEndX < touchStartX - 30) this.moveLeft();
+        if (touchEndX > touchStartX + 30) this.moveRight();
+      }
     }, {passive: true});
 
     this.animate();
@@ -165,6 +187,14 @@ class LisarRunner {
     if(!this.isPlaying) return;
     if(e.key === 'ArrowLeft' || e.key === 'a') this.moveLeft();
     if(e.key === 'ArrowRight' || e.key === 'd') this.moveRight();
+    if(e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') this.jump();
+  }
+  
+  jump() {
+    if(!this.isJumping) {
+      this.isJumping = true;
+      this.velocityY = this.jumpForce;
+    }
   }
   
   spawnObstacle() {
@@ -258,8 +288,21 @@ class LisarRunner {
         const targetX = this.lanes[this.currentLane];
         this.player.position.x += (targetX - this.player.position.x) * 0.2;
         
-        // Procedural bobbing (running effect)
-        this.player.position.y = (this.player.geometry ? 0.5 : 0) + Math.abs(Math.sin(this.playerTime)) * 0.2;
+        // Procedural bobbing (running effect) ONLY when not jumping
+        let baseY = this.player.geometry ? 0.5 : 0;
+        
+        if (this.isJumping) {
+          this.velocityY += this.gravity;
+          this.player.position.y += this.velocityY;
+          
+          if (this.player.position.y <= baseY) {
+            this.player.position.y = baseY;
+            this.isJumping = false;
+            this.velocityY = 0;
+          }
+        } else {
+          this.player.position.y = baseY + Math.abs(Math.sin(this.playerTime)) * 0.2;
+        }
         
         // Tilt when moving
         this.player.rotation.z = (this.player.position.x - targetX) * 0.1;
@@ -280,7 +323,9 @@ class LisarRunner {
         
         // Collision (simple AABB distance check)
         if(this.player && Math.abs(obs.position.z - this.player.position.z) < 1.5 && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
-          this.gameOver();
+          if (this.player.position.y < 1.5) {
+            this.gameOver();
+          }
         }
         
         if(obs.position.z > 10) {
