@@ -134,10 +134,10 @@ class LisarRunner {
     this.player.position.set(this.lanes[this.currentLane], 0.5, 0);
     this.scene.add(this.player);
     
-    // Try to load GLB (tron.glb)
+    // Try to load GLB (wukonglisar.glb)
     if(window.THREE && window.THREE.GLTFLoader) {
       const loader = new THREE.GLTFLoader();
-      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/tron.glb', (gltf) => {
+      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.glb', (gltf) => {
         this.scene.remove(this.player);
         this.player = gltf.scene;
         this.player.scale.set(0.5, 0.5, 0.5); // Adjust scale
@@ -154,7 +154,7 @@ class LisarRunner {
         
         this.scene.add(this.player);
       }, undefined, (err) => {
-        console.warn("Could not load tron.glb for minigame, using placeholder", err);
+        console.warn("Could not load wukonglisar.glb for minigame, using placeholder", err);
       });
     }
   }
