@@ -316,10 +316,35 @@ document.addEventListener('DOMContentLoaded', () => {
     body.innerHTML = '';
     footer.innerHTML = '';
     
-    addBotMsg("🎉 ¡Felicidades por conseguir las 100 Lisar Coins! ¿Qué esperas para utilizar ese 30% de descuento en tu primer servicio? 🤩");
-    renderOptions([
-        { text: "¡Quiero cotizar ahora! 🚀", next: "servicios" },
-        { text: "Luego, gracias.", next: null }
-    ]);
+    showTyping();
+    setTimeout(() => {
+        hideTyping();
+        addBotMsg("🎉 ¡Felicidades por conseguir las 100 Lisar Coins! ¿Qué esperas para utilizar ese 30% de descuento en tu primer servicio? 🤩");
+        
+        const btnSi = document.createElement('button');
+        btnSi.className = 'chat-option-btn';
+        btnSi.innerText = '¡Quiero cotizar ahora! 🚀';
+        btnSi.onclick = () => {
+            addUserMsg('¡Quiero cotizar ahora! 🚀');
+            loadState('start');
+        };
+        
+        const btnNo = document.createElement('button');
+        btnNo.className = 'chat-option-btn';
+        btnNo.innerText = 'Luego, gracias.';
+        btnNo.onclick = () => {
+            addUserMsg('Luego, gracias.');
+            footer.innerHTML = '';
+            showTyping();
+            setTimeout(() => {
+                hideTyping();
+                addBotMsg("¡No hay problema! Cuando estés listo, aquí estaré. Recuerda guardar tu captura de pantalla. 😉");
+            }, 800);
+        };
+        
+        footer.innerHTML = '';
+        footer.appendChild(btnSi);
+        footer.appendChild(btnNo);
+    }, 1000);
   };
 });
