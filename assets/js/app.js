@@ -470,6 +470,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Global function for hero buttons
+  window.filterPortfolio = function(category) {
+    const targetPill = Array.from(portfolioPills).find(pill => pill.getAttribute('data-category') === category);
+    if(targetPill) {
+      targetPill.click();
+    }
+  };
+
   // ============================================================
   // 7. STICKY HEADER
   // ============================================================
