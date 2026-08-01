@@ -1149,7 +1149,7 @@ class LisarRunner {
         }
         
         // Generar Monedas al compás de las melodías fuertes/cajas
-        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 300)) {
+        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 1200)) {
            this.lastCoinBeatTime = now;
            this.spawnCoin(Math.floor(Math.random() * 2) + 1);
            coinSpawned = true;
@@ -1161,8 +1161,8 @@ class LisarRunner {
           if(!obstacleSpawned && Math.random() < 0.002) {
             this.spawnObstacle();
           }
-          if(!coinSpawned && Math.random() < 0.012) {
-            this.spawnCoin(Math.floor(Math.random() * 3) + 3);
+          if(!coinSpawned && Math.random() < 0.004) {
+            this.spawnCoin(Math.floor(Math.random() * 2) + 1);
           }
       }
       
