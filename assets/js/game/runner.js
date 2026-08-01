@@ -28,10 +28,14 @@ class LisarRunner {
     this.container.appendChild(this.renderer.domElement);
     
     // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     this.scene.add(ambientLight);
     
-    const dirLight = new THREE.DirectionalLight(0xffb703, 1);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
+    hemiLight.position.set(0, 20, 0);
+    this.scene.add(hemiLight);
+    
+    const dirLight = new THREE.DirectionalLight(0xffb703, 1.2);
     dirLight.position.set(5, 10, 5);
     this.scene.add(dirLight);
 
@@ -139,16 +143,34 @@ class LisarRunner {
       const loader = new THREE.GLTFLoader();
       loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.glb', (gltf) => {
         this.scene.remove(this.player);
-        this.player = gltf.scene;
-        this.player.scale.set(0.5, 0.5, 0.5); // Adjust scale
+        
+        this.model = gltf.scene;
+        this.model.scale.set(2.5, 2.5, 2.5); // Ajustar escala para modelos Mixamo
+        this.model.rotation.y = Math.PI; // Face forward
+        
+        // Ensure materials display correctly
+        this.model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if(child.material) {
+              child.material.needsUpdate = true;
+            }
+          }
+        });
+
+        // Wrapper group to separate procedural movement from GLTF animation
+        this.player = new THREE.Group();
         this.player.position.set(this.lanes[this.currentLane], 0, 0);
-        // Face forward
-        this.player.rotation.y = Math.PI; 
+        this.player.add(this.model);
         
         // Handle Animations
         if (gltf.animations && gltf.animations.length > 0) {
-          this.mixer = new THREE.AnimationMixer(this.player);
-          const action = this.mixer.clipAction(gltf.animations[0]);
+          this.mixer = new THREE.AnimationMixer(this.model);
+          // Buscar animacion 'run', si no usar la 0
+          let runClip = gltf.animations.find(a => a.name.toLowerCase().includes('run'));
+          if(!runClip) runClip = gltf.animations[0];
+          const action = this.mixer.clipAction(runClip);
           action.play();
         }
         
