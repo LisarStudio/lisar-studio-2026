@@ -18,7 +18,8 @@ class LisarRunner {
     this.scene.fog = new THREE.Fog(0x0b0c10, 10, 50);
     this.scene.background = new THREE.Color(0x0b0c10);
     
-    this.camera = new THREE.PerspectiveCamera(60, this.width / this.height, 0.1, 100);
+    // Aumentamos el FOV (de 60 a 75) para hacer un efecto de "zoom out"
+    this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100);
     this.camera.position.set(0, 2, 4.0); // Cámara más cerca y más abajo
     this.camera.lookAt(0, 1.2, -2); // Mirar un poco hacia adelante para que el personaje se vea bien posicionado
     
@@ -208,7 +209,7 @@ class LisarRunner {
         this.scene.remove(this.player);
         
         this.model = gltf.scene;
-        this.model.scale.set(1.2, 1.2, 1.2); // Escala aumentada para que el personaje se vea más grande
+        this.model.scale.set(1.32, 1.32, 1.32); // 10% más grande
         this.model.rotation.y = Math.PI; // Face forward
         
         // Fix para materiales metálicos en entornos oscuros:
@@ -254,6 +255,29 @@ class LisarRunner {
             child.receiveShadow = true;
           }
         });
+      });
+      
+      // Load Rocket
+      loader.load('assets/models/Rocket.glb', (gltf) => {
+        this.rocketModel = gltf.scene;
+        // Escalar y posicionar el cohete en el cielo (lejos a la izquierda)
+        this.rocketModel.scale.set(2.0, 2.0, 2.0); 
+        this.rocketModel.position.set(-40, 12, -20);
+        this.rocketModel.rotation.y = Math.PI / 2; // Apuntar hacia la derecha
+        this.rocketModel.rotation.z = -0.15; // Inclinación ligera hacia arriba
+        
+        this.rocketModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+              child.material.metalness = 0.2;
+              child.material.roughness = 0.6;
+            }
+          }
+        });
+        
+        this.scene.add(this.rocketModel);
       });
     }
   }
@@ -609,6 +633,18 @@ class LisarRunner {
         } else if(coin.position.z > 10) {
           this.scene.remove(coin);
           this.coins.splice(i, 1);
+        }
+      }
+      
+      // Animate Sky Rocket
+      if(this.rocketModel) {
+        this.rocketModel.position.x += 0.03; // Volar lentamente hacia la derecha
+        this.rocketModel.position.y += Math.sin(this.playerTime * 0.5) * 0.01; // Ligero bamboleo
+        
+        // Si sale de la pantalla, reiniciar a la izquierda
+        if (this.rocketModel.position.x > 40) {
+           this.rocketModel.position.x = -60;
+           this.rocketModel.position.y = 12 + (Math.random() * 4 - 2); // Variar altura al reaparecer
         }
       }
       
