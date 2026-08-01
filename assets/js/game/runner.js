@@ -141,14 +141,14 @@ class LisarRunner {
     
     this.scoreEl = document.createElement('div');
     this.scoreEl.style.color = '#ffb703';
-    this.scoreEl.style.fontFamily = 'monospace';
-    this.scoreEl.style.fontSize = '20px';
+    this.scoreEl.style.fontFamily = "'Orbitron', sans-serif";
+    this.scoreEl.style.fontSize = '22px';
     this.scoreEl.style.fontWeight = 'bold';
     this.scoreEl.innerText = 'MONEDAS: 0';
     
     this.livesEl = document.createElement('div');
     this.livesEl.style.color = '#ff0055';
-    this.livesEl.style.fontFamily = 'monospace';
+    this.livesEl.style.fontFamily = "'Orbitron', sans-serif";
     this.livesEl.style.fontSize = '20px';
     this.livesEl.style.fontWeight = 'bold';
     this.updateLivesDisplay();
@@ -173,34 +173,17 @@ class LisarRunner {
 
     this.msgEl = document.createElement('div');
     this.msgEl.style.position = 'absolute';
-    this.msgEl.style.top = '50%';
+    this.msgEl.style.top = '40%';
     this.msgEl.style.left = '50%';
     this.msgEl.style.transform = 'translate(-50%, -50%)';
-    this.msgEl.style.color = '#ff8800'; // Neon orange
-    this.msgEl.style.textShadow = '0 0 15px #ff8800';
-    this.msgEl.style.fontFamily = 'monospace';
-    this.msgEl.style.fontSize = '40px';
-    this.msgEl.style.fontWeight = 'bold';
+    this.msgEl.style.color = '#00ffff';
+    this.msgEl.style.fontFamily = "'Orbitron', sans-serif";
+    this.msgEl.style.fontSize = '60px';
+    this.msgEl.style.fontWeight = '900';
+    this.msgEl.style.textShadow = '0 0 20px #00ffff, 0 0 40px #00ffff';
     this.msgEl.style.display = 'none';
     this.msgEl.style.zIndex = '100';
-    this.msgEl.style.pointerEvents = 'none';
     this.container.appendChild(this.msgEl);
-    
-    this.jumpWarningEl = document.createElement('div');
-    this.jumpWarningEl.style.position = 'absolute';
-    this.jumpWarningEl.style.top = '60%';
-    this.jumpWarningEl.style.left = '50%';
-    this.jumpWarningEl.style.transform = 'translate(-50%, -50%)';
-    this.jumpWarningEl.style.color = '#ff0000';
-    this.jumpWarningEl.style.textShadow = '0 0 15px #ff0000';
-    this.jumpWarningEl.style.fontFamily = 'monospace';
-    this.jumpWarningEl.style.fontSize = '50px';
-    this.jumpWarningEl.style.fontWeight = 'bold';
-    this.jumpWarningEl.style.display = 'none';
-    this.jumpWarningEl.style.zIndex = '100';
-    this.jumpWarningEl.style.pointerEvents = 'none';
-    this.jumpWarningEl.innerText = '¡SALTA!';
-    this.container.appendChild(this.jumpWarningEl);
     
     this.controlsBubbleEl = document.createElement('div');
     this.controlsBubbleEl.style.position = 'absolute';
@@ -210,12 +193,12 @@ class LisarRunner {
     this.controlsBubbleEl.style.background = 'rgba(0, 0, 0, 0.7)';
     this.controlsBubbleEl.style.color = '#fff';
     this.controlsBubbleEl.style.padding = '15px 30px';
-    this.controlsBubbleEl.style.borderRadius = '30px';
+    this.controlsBubbleEl.style.borderRadius = '20px';
     this.controlsBubbleEl.style.border = '2px solid #00ffff';
     this.controlsBubbleEl.style.boxShadow = '0 0 15px #00ffff';
-    this.controlsBubbleEl.style.fontFamily = 'sans-serif';
-    this.controlsBubbleEl.style.fontSize = '18px';
-    this.controlsBubbleEl.style.textAlign = 'center';
+    this.controlsBubbleEl.style.fontFamily = "'Orbitron', sans-serif";
+    this.controlsBubbleEl.style.fontSize = '16px';
+    this.controlsBubbleEl.style.textAlign = 'justify';
     this.controlsBubbleEl.style.display = 'none';
     this.controlsBubbleEl.style.zIndex = '100';
     this.controlsBubbleEl.style.pointerEvents = 'none';
@@ -509,8 +492,37 @@ class LisarRunner {
     this.speed = 0.12;
     this.currentLane = 1;
     this.isPlaying = false; // No mover nada aún
+    this.isIntro = false; // Empezará luego de las instrucciones
+    this.introProgress = 0;
     
     if(this.player) this.player.position.set(this.lanes[this.currentLane], 0, 0);
+    
+    // Posición inicial de cámara para Intro
+    this.camera.position.set(0, 1.0, -5);
+    this.camera.lookAt(0, 1.0, 0);
+    
+    // Primero mostrar las instrucciones
+    const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+    this.controlsBubbleEl.innerHTML = isMobile 
+       ? '👆 Desliza para moverte<br><br>👆 Toca para saltar'
+       : '⌨️ Flechas / A-D moverte<br><br>⌨️ Espacio saltar<br><br>⌨️ P para pausar';
+    this.controlsBubbleEl.style.display = 'block';
+    setTimeout(() => { this.controlsBubbleEl.style.opacity = '1'; }, 10);
+    
+    // Las instrucciones duran 3 segundos en pantalla
+    setTimeout(() => {
+       this.controlsBubbleEl.style.opacity = '0';
+       setTimeout(() => {
+          this.controlsBubbleEl.style.display = 'none';
+          this.startCountdownAndIntro();
+       }, 500);
+    }, 3000);
+  }
+  
+  startCountdownAndIntro() {
+    // Activa la animación de la cámara simultánea al contador
+    this.isIntro = true; 
+    this.introProgress = 0;
     
     // 3, 2, 1 Countdown
     let count = 3;
@@ -540,19 +552,6 @@ class LisarRunner {
         setTimeout(() => {
            this.msgEl.style.display = 'none';
            this.msgEl.innerHTML = ''; // reset
-           
-           // Show controls bubble
-           const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
-           this.controlsBubbleEl.innerHTML = isMobile 
-              ? '👆 Desliza para moverte<br>👆 Toca para saltar'
-              : '⌨️ Flechas / A-D para moverte<br>⌨️ Espacio para saltar<br>⌨️ P para pausar';
-           this.controlsBubbleEl.style.display = 'block';
-           setTimeout(() => { this.controlsBubbleEl.style.opacity = '1'; }, 10);
-           setTimeout(() => { 
-              this.controlsBubbleEl.style.opacity = '0'; 
-              setTimeout(() => { this.controlsBubbleEl.style.display = 'none'; }, 500);
-           }, 4000);
-           
            this.beginGame();
         }, 1500);
       }
@@ -570,8 +569,9 @@ class LisarRunner {
   }
 
   beginGame() {
+    this.isIntro = false;
     this.isPlaying = true;
-    this.msgEl.style.fontSize = '40px'; // reset font size
+    this.msgEl.style.fontSize = '50px'; // reset font size
     
     // Play music
     this.bgMusic.currentTime = 0;
@@ -627,30 +627,31 @@ class LisarRunner {
   animate() {
     requestAnimationFrame(this.animate.bind(this));
     
-    if(this.isPlaying && !this.isPaused) {
-      const dt = this.clock.getDelta();
+    const dt = this.clock.getDelta();
+    
+    if (!this.isPaused) {
       if(this.mixer) this.mixer.update(dt);
       if(this.rocketMixer) this.rocketMixer.update(dt);
+    }
+    
+    if (this.isIntro && !this.isPaused) {
+      this.introProgress += dt / 3.0; // 3 seconds intro
+      let p = Math.min(this.introProgress, 1.0);
+      const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
       
+      const startPos = new THREE.Vector3(0, 1.0, -5);
+      const endPos = new THREE.Vector3(0, 4.5, 7.0);
+      const startLook = new THREE.Vector3(0, 1.0, 0);
+      const endLook = new THREE.Vector3(0, 2.0, -10);
+      
+      this.camera.position.lerpVectors(startPos, endPos, ease);
+      const currentLook = new THREE.Vector3().lerpVectors(startLook, endLook, ease);
+      this.camera.lookAt(currentLook);
+    }
+    
+    if(this.isPlaying && !this.isPaused) {
       this.playerTime += 0.1;
       
-      // Jump warning logic
-      let needJump = false;
-      if(this.player) {
-        for(let i = 0; i < this.obstacles.length; i++) {
-          let obs = this.obstacles[i];
-          if(!obs.hit && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
-             if(obs.position.z > -20 && obs.position.z < -5) {
-               needJump = true;
-               break;
-             }
-          }
-        }
-      }
-      if(this.jumpWarningEl) {
-         this.jumpWarningEl.style.display = needJump ? 'block' : 'none';
-      }
-
       // Move player smoothly to lane and add running/bobbing animation
       if(this.player) {
         const targetX = this.lanes[this.currentLane];
