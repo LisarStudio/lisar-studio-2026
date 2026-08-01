@@ -107,6 +107,12 @@ class LisarRunner {
       touchStartY = e.changedTouches[0].screenY;
     }, {passive: true});
     
+    this.container.addEventListener('touchmove', (e) => {
+      if (this.isPlaying || this.isIntro || this.isShowingInstructions) {
+         e.preventDefault(); // Bloquear scroll de página mientras se juega
+      }
+    }, {passive: false});
+    
     this.container.addEventListener('touchend', (e) => {
       if(!this.isPlaying || this.isPaused) return;
       let touchEndX = e.changedTouches[0].screenX;
