@@ -250,22 +250,11 @@ document.addEventListener('DOMContentLoaded', () => {
                  </video>`
               : item.type === 'iframe'
                 ? `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`
-                : `<model-viewer
-                      src="${item.glbFile}"
-                      alt="${item.title}"
-                      auto-rotate
-                      auto-rotate-delay="0"
-                      rotation-per-second="30deg"
-                      camera-controls
-                      shadow-intensity="1.5"
-                      shadow-softness="1"
-                      environment-image="neutral"
-                      exposure="1"
-                      style="width:100%;height:100%;border-radius:10px;background:transparent;">
-                      <div class="model-loading-bar" slot="progress-bar">
-                        <div class="loading-bar-fill"></div>
-                      </div>
-                    </model-viewer>`
+                : `<canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
+                   <div class="model-loading-bar" id="loading-${item.id}">
+                     <div class="loading-bar-fill"></div>
+                     <span>Cargando modelo 3D...</span>
+                   </div>`
             }
           </div>
 
@@ -283,6 +272,190 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
     `).join('');
+
+    // Inicializar visor 3D Three.js para cada tarjeta que no sea video ni iframe
+    filtered.forEach(item => {
+      if (item.type !== 'video' && item.type !== 'iframe') {
+        initGLBViewer(`canvas-${item.id}`, `loading-${item.id}`, item.glbFile);
+      }
+    });
+  }
+
+  // ============================================================
+  // 5. VISOR 3D GLB CON THREE.JS + GLTFLoader
+  // ============================================================
+  function initGLBViewer(canvasId, loadingId, glbPath) {
+    const canvas  = document.getElementById(canvasId);
+    const loadBar = document.getElementById(loadingId);
+    if (!canvas || !window.THREE) return;
+
+    const THREE = window.THREE;
+    const wrapper = canvas.parentElement;
+    const W = wrapper.clientWidth  || 320;
+    const H = wrapper.clientHeight || 320;
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping    = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.shadowMap.enabled = true;
+
+    // Scene
+    const scene  = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, W / H, 0.01, 1000);
+    camera.position.set(0, 0, 3);
+
+    // Lighting — cálida dorada para concordar con la paleta
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+
+    const dirLight = new THREE.DirectionalLight(0xffd166, 1.8);
+    dirLight.position.set(5, 10, 7);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const fillLight = new THREE.DirectionalLight(0xfb8500, 0.5);
+    fillLight.position.set(-5, -2, -5);
+    scene.add(fillLight);
+
+    const rimLight = new THREE.PointLight(0xffb703, 0.8, 20);
+    rimLight.position.set(0, 3, -4);
+    scene.add(rimLight);
+
+    // Estado de órbita (drag para rotar)
+    let isDragging = false, prevX = 0, prevY = 0;
+    let rotX = 0, rotY = 0;
+    let autoRotate = true;
+
+    canvas.addEventListener('mousedown',  e => { isDragging = true;  autoRotate = false; prevX = e.clientX; prevY = e.clientY; canvas.style.cursor = 'grabbing'; });
+    canvas.addEventListener('mousemove',  e => { if (!isDragging) return; rotY += (e.clientX - prevX) * 0.008; rotX += (e.clientY - prevY) * 0.005; prevX = e.clientX; prevY = e.clientY; });
+    canvas.addEventListener('mouseup',    () => { isDragging = false; canvas.style.cursor = 'grab'; setTimeout(() => { autoRotate = true; }, 2000); });
+    canvas.addEventListener('mouseleave', () => { isDragging = false; canvas.style.cursor = 'grab'; setTimeout(() => { autoRotate = true; }, 2000); });
+
+    // Touch
+    canvas.addEventListener('touchstart', e => { isDragging = true; autoRotate = false; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; });
+    canvas.addEventListener('touchmove',  e => { if (!isDragging) return; rotY += (e.touches[0].clientX - prevX) * 0.008; rotX += (e.touches[0].clientY - prevY) * 0.005; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; e.preventDefault(); }, { passive: false });
+    canvas.addEventListener('touchend',   () => { isDragging = false; setTimeout(() => { autoRotate = true; }, 2000); });
+
+    // Cargar GLB con GLTFLoader
+    if (!THREE.GLTFLoader) {
+      // Fallback: mostrar placeholder dorado si no hay loader
+      showGoldenPlaceholder(scene, camera, renderer, canvas, autoRotate, rotX, rotY);
+      if (loadBar) loadBar.style.display = 'none';
+      return;
+    }
+
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      glbPath,
+      (gltf) => {
+        if (loadBar) loadBar.style.display = 'none';
+
+        const model = gltf.scene;
+
+        const pivot = new THREE.Group();
+        scene.add(pivot);
+
+        const box    = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size   = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scale  = 2.0 / maxDim;
+
+        model.scale.setScalar(scale);
+        model.position.sub(center.multiplyScalar(scale));
+
+        // Activar sombras y arreglar texturas metálicas en meshes
+        model.traverse(child => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            if (child.material) {
+               // Evitar que se vea negro en celulares si no hay mapa de entorno
+               child.material.envMapIntensity = 0;
+               if (child.material.metalness > 0.5) {
+                   child.material.metalness = 0.5; // Reducir un poco el metalness para que refleje luz difusa
+               }
+               child.material.needsUpdate = true;
+            }
+          }
+        });
+
+        pivot.add(model);
+
+        // Ajustar cámara según tamaño real
+        camera.position.z = 2.5;
+
+        // Reproducir animaciones si el GLB las trae
+        let mixer = null;
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(model);
+          gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+        }
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+          requestAnimationFrame(animate);
+          const delta = clock.getDelta();
+          if (mixer) mixer.update(delta);
+          if (autoRotate) rotY += 0.005;
+          pivot.rotation.y = rotY;
+          pivot.rotation.x = rotX * 0.3;
+          renderer.render(scene, camera);
+        }
+        animate();
+      },
+      (progress) => {
+        if (loadBar && progress.total) {
+          const pct = (progress.loaded / progress.total * 100).toFixed(0);
+          const fill = loadBar.querySelector('.loading-bar-fill');
+          if (fill) fill.style.width = pct + '%';
+          const span = loadBar.querySelector('span');
+          if (span) span.textContent = `Cargando ${pct}%...`;
+        }
+      },
+      (error) => {
+        console.error('Error cargando GLB:', glbPath, error);
+        if (loadBar) loadBar.style.display = 'none';
+        showGoldenPlaceholder(scene, camera, renderer, canvas);
+      }
+    );
+  }
+
+  // Placeholder dorado si falla la carga
+  function showGoldenPlaceholder(scene, camera, renderer, canvas) {
+    const THREE = window.THREE;
+    const geo  = new THREE.IcosahedronGeometry(0.8, 0);
+    const mat  = new THREE.MeshStandardMaterial({ color: 0xffb703, metalness: 0.9, roughness: 0.2, wireframe: false });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    // Scroll to top button functionality
+    const scrollTopBtn = document.getElementById('scrollTopBtn');
+    if (scrollTopBtn) {
+      scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) {
+          scrollTopBtn.classList.add('show');
+        } else {
+          scrollTopBtn.classList.remove('show');
+        }
+      });
+    }
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.01;
+      mesh.rotation.y += 0.01;
+      mesh.rotation.x += 0.003;
+      renderer.render(scene, camera);
+    }
+    animate();
   }
 
   // Scroll to top button functionality
