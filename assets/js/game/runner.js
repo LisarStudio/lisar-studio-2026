@@ -239,7 +239,7 @@ class LisarRunner {
       
       loader.load('assets/models/lisar 2.0 coin.glb', (gltf) => {
         this.coinModel = gltf.scene;
-        this.coinModel.scale.set(0.015, 0.015, 0.015);
+        this.coinModel.scale.set(0.5, 0.5, 0.5);
         this.coinModel.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -478,6 +478,7 @@ class LisarRunner {
       if(this.floor.position.z > 10) this.floor.position.z = -30;
       
       // Spawn logic with Audio Beat Detection
+      let obstacleSpawned = false;
       if(this.analyser && this.isPlaying) {
         this.analyser.getByteFrequencyData(this.dataArray);
         // Promedio de frecuencias bajas para detectar golpes (beats)
@@ -489,14 +490,17 @@ class LisarRunner {
         const avg = sum / lowFreqCount;
         
         const now = performance.now();
-        // Si el volumen bajo supera el umbral y pasaron al menos 400ms desde el último obstáculo
-        if(avg > 210 && (now - this.lastBeatTime > 400)) {
+        // Si el volumen bajo supera el umbral (150 en vez de 210 para ser más sensible) y pasaron al menos 400ms
+        if(avg > 150 && (now - this.lastBeatTime > 400)) {
            this.lastBeatTime = now;
            this.spawnObstacle();
+           obstacleSpawned = true;
         }
-      } else {
-        // Fallback si no hay audio
-        if(Math.random() < 0.02) this.spawnObstacle();
+      }
+      
+      // Fallback constante para que siempre haya obstáculos incluso en silencios
+      if(!obstacleSpawned && Math.random() < 0.015) {
+        this.spawnObstacle();
       }
       
       // Spawn coins aleatoriamente
