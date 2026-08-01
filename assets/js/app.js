@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Reset theme to 'dark' to prevent broken light mode styling and enforce cyberpunk branding
+  if (localStorage.getItem('lisar_theme') === 'light') {
+    localStorage.setItem('lisar_theme', 'dark');
+  }
   const savedTheme = localStorage.getItem('lisar_theme') || 'dark';
   setTheme(savedTheme);
 
