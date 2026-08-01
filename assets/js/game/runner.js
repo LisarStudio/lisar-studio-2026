@@ -882,6 +882,25 @@ class LisarRunner {
            }
            
            this.beginGame();
+           
+           // Show Promo Message
+           setTimeout(() => {
+               this.msgEl.style.fontSize = '24px';
+               this.msgEl.style.width = '80%';
+               this.msgEl.style.textAlign = 'center';
+               this.msgEl.innerHTML = `
+                   <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; border: 1px solid #00f3ff; box-shadow: 0 0 15px rgba(0,243,255,0.5);">
+                       <span style="color: #ffb703; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00; text-shadow: 0 0 5px #00ff00;">30% de descuento</span> en tu primer servicio.
+                   </div>
+               `;
+               this.msgEl.style.display = 'block';
+               
+               setTimeout(() => {
+                   this.msgEl.style.display = 'none';
+                   this.msgEl.innerHTML = '';
+               }, 6000);
+           }, 500);
+           
         }, 1500);
       }
     }, 1000);
@@ -968,6 +987,29 @@ class LisarRunner {
     this.renderer.setSize(this.width, this.height);
   }
   
+  showDiscountModal() {
+    this.isPaused = true;
+    if (this.bgMusic) this.bgMusic.pause();
+    const overlay = document.getElementById('game-overlay');
+    if(overlay) {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <h3 class="text-success mb-2" style="text-shadow: 0 0 15px #00ff00; font-size: 35px;">¡Felicidades Crack! 🎉</h3>
+        <p class="text-white mb-3" style="font-size: 20px; text-align: center; max-width: 80%;">
+           Has conseguido 100 Lisar Coins. <br><br>
+           <strong style="color: #00f3ff; font-size: 24px; text-shadow: 0 0 10px #00f3ff;">Sácale una captura a esta pantalla</strong><br><br>
+           y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800;">30% de Descuento</strong>.
+        </p>
+        <button id="continue-game-btn" class="btn btn-gold-primary mt-2"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+      `;
+      document.getElementById('continue-game-btn').addEventListener('click', () => {
+        overlay.style.display = 'none';
+        this.isPaused = false;
+        if (this.bgMusic) this.bgMusic.play();
+      });
+    }
+  }
+
   animate() {
     requestAnimationFrame(this.animate.bind(this));
     
@@ -1202,6 +1244,10 @@ class LisarRunner {
             if(this.lives < 3) this.lives++;
             this.updateLivesDisplay();
             this.showMessage("¡Vida Recuperada! 💚");
+          }
+          
+          if (this.totalCoins === 100) {
+             this.showDiscountModal();
           }
           
           // Mover a arreglo de desintegración
