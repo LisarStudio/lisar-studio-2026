@@ -891,8 +891,8 @@ class LisarRunner {
                this.msgEl.style.width = '80%';
                this.msgEl.style.textAlign = 'center';
                this.msgEl.innerHTML = `
-                   <div style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; border: 1px solid #00f3ff; box-shadow: 0 0 15px rgba(0,243,255,0.5);">
-                       <span style="color: #ffb703; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00; text-shadow: 0 0 5px #00ff00;">30% de descuento</span> en tu primer servicio.
+                   <div class="neon-bubble-content" style="padding: 20px; animation: scaleIn 0.3s ease-out;">
+                       <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
                    </div>
                `;
                this.msgEl.style.display = 'block';
@@ -998,13 +998,16 @@ class LisarRunner {
     if(overlay) {
       overlay.style.display = 'flex';
       overlay.innerHTML = `
-        <h3 class="text-success mb-2" style="text-shadow: 0 0 15px #00ff00; font-size: 35px;">¡Felicidades Crack! 🎉</h3>
-        <p class="text-white mb-3" style="font-size: 20px; text-align: center; max-width: 80%;">
-           Has conseguido 100 Lisar Coins. <br><br>
-           <strong style="color: #00f3ff; font-size: 24px; text-shadow: 0 0 10px #00f3ff;">Sácale una captura a esta pantalla</strong><br><br>
-           y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800;">30% de Descuento</strong>.
-        </p>
-        <button id="continue-game-btn" class="btn btn-gold-primary mt-2"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+        <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; max-width: 90%; padding: 30px; animation: scaleIn 0.3s ease-out;">
+            <h3 class="text-success mb-2" style="font-size: 30px; letter-spacing: 1px; color: #00ff00 !important;">¡Felicidades Crack!</h3>
+            <p class="text-white mb-3" style="font-size: 18px; margin-top: 10px;">
+               Has conseguido 100 Lisar Coins.<br><br>
+               <span style="color: #00f3ff; font-size: 22px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
+               y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800;">30% de Descuento</strong>.
+            </p>
+            <div style="font-family: 'Orbitron', sans-serif; font-size: 26px; color: #ffffff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 15px #ffffff, 0 0 20px #00f3ff; margin-bottom: 20px;">LisarStudio</div>
+            <button id="continue-game-btn" class="btn btn-gold-primary mt-3" style="width: 100%; max-width: 250px; font-size: 18px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+        </div>
       `;
       document.getElementById('continue-game-btn').addEventListener('click', () => {
         overlay.style.display = 'none';
