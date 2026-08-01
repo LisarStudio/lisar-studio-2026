@@ -60,6 +60,7 @@ class LisarRunner {
     
     this.obstacles = [];
     this.coins = [];
+    this.collectedCoins = [];
     
     // Game/Audio State
     this.lives = 3;
@@ -478,6 +479,28 @@ class LisarRunner {
     }
   }
 
+  playCoinSound() {
+    if(!this.audioContext || this.audioContext.state !== 'running') return;
+    const osc = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+    
+    // Frecuencias pentatónicas mayores (C, D, E, G, A, C) para que siempre suene "musical" y agradable
+    const freqs = [1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 2093.00];
+    const freq = freqs[Math.floor(Math.random() * freqs.length)];
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+    
+    gainNode.gain.setValueAtTime(0.05, this.audioContext.currentTime); // Volumen suave
+    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.3);
+    
+    osc.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+    
+    osc.start();
+    osc.stop(this.audioContext.currentTime + 0.3);
+  }
+
   startGame() {
     const overlay = document.getElementById('game-overlay');
     if(overlay) overlay.style.display = 'none';
@@ -496,8 +519,10 @@ class LisarRunner {
     // Clear old
     this.obstacles.forEach(o => this.scene.remove(o));
     this.coins.forEach(c => this.scene.remove(c));
+    this.collectedCoins.forEach(c => this.scene.remove(c));
     this.obstacles = [];
     this.coins = [];
+    this.collectedCoins = [];
     
     this.speed = 0.12;
     this.currentLane = 1;
@@ -775,9 +800,10 @@ class LisarRunner {
         
         if(this.player && Math.abs(coin.position.z - this.player.position.z) < 1.5 && Math.abs(coin.position.x - this.player.position.x) < 1.0) {
           this.scene.remove(coin);
-          this.coins.splice(i, 1);
+          
           this.totalCoins++;
           this.scoreEl.innerText = 'MONEDAS: ' + this.totalCoins;
+          this.playCoinSound();
           
           // Recompensas
           if (this.totalCoins % 50 === 0 && this.totalCoins > 0) {
@@ -785,6 +811,10 @@ class LisarRunner {
             this.updateLivesDisplay();
             this.showMessage("¡Vida Recuperada! 💚");
           }
+          
+          // Mover a arreglo de desintegración
+          this.collectedCoins.push(coin);
+          this.coins.splice(i, 1);
 
         } else if(coin.position.z > 10) {
           this.scene.remove(coin);
@@ -802,6 +832,19 @@ class LisarRunner {
            this.rocketModel.position.x = -60;
            this.rocketModel.position.y = 12 + (Math.random() * 4 - 2); // Variar altura al reaparecer
         }
+      }
+      
+      // Animación de desintegración futurista para monedas recolectadas
+      for (let i = this.collectedCoins.length - 1; i >= 0; i--) {
+         let c = this.collectedCoins[i];
+         c.scale.multiplyScalar(0.85); // Encogerse rápidamente
+         c.position.y += 0.2; // Subir volando
+         c.rotation.y += 0.4; // Girar súper rápido
+         c.rotation.x += 0.2;
+         if (c.scale.x < 0.05) {
+             this.scene.remove(c);
+             this.collectedCoins.splice(i, 1);
+         }
       }
       
       // Increase speed slightly
