@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
       type: "video",
-      videoFile: "assets/videos/vfx-video.mp4",
+      videoFile: "https://www.w3schools.com/html/mov_bbb.mp4",
       description: "Animación fluida con sistema de partículas y simulación de movimiento orgánico dinámico.",
       tools: ["Houdini FX", "After Effects", "DaVinci Resolve"],
     },
