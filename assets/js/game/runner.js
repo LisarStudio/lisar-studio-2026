@@ -145,7 +145,7 @@ class LisarRunner {
     this.scoreEl.style.fontFamily = 'monospace';
     this.scoreEl.style.fontSize = '20px';
     this.scoreEl.style.fontWeight = 'bold';
-    this.scoreEl.innerText = 'SCORE: 0';
+    this.scoreEl.innerText = 'MONEDAS: 0';
     
     this.livesEl = document.createElement('div');
     this.livesEl.style.color = '#ff0055';
@@ -438,7 +438,7 @@ class LisarRunner {
     }
     
     this.uiContainer.style.display = 'flex';
-    this.scoreEl.innerText = 'SCORE: 0';
+    this.scoreEl.innerText = 'MONEDAS: 0';
     this.lives = 3;
     this.totalCoins = 0;
     this.updateLivesDisplay();
@@ -449,7 +449,6 @@ class LisarRunner {
     this.obstacles = [];
     this.coins = [];
     
-    this.score = 0;
     this.speed = 0.12;
     this.currentLane = 1;
     this.isPlaying = false; // No mover nada aún
@@ -679,10 +678,6 @@ class LisarRunner {
         if(obs.position.z > 10) {
           this.scene.remove(obs);
           this.obstacles.splice(i, 1);
-          if(!obs.hit) {
-            this.score += 10; // points for dodging
-            this.scoreEl.innerText = 'SCORE: ' + this.score;
-          }
         }
       }
       
@@ -697,17 +692,14 @@ class LisarRunner {
         if(this.player && Math.abs(coin.position.z - this.player.position.z) < 1.5 && Math.abs(coin.position.x - this.player.position.x) < 1.0) {
           this.scene.remove(coin);
           this.coins.splice(i, 1);
-          this.score += 50; 
           this.totalCoins++;
-          this.scoreEl.innerText = 'SCORE: ' + this.score;
+          this.scoreEl.innerText = 'MONEDAS: ' + this.totalCoins;
           
           // Recompensas
-          if (this.totalCoins % 1000 === 0) {
-            this.showMessage("¡Increíble! " + this.totalCoins + " Monedas");
-          } else if (this.totalCoins % 100 === 0) {
-            this.lives++;
+          if (this.totalCoins % 1000 === 0 && this.totalCoins > 0) {
+            if(this.lives < 3) this.lives++;
             this.updateLivesDisplay();
-            this.showMessage("¡Vida Extra! 💚");
+            this.showMessage("¡Vida Recuperada! 💚");
           }
 
         } else if(coin.position.z > 10) {
