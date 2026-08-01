@@ -264,11 +264,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ${item.tools.map(t => `<span style="font-size:0.7rem;background:rgba(255,183,3,0.08);border:1px solid rgba(255,183,3,0.2);color:var(--lisar-gold);padding:2px 8px;border-radius:20px;">${t}</span>`).join('')}
           </div>
 
-          <div class="d-flex align-items-center justify-content-between pt-3 border-top border-secondary mt-auto">
+          <div class="d-flex align-items-center pt-3 border-top border-secondary mt-auto">
             <span class="text-muted" style="font-size:0.75rem;"><i class="bi bi-instagram text-danger mr-1"></i>@lisarstudiooficial</span>
-            <a href="${item.instagramUrl}" target="_blank" class="btn btn-sm btn-gold-outline">
-              Ver en Instagram <i class="bi bi-instagram ml-1 text-danger"></i>
-            </a>
           </div>
         </div>
       </div>
