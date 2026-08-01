@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/p/DaVr7Z4qhgi/",
       type: "video",
-      videoFile: "https://res.cloudinary.com/demo/video/upload/elephants.mp4",
+      videoFile: "assets/video/vfx_ig.mp4",
       description: "Desglose visual y VFX con identidad visual única de LisarStudio.",
       tools: ["Cinema 4D", "After Effects", "Redshift"],
     },
