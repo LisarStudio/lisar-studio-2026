@@ -141,7 +141,7 @@ class LisarRunner {
     // Try to load GLB (wukonglisar.glb)
     if(window.THREE && window.THREE.GLTFLoader) {
       const loader = new THREE.GLTFLoader();
-      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/wukonglisar.glb', (gltf) => {
+      loader.load('assets/models/wukonglisar.glb', (gltf) => {
         this.scene.remove(this.player);
         
         this.model = gltf.scene;
