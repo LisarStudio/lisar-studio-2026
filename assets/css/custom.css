@@ -1,0 +1,123 @@
+/* Custom overrides for Lisar Studio */
+
+/* Purple accent palette */
+:root {
+  --lisar-purple: #9b59b6;
+  --lisar-purple-light: #c39bd3;
+  --lisar-purple-dark: #6c3483;
+  --lisar-accent: var(--lisar-purple);
+}
+
+/* Hero overlay to improve legibility over 3D background */
+.hero-overlay {
+  position: relative;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-md);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2; /* ensure above 3D canvas */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Adjust hero text colors */
+/* Ensure hero title is white for readability */
+.hero-title { color: #fff !important; }
+
+/* Floating WhatsApp button */
+.whatsapp-float {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #25d366;
+  color: #fff;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+.whatsapp-float:hover { transform: scale(1.1); }
+
+/* Scroll to top button */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: var(--lisar-accent);
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s;
+  z-index: 1000;
+}
+.scroll-top-btn.show { opacity: 1; visibility: visible; }
+.scroll-top-btn:hover { background: var(--lisar-gold); }
+.hero-subtitle { color: var(--lisar-text-muted); }
+
+/* Glow tag using purple accent for contrast */
+.hero-section .hero-title,
+.hero-section .hero-subtitle {
+  color: #ffffff !important;
+}
+.hero-section .hero-glow-tag {
+  background: var(--lisar-accent);
+  color: #fff;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+/* Pricing section title contrast */
+#precios .section-title { color: #fff; }
+
+/* Scroll to top button functionality */
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const scrollBtn = document.getElementById('scrollTopBtn');
+  if (!scrollBtn) return;
+  scrollBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 200) {
+      scrollBtn.classList.add('show');
+    } else {
+      scrollBtn.classList.remove('show');
+    }
+  });
+});
+</script>
+
+/* Button color tweaks */
+    .btn-instagram {
+      background: linear-gradient(45deg, #f58529, #dd2a7b, #515bd4);
+      color: #fff;
+      border: none;
+    }
+    .btn-instagram:hover {
+      opacity: 0.9;
+    }
+    .btn-whatsapp {
+      background: #25d366;
+      color: #fff;
+      border: none;
+    }
+    .btn-whatsapp:hover {
+      opacity: 0.9;
+    }
+.btn-gold-outline { background: transparent; border-color: var(--lisar-gold); color: var(--lisar-gold); }
+.btn-gold-primary:hover { background: var(--lisar-accent); border-color: var(--lisar-accent); color: #fff; }
