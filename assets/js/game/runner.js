@@ -19,8 +19,8 @@ class LisarRunner {
     this.scene.background = new THREE.Color(0x0b0c10);
     
     this.camera = new THREE.PerspectiveCamera(60, this.width / this.height, 0.1, 100);
-    this.camera.position.set(0, 3, 7);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(0, 2, 4.0); // Cámara más cerca y más abajo
+    this.camera.lookAt(0, 1.2, -2); // Mirar un poco hacia adelante para que el personaje se vea bien posicionado
     
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(this.width, this.height);
@@ -208,7 +208,7 @@ class LisarRunner {
         this.scene.remove(this.player);
         
         this.model = gltf.scene;
-        this.model.scale.set(0.7, 0.7, 0.7); // Escala para GLB
+        this.model.scale.set(1.2, 1.2, 1.2); // Escala aumentada para que el personaje se vea más grande
         this.model.rotation.y = Math.PI; // Face forward
         
         // Ensure materials display correctly without overriding user's blender materials
@@ -378,7 +378,44 @@ class LisarRunner {
     this.score = 0;
     this.speed = 0.12;
     this.currentLane = 1;
+    this.isPlaying = false; // No mover nada aún
+    
+    if(this.player) this.player.position.set(this.lanes[this.currentLane], 0, 0);
+    
+    // 3, 2, 1 Countdown
+    let count = 3;
+    this.msgEl.style.fontSize = '80px';
+    this.showMessage(count.toString(), 900);
+    this.speak(count.toString());
+    
+    const countInterval = setInterval(() => {
+      count--;
+      if (count > 0) {
+        this.showMessage(count.toString(), 900);
+        this.speak(count.toString());
+      } else {
+        clearInterval(countInterval);
+        this.msgEl.style.fontSize = '60px';
+        this.showMessage("¡GO!", 1000);
+        this.speak("Go!");
+        this.beginGame();
+      }
+    }, 1000);
+  }
+
+  speak(text) {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // Inglés para "Ready" / "Go" / "3, 2, 1"
+      utterance.rate = 1.2;
+      utterance.pitch = 1.1;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+
+  beginGame() {
     this.isPlaying = true;
+    this.msgEl.style.fontSize = '40px'; // reset font size
     
     // Play music
     this.bgMusic.currentTime = 0;
@@ -482,25 +519,25 @@ class LisarRunner {
       let obstacleSpawned = false;
       if(this.analyser && this.isPlaying) {
         this.analyser.getByteFrequencyData(this.dataArray);
-        // Promedio de frecuencias bajas para detectar golpes (beats)
+        // Analizar SOLO frecuencias sub-bass y graves (bins 0 a 3) para aislar los verdaderos golpes de percusión
         let sum = 0;
-        const lowFreqCount = 10;
+        const lowFreqCount = 4;
         for(let j = 0; j < lowFreqCount; j++){
            sum += this.dataArray[j];
         }
         const avg = sum / lowFreqCount;
         
         const now = performance.now();
-        // Si el volumen bajo supera el umbral (150 en vez de 210 para ser más sensible) y pasaron al menos 400ms
-        if(avg > 150 && (now - this.lastBeatTime > 400)) {
+        // Umbral alto (180) para que sólo detecte los bombos fuertes, y mínimo 450ms entre obstáculos
+        if(avg > 180 && (now - this.lastBeatTime > 450)) {
            this.lastBeatTime = now;
            this.spawnObstacle();
            obstacleSpawned = true;
         }
       }
       
-      // Fallback constante para que siempre haya obstáculos incluso en silencios
-      if(!obstacleSpawned && Math.random() < 0.015) {
+      // Fallback mínimo para que nunca haya silencios totales
+      if(!obstacleSpawned && Math.random() < 0.005) {
         this.spawnObstacle();
       }
       
