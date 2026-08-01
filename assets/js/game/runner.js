@@ -20,8 +20,8 @@ class LisarRunner {
     
     // Aumentamos el FOV (de 60 a 75) para hacer un efecto de "zoom out"
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100);
-    this.camera.position.set(0, 4.0, 6.0); // Cámara un 30% más lejos y más alta
-    this.camera.lookAt(0, 1.0, -10); // Vista inclinada de arriba a abajo, pero viendo lejos para apreciar el cohete y el cielo
+    this.camera.position.set(0, 4.5, 7.0); // Cámara más atrás y más alta
+    this.camera.lookAt(0, 2.0, -10); // Mirar más hacia arriba para empujar al personaje al borde inferior
     
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(this.width, this.height);
@@ -55,8 +55,8 @@ class LisarRunner {
     // Jump State
     this.isJumping = false;
     this.velocityY = 0;
-    this.gravity = -0.015;
-    this.jumpForce = 0.25;
+    this.gravity = -0.010; // Gravedad más flotante
+    this.jumpForce = 0.22; // Salto agradable y duradero
     
     this.obstacles = [];
     this.coins = [];
@@ -471,11 +471,11 @@ class LisarRunner {
       } else {
         clearInterval(countInterval);
         
-        // Mostrar "READY!" con isotipo (estilo Megaman X6)
+        // Mostrar "READY!" con isotipo (estilo Megaman X6) centrado
         this.msgEl.style.fontSize = '60px';
-        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; gap: 20px; animation: pulse 1s infinite alternate;">
-                                  <img src="assets/img/lisar-studio-logo-white.webp" style="height: 70px; object-fit: contain; filter: drop-shadow(0 0 10px #ff8800);">
-                                  <span>READY!</span>
+        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite alternate;">
+                                  <img src="assets/img/lisar-studio-logo-white.webp" style="height: 60px; margin-right: 15px; object-fit: contain; filter: drop-shadow(0 0 10px #ff8800);">
+                                  <span style="line-height: 1;">READY!</span>
                                 </div>`;
         this.msgEl.style.display = 'block';
         this.speak("Ready!");
@@ -653,8 +653,8 @@ class LisarRunner {
         let obs = this.obstacles[i];
         obs.position.z += this.speed;
         
-        // Collision (simple AABB distance check)
-        if(this.player && !obs.hit && Math.abs(obs.position.z - this.player.position.z) < 1.5 && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
+        // Collision (simple AABB distance check - más permisivo)
+        if(this.player && !obs.hit && Math.abs(obs.position.z - this.player.position.z) < 1.2 && Math.abs(obs.position.x - this.player.position.x) < 0.8) {
           if (this.player.position.y < 1.5) {
             obs.hit = true; // prevent multiple hits from same obstacle
             this.lives--;
@@ -690,7 +690,7 @@ class LisarRunner {
           this.scoreEl.innerText = 'MONEDAS: ' + this.totalCoins;
           
           // Recompensas
-          if (this.totalCoins % 1000 === 0 && this.totalCoins > 0) {
+          if (this.totalCoins % 50 === 0 && this.totalCoins > 0) {
             if(this.lives < 3) this.lives++;
             this.updateLivesDisplay();
             this.showMessage("¡Vida Recuperada! 💚");
