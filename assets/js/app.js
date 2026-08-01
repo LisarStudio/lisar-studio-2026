@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <i class="bi bi-badge-3d-fill"></i> ${item.type === 'video' ? 'Video · ' : 'Visor 3D · '}${item.title}
             </span>
             ${item.type === 'video' 
-              ? `<video src="${item.videoFile}" class="w-100 h-100" style="object-fit:cover;border-radius:10px;" controls muted loop></video>`
+              ? `<video src="${item.videoFile}" class="w-100 h-100" style="object-fit:cover;border-radius:10px;" autoplay muted loop playsinline></video>`
               : item.type === 'iframe'
                 ? `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`
                 : `<canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>

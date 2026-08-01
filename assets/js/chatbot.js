@@ -9,10 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Estado de la cotización
   let quoteData = {
-    duration: 0,
-    complexity: 0,
-    style: 0,
-    urgency: 1,
+    service: '',
+    details: [],
+    urgencyText: '',
     name: '',
     email: '',
     total: 0
@@ -21,36 +20,82 @@ document.addEventListener('DOMContentLoaded', () => {
   // Árbol de conversación
   const chatFlow = {
     start: {
-      msg: "¡Hola! Soy Lisar IA 🤖. Estoy aquí para ayudarte a cotizar tu próximo proyecto de Animación 3D de alto impacto. ¿Qué duración aproximada necesitas?",
+      msg: "¡Hola! Soy Lisar IA 🤖. Estoy aquí para ayudarte a cotizar. ¿Qué servicio te gustaría cotizar hoy?",
       options: [
-        { label: "15 segundos", next: "complexity", val: 15 },
-        { label: "30 segundos", next: "complexity", val: 30 },
-        { label: "60 segundos", next: "complexity", val: 60 }
+        { label: "Animación 3D", next: "anim_duration", val: 0 },
+        { label: "Modelo 3D", next: "model_type", val: 0 },
+        { label: "Sitio Web", next: "web_type", val: 0 }
       ]
     },
-    complexity: {
-      msg: "¡Perfecto! Ahora, ¿necesitas que modelemos todo desde cero o podemos usar modelos de stock (más económico)?",
+    
+    // ---------------- ANIMACIÓN 3D ----------------
+    anim_duration: {
+      msg: "¡Excelente! Para animación 3D, ¿qué duración aproximada necesitas?",
       options: [
-        { label: "Modelos de Stock", next: "style", val: 50 },
-        { label: "Modelado Personalizado", next: "style", val: 150 }
+        { label: "15 segundos", next: "anim_complexity", val: 300 }, // Base $300
+        { label: "30 segundos", next: "anim_complexity", val: 600 },
+        { label: "60 segundos", next: "anim_complexity", val: 1200 }
       ]
     },
-    style: {
-      msg: "Entendido. ¿Qué nivel de realismo o estilo visual buscas?",
+    anim_complexity: {
+      msg: "¿Necesitas que modelemos todo desde cero o podemos usar modelos de stock (más económico)?",
+      options: [
+        { label: "Modelos de Stock", next: "anim_style", val: 100 },
+        { label: "Modelado Personalizado", next: "anim_style", val: 400 }
+      ]
+    },
+    anim_style: {
+      msg: "¿Qué nivel de realismo o estilo visual buscas?",
       options: [
         { label: "Estilizado / Low Poly", next: "urgency", val: 1 },
-        { label: "Fotorrealista / VFX", next: "urgency", val: 2 }
+        { label: "Fotorrealista / VFX", next: "urgency", val: 1.5 } // Multiplicador
       ]
     },
-    urgency: {
-      msg: "Casi listos. ¿Para cuándo necesitas el video final?",
+
+    // ---------------- MODELO 3D ----------------
+    model_type: {
+      msg: "¡Genial! Para modelado 3D, ¿qué tipo de elemento necesitas modelar?",
       options: [
-        { label: "Tiempo Normal (2-3 Semanas)", next: "contact", val: 1 },
-        { label: "Urgente (Menos de 1 semana)", next: "contact", val: 1.5 }
+        { label: "Personaje / Avatar", next: "model_rig", val: 400 },
+        { label: "Producto / Envase", next: "model_rig", val: 200 },
+        { label: "Arquitectura / Escenario", next: "model_rig", val: 350 }
+      ]
+    },
+    model_rig: {
+      msg: "¿Necesitas que el modelo incluya Rigging (esqueleto listo para animar)?",
+      options: [
+        { label: "Sí, con Rigging", next: "urgency", val: 150 },
+        { label: "No, solo el modelo", next: "urgency", val: 0 }
+      ]
+    },
+
+    // ---------------- SITIO WEB ----------------
+    web_type: {
+      msg: "¡Perfecto! Para diseño web, ¿qué tipo de proyecto tienes en mente?",
+      options: [
+        { label: "Landing Page", next: "web_design", val: 250 },
+        { label: "Web Corporativa", next: "web_design", val: 450 },
+        { label: "Tienda Online (E-Commerce)", next: "web_design", val: 850 }
+      ]
+    },
+    web_design: {
+      msg: "¿Ya tienes la identidad gráfica (logo, colores) y los textos listos?",
+      options: [
+        { label: "Sí, tengo todo listo", next: "urgency", val: 0 },
+        { label: "No, necesito ayuda con eso", next: "urgency", val: 150 }
+      ]
+    },
+
+    // ---------------- FINAL COMÚN ----------------
+    urgency: {
+      msg: "Casi listos. ¿Para cuándo necesitas el proyecto terminado?",
+      options: [
+        { label: "Tiempo Normal (2-4 Semanas)", next: "contact", val: 1 },
+        { label: "Urgente (Prioridad Alta)", next: "contact", val: 1.3 } // Multiplicador
       ]
     },
     contact: {
-      msg: "¡Genial! Ya he calculado tu cotización. Por favor ingresa tu Nombre y Correo para generar tu PDF personalizado y enviarlo a tu bandeja.",
+      msg: "¡Genial! Ya he calculado tu cotización estimada. Por favor ingresa tu Nombre y Correo para generar tu PDF personalizado y enviarlo a tu bandeja.",
       input: true
     }
   };
@@ -137,26 +182,24 @@ document.addEventListener('DOMContentLoaded', () => {
   function handleOption(opt, stateKey) {
     addUserMsg(opt.label);
     
-    // Guardar datos
-    if(stateKey === 'start') quoteData.duration = opt.val;
-    if(stateKey === 'complexity') quoteData.complexity = opt.val;
-    if(stateKey === 'style') quoteData.style = opt.val;
-    if(stateKey === 'urgency') quoteData.urgency = opt.val;
+    // Acumular lógica de precios y detalles
+    if(stateKey === 'start') {
+      quoteData.service = opt.label;
+      quoteData.total = 0; // reset
+      quoteData.details = [];
+    } else if (stateKey === 'anim_duration' || stateKey === 'anim_complexity' || stateKey === 'model_type' || stateKey === 'model_rig' || stateKey === 'web_type' || stateKey === 'web_design') {
+      quoteData.details.push(opt.label);
+      quoteData.total += opt.val;
+    } else if (stateKey === 'anim_style') {
+      quoteData.details.push(opt.label);
+      quoteData.total = quoteData.total * opt.val;
+    } else if (stateKey === 'urgency') {
+      quoteData.urgencyText = opt.label;
+      quoteData.total = Math.round(quoteData.total * opt.val);
+    }
 
     footer.innerHTML = '';
     loadState(opt.next);
-  }
-
-  function calculateTotal() {
-    // Lógica de Precios en USD (ejemplo básico)
-    // Precio base por segundo: $20 USD
-    let base = quoteData.duration * 20; 
-    let mod = quoteData.complexity; // 50 (Stock) o 150 (Custom)
-    let styleMulti = quoteData.style; // 1 (Low poly) o 2 (Fotorrealista)
-    let urgMulti = quoteData.urgency; // 1 (Normal) o 1.5 (Urgente)
-    
-    // Fórmula final
-    quoteData.total = Math.round(((base + mod) * styleMulti) * urgMulti);
   }
 
   function handleContactSubmit() {
@@ -176,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
     showTyping();
     setTimeout(() => {
       hideTyping();
-      calculateTotal();
       addBotMsg(`¡Gracias ${name}! El costo estimado de tu proyecto es de <b>$${quoteData.total} USD</b>. Estoy generando tu documento PDF y enviándolo a nuestro equipo...`);
       
       generatePDF();
@@ -200,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text("Cotización de Animación 3D", 105, 30, { align: "center" });
+    doc.text(`Cotizacion: ${quoteData.service}`, 105, 30, { align: "center" });
 
     // Datos del cliente
     doc.setTextColor(0, 0, 0);
@@ -211,25 +253,23 @@ document.addEventListener('DOMContentLoaded', () => {
     doc.text(`Email: ${quoteData.email}`, 15, 69);
 
     // Tabla de Detalles usando AutoTable
+    const bodyData = quoteData.details.map(item => ['+', item]);
+    bodyData.push(['Tiempo de Entrega', quoteData.urgencyText]);
+    bodyData.push(['', '']);
+    bodyData.push(['TOTAL ESTIMADO', `$${quoteData.total} USD`]);
+
     doc.autoTable({
       startY: 80,
       headStyles: { fillColor: [255, 183, 3], textColor: [0, 0, 0] },
       head: [['Concepto', 'Detalle']],
-      body: [
-        ['Duración de la Animación', `${quoteData.duration} segundos`],
-        ['Complejidad de Modelado', quoteData.complexity === 50 ? 'Modelos de Stock' : 'Modelado Personalizado'],
-        ['Estilo Visual', quoteData.style === 1 ? 'Estilizado / Low Poly' : 'Fotorrealista / VFX'],
-        ['Tiempo de Entrega', quoteData.urgency === 1 ? 'Normal (2-3 Semanas)' : 'Urgente (Menos de 1 Semana)'],
-        ['', ''],
-        ['TOTAL ESTIMADO', `$${quoteData.total} USD`]
-      ],
+      body: bodyData,
       theme: 'grid'
     });
 
     // Footer
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text("Nota: Este es un valor estimado generado automáticamente por Lisar IA.", 105, 275, { align: "center" });
+    doc.text("Nota: Este es un valor estimado generado automaticamente por Lisar IA.", 105, 275, { align: "center" });
     doc.text("Para un presupuesto exacto y formal, nos pondremos en contacto contigo.", 105, 280, { align: "center" });
     doc.text("www.lisarstudio.cl - peter@lisarstudio.cl", 105, 285, { align: "center" });
 
@@ -246,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify({
         email: quoteData.email,
         name: quoteData.name,
-        message: `Nueva cotización 3D: $${quoteData.total} USD. Duración: ${quoteData.duration}s. Complejidad: ${quoteData.complexity}. Estilo: ${quoteData.style}. Urgencia: ${quoteData.urgency}.`
+        message: `Nueva cotizacion de ${quoteData.service}: $${quoteData.total} USD. Detalles: ${quoteData.details.join(', ')}. Urgencia: ${quoteData.urgencyText}.`
       })
     })
     .then(response => {
