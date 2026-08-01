@@ -891,8 +891,8 @@ class LisarRunner {
                this.msgEl.style.width = '80%';
                this.msgEl.style.textAlign = 'center';
                this.msgEl.innerHTML = `
-                   <div class="neon-bubble" style="display: inline-block; animation: scaleIn 0.3s ease-out;">
-                       <div class="neon-bubble-content" style="padding: 20px;">
+                   <div class="neon-bubble" style="display: inline-block; position: relative; opacity: 1; pointer-events: auto; max-width: 90%; animation: scaleIn 0.3s ease-out; padding: 20px;">
+                       <div class="neon-bubble-content">
                            <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
                        </div>
                    </div>
@@ -1003,7 +1003,7 @@ class LisarRunner {
          window.triggerPromoChatbot();
       }
       overlay.innerHTML = `
-        <div class="neon-bubble" style="max-width: 90%; animation: scaleIn 0.3s ease-out;">
+        <div class="neon-bubble" style="position: relative; opacity: 1; pointer-events: auto; max-width: 90%; animation: scaleIn 0.3s ease-out;">
             <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; padding: 30px;">
                 <h3 class="text-success mb-2" style="font-size: 30px; letter-spacing: 1px; color: #00ff00 !important;">¡Felicidades Crack!</h3>
                 <p class="text-white mb-3" style="font-size: 18px; margin-top: 10px;">
@@ -1156,7 +1156,7 @@ class LisarRunner {
         }
         
         // Generar Monedas al compás de las melodías fuertes/cajas
-        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 600)) {
+        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 400)) {
            this.lastCoinBeatTime = now;
            this.spawnCoin(Math.floor(Math.random() * 2) + 1);
            coinSpawned = true;
@@ -1168,7 +1168,7 @@ class LisarRunner {
           if(!obstacleSpawned && Math.random() < 0.002) {
             this.spawnObstacle();
           }
-          if(!coinSpawned && Math.random() < 0.007) {
+          if(!coinSpawned && Math.random() < 0.010) {
             this.spawnCoin(Math.floor(Math.random() * 2) + 2);
           }
       }
