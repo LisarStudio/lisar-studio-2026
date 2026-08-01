@@ -105,9 +105,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggle Chat
   if(toggler) {
     toggler.addEventListener('click', () => {
+      console.log("Chatbot button clicked");
       container.classList.add('show');
       toggler.style.display = 'none';
-      if(body.querySelectorAll('.chat-msg').length === 0) {
+      
+      const msgCount = body.querySelectorAll('.chat-msg').length;
+      console.log("Current message count:", msgCount);
+      
+      if(msgCount === 0) {
+        console.log("Initializing chat flow...");
         loadState('start');
       }
     });
