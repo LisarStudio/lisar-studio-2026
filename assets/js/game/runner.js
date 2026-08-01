@@ -20,8 +20,8 @@ class LisarRunner {
     
     // Aumentamos el FOV (de 60 a 75) para hacer un efecto de "zoom out"
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100);
-    this.camera.position.set(0, 3.5, 5.5); // Cámara un poco más lejos
-    this.camera.lookAt(0, -0.5, -3); // Mirar más hacia abajo para que el personaje baje al borde de la pantalla
+    this.camera.position.set(0, 2.5, 3.5); // Cámara más cerca en Z y un poco alta
+    this.camera.lookAt(0, 1.5, -10); // Mirar a lo lejos para que el personaje baje al borde de la pantalla
     
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(this.width, this.height);
@@ -163,8 +163,8 @@ class LisarRunner {
     this.msgEl.style.top = '50%';
     this.msgEl.style.left = '50%';
     this.msgEl.style.transform = 'translate(-50%, -50%)';
-    this.msgEl.style.color = '#00ffff';
-    this.msgEl.style.textShadow = '0 0 10px #00ffff';
+    this.msgEl.style.color = '#ff8800'; // Neon orange
+    this.msgEl.style.textShadow = '0 0 15px #ff8800';
     this.msgEl.style.fontFamily = 'monospace';
     this.msgEl.style.fontSize = '40px';
     this.msgEl.style.fontWeight = 'bold';
@@ -172,6 +172,22 @@ class LisarRunner {
     this.msgEl.style.zIndex = '100';
     this.msgEl.style.pointerEvents = 'none';
     this.container.appendChild(this.msgEl);
+    
+    this.jumpWarningEl = document.createElement('div');
+    this.jumpWarningEl.style.position = 'absolute';
+    this.jumpWarningEl.style.top = '60%';
+    this.jumpWarningEl.style.left = '50%';
+    this.jumpWarningEl.style.transform = 'translate(-50%, -50%)';
+    this.jumpWarningEl.style.color = '#ff0000';
+    this.jumpWarningEl.style.textShadow = '0 0 15px #ff0000';
+    this.jumpWarningEl.style.fontFamily = 'monospace';
+    this.jumpWarningEl.style.fontSize = '50px';
+    this.jumpWarningEl.style.fontWeight = 'bold';
+    this.jumpWarningEl.style.display = 'none';
+    this.jumpWarningEl.style.zIndex = '100';
+    this.jumpWarningEl.style.pointerEvents = 'none';
+    this.jumpWarningEl.innerText = '¡SALTA!';
+    this.container.appendChild(this.jumpWarningEl);
   }
 
   updateLivesDisplay() {
@@ -446,6 +462,8 @@ class LisarRunner {
     this.showMessage(count.toString(), 900);
     this.speak(count.toString());
     
+    this.readyCoin = null;
+    
     const countInterval = setInterval(() => {
       count--;
       if (count > 0) {
@@ -453,10 +471,27 @@ class LisarRunner {
         this.speak(count.toString());
       } else {
         clearInterval(countInterval);
+        
+        // Mostrar "READY!"
         this.msgEl.style.fontSize = '60px';
-        this.showMessage("¡GO!", 1000);
-        this.speak("Go!");
-        this.beginGame();
+        this.msgEl.innerText = "READY!";
+        this.msgEl.style.display = 'block';
+        this.speak("Ready!");
+        
+        // Agregar moneda 3D enfrente de la cámara
+        if (this.coinModel) {
+            this.readyCoin = this.coinModel.clone();
+            this.readyCoin.scale.set(1.5, 1.5, 1.5);
+            this.readyCoin.position.set(1.5, 1.5, -2); // Posicionar a la derecha del texto, frente a la cámara
+            this.camera.add(this.readyCoin);
+            this.scene.add(this.camera); // Asegurar que la cámara está en la escena para ver sus hijos
+        }
+        
+        setTimeout(() => {
+           this.msgEl.style.display = 'none';
+           if(this.readyCoin) this.camera.remove(this.readyCoin);
+           this.beginGame();
+        }, 1500);
       }
     }, 1000);
   }
@@ -535,6 +570,23 @@ class LisarRunner {
       if(this.rocketMixer) this.rocketMixer.update(dt);
       
       this.playerTime += 0.1;
+      
+      // Jump warning logic
+      let needJump = false;
+      if(this.player) {
+        for(let i = 0; i < this.obstacles.length; i++) {
+          let obs = this.obstacles[i];
+          if(!obs.hit && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
+             if(obs.position.z > -20 && obs.position.z < -5) {
+               needJump = true;
+               break;
+             }
+          }
+        }
+      }
+      if(this.jumpWarningEl) {
+         this.jumpWarningEl.style.display = needJump ? 'block' : 'none';
+      }
 
       // Move player smoothly to lane and add running/bobbing animation
       if(this.player) {
@@ -678,6 +730,11 @@ class LisarRunner {
       
       // Increase speed slightly
       this.speed += 0.00005;
+    } else {
+      // Girar la moneda de READY cuando el juego no ha empezado aún
+      if(this.readyCoin) {
+         this.readyCoin.children[0].rotation.y += 0.05;
+      }
     }
     
     this.renderer.render(this.scene, this.camera);
