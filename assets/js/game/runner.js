@@ -647,9 +647,9 @@ class LisarRunner {
         this.player.position.set(this.lanes[this.currentLane], 0, 50); // Empieza lejos
     }
     
-    // Posición inicial de cámara para Intro
-    this.camera.position.set(0, 1.0, -5);
-    this.camera.lookAt(0, 1.0, 0);
+    // Posición inicial de cámara para Intro (De frente, mirando al horizonte donde viene el personaje)
+    this.camera.position.set(0, 1.0, -15);
+    this.camera.lookAt(0, 2.0, 50);
     
     // Primero mostrar las instrucciones
     const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
@@ -824,20 +824,32 @@ class LisarRunner {
     if (this.isIntro && !this.isPaused) {
       this.introProgress += dt / 3.0; // 3 seconds intro
       let p = Math.min(this.introProgress, 1.0);
-      const ease = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      // Cámara: ease-in-out para un viaje suave
+      const easeCam = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
       
-      const startPos = new THREE.Vector3(0, 1.0, -5);
-      const endPos = new THREE.Vector3(0, 4.5, 7.0);
-      const startLook = new THREE.Vector3(0, 1.0, 0);
-      const endLook = new THREE.Vector3(0, 2.0, -10);
-      
-      this.camera.position.lerpVectors(startPos, endPos, ease);
-      const currentLook = new THREE.Vector3().lerpVectors(startLook, endLook, ease);
-      this.camera.lookAt(currentLook);
+      // Personaje: ease-out para que entre rápido y frene suavemente
+      const easePlayer = 1 - Math.pow(1 - p, 3);
       
       if (this.player) {
-         // El personaje viene llegando desde atrás hacia su posición durante el 3..2..1
-         this.player.position.z += (0 - this.player.position.z) * 0.035;
+         this.player.position.z = 50 * (1 - easePlayer);
+      }
+      
+      const startX = 0; const startY = 1.0; const startZ = -15; // Frente al personaje
+      const endX = 0; const endY = 4.5; const endZ = 7.0; // Detrás del personaje (gameplay)
+      
+      // La cámara hace un medio círculo (arco) hacia la derecha
+      const currentX = Math.sin(easeCam * Math.PI) * 15; 
+      const currentY = startY + (endY - startY) * easeCam;
+      const currentZ = startZ + (endZ - startZ) * easeCam;
+      
+      this.camera.position.set(currentX, currentY, currentZ);
+      
+      if (this.player) {
+          // La cámara mira al personaje, y al final mira hacia el horizonte
+          const lookZ = this.player.position.z - (easeCam * 10);
+          this.camera.lookAt(this.player.position.x, this.player.position.y + 2, lookZ);
+      } else {
+          this.camera.lookAt(0, 2, -10);
       }
     }
     
