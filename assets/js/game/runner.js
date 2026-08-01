@@ -9,6 +9,10 @@ class LisarRunner {
     this.width = this.container.clientWidth;
     this.height = this.container.clientHeight;
     
+    this.clock = new THREE.Clock();
+    this.playerTime = 0;
+    this.mixer = null;
+    
     // Scene, Camera, Renderer
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x0b0c10, 10, 50);
@@ -47,6 +51,10 @@ class LisarRunner {
     
     // Player
     this.player = null;
+    // Load Logo Texture
+    this.textureLoader = new THREE.TextureLoader();
+    this.logoTexture = this.textureLoader.load('assets/img/lisar-studio-logo-white.webp');
+    
     this.initPlayer();
     
     // Floor
@@ -114,6 +122,14 @@ class LisarRunner {
         this.player.position.set(this.lanes[this.currentLane], 0, 0);
         // Face forward
         this.player.rotation.y = Math.PI; 
+        
+        // Handle Animations
+        if (gltf.animations && gltf.animations.length > 0) {
+          this.mixer = new THREE.AnimationMixer(this.player);
+          const action = this.mixer.clipAction(gltf.animations[0]);
+          action.play();
+        }
+        
         this.scene.add(this.player);
       }, undefined, (err) => {
         console.warn("Could not load tron.glb for minigame, using placeholder", err);
@@ -162,13 +178,29 @@ class LisarRunner {
   }
   
   spawnCoin() {
-    const geo = new THREE.TorusGeometry(0.5, 0.15, 8, 16);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.5 });
-    const coin = new THREE.Mesh(geo, mat);
+    // Moneda con Logo Lisar 3D
+    const geo = new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32);
+    
+    const edgeMat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.3 });
+    const faceMat = new THREE.MeshStandardMaterial({ 
+      map: this.logoTexture,
+      emissive: 0xffffff,
+      emissiveMap: this.logoTexture,
+      emissiveIntensity: 0.5,
+      transparent: true
+    });
+    
+    // El orden de materiales en CylinderGeometry es [lateral, arriba, abajo]
+    const coinMesh = new THREE.Mesh(geo, [edgeMat, faceMat, faceMat]);
+    coinMesh.rotation.x = Math.PI / 2; // Hacer que mire hacia la camara
+    
+    const coinGroup = new THREE.Group();
+    coinGroup.add(coinMesh);
+    
     const lane = Math.floor(Math.random() * 3);
-    coin.position.set(this.lanes[lane], 1, -40);
-    this.scene.add(coin);
-    this.coins.push(coin);
+    coinGroup.position.set(this.lanes[lane], 1, -40);
+    this.scene.add(coinGroup);
+    this.coins.push(coinGroup);
   }
   
   startGame() {
@@ -216,10 +248,21 @@ class LisarRunner {
     requestAnimationFrame(this.animate.bind(this));
     
     if(this.isPlaying) {
-      // Move player smoothly to lane
+      const dt = this.clock.getDelta();
+      if(this.mixer) this.mixer.update(dt);
+      
+      this.playerTime += 0.1;
+
+      // Move player smoothly to lane and add running/bobbing animation
       if(this.player) {
         const targetX = this.lanes[this.currentLane];
         this.player.position.x += (targetX - this.player.position.x) * 0.2;
+        
+        // Procedural bobbing (running effect)
+        this.player.position.y = (this.player.geometry ? 0.5 : 0) + Math.abs(Math.sin(this.playerTime)) * 0.2;
+        
+        // Tilt when moving
+        this.player.rotation.z = (this.player.position.x - targetX) * 0.1;
       }
       
       // Move floor texture (illusion of speed)
