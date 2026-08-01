@@ -210,16 +210,11 @@ class LisarRunner {
         this.model.scale.set(0.7, 0.7, 0.7); // Escala para GLB
         this.model.rotation.y = Math.PI; // Face forward
         
-        // Ensure materials display correctly (fix Blender default metalness)
+        // Ensure materials display correctly without overriding user's blender materials
         this.model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            if(child.material) {
-              child.material.metalness = 0.1;
-              child.material.roughness = 0.8;
-              child.material.needsUpdate = true;
-            }
           }
         });
 
@@ -245,6 +240,12 @@ class LisarRunner {
       loader.load('assets/models/lisar 2.0 coin.glb', (gltf) => {
         this.coinModel = gltf.scene;
         this.coinModel.scale.set(0.015, 0.015, 0.015);
+        this.coinModel.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
       });
     }
   }
