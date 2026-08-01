@@ -5,8 +5,8 @@
 /* Botón flotante para abrir el chat */
 .chatbot-toggler {
   position: fixed;
-  bottom: 95px;
-  right: 25px;
+  bottom: 25px;
+  right: 90px;
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, var(--lisar-gold), #b38400);
@@ -40,7 +40,7 @@
 /* Contenedor del Chatbot */
 .chatbot-container {
   position: fixed;
-  bottom: 165px;
+  bottom: 95px;
   right: 25px;
   width: 350px;
   max-width: calc(100vw - 50px);

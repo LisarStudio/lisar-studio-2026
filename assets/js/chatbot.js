@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toggler.addEventListener('click', () => {
       container.classList.add('show');
       toggler.style.display = 'none';
-      if(body.innerHTML.trim() === '') {
+      if(body.querySelectorAll('.chat-msg').length === 0) {
         loadState('start');
       }
     });
