@@ -330,6 +330,44 @@ class LisarRunner {
            position: relative;
            z-index: 1;
          }
+         .neon-box {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            margin: 0 auto;
+            width: 100%;
+          }
+          .neon-box::before {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: conic-gradient(transparent, transparent, transparent, #ff8800);
+            animation: rotateNeon 2s linear infinite;
+            z-index: -2;
+          }
+          .neon-box::after {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            background: rgba(0,0,0,0.85);
+            border-radius: 17px;
+            z-index: -1;
+          }
+          .neon-box-content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+          }
          
          @keyframes readyZoomIn {
            0% { transform: scale(0.2); opacity: 0; }
@@ -891,8 +929,8 @@ class LisarRunner {
                this.msgEl.style.width = '80%';
                this.msgEl.style.textAlign = 'center';
                this.msgEl.innerHTML = `
-                   <div class="neon-bubble" style="display: inline-block; position: relative; opacity: 1; pointer-events: auto; width: 90%; max-width: 300px; animation: scaleIn 0.3s ease-out; padding: 10px;">
-                       <div class="neon-bubble-content" style="padding: 10px; font-size: 15px; line-height: 1.3;">
+                   <div class="neon-box" style="animation: scaleIn 0.3s ease-out;">
+                       <div class="neon-box-content" style="padding: 15px; font-size: 15px; line-height: 1.3;">
                            <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <br><span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
                        </div>
                    </div>
@@ -1003,16 +1041,16 @@ class LisarRunner {
          window.triggerPromoChatbot();
       }
       overlay.innerHTML = `
-        <div class="neon-bubble" style="position: relative; opacity: 1; pointer-events: auto; width: 95%; max-width: 320px; animation: scaleIn 0.3s ease-out; padding: 10px;">
-            <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; padding: 15px;">
-                <h3 class="text-success mb-1" style="font-size: 22px; letter-spacing: 1px; color: #00ff00 !important; font-weight: bold;">¡Felicidades Crack!</h3>
-                <p class="text-white mb-2" style="font-size: 14px; margin-top: 5px; line-height: 1.3;">
+        <div class="neon-box" style="width: 90%; max-width: 320px; animation: scaleIn 0.3s ease-out;">
+            <div class="neon-box-content" style="padding: 20px 15px;">
+                <h3 class="text-success mb-2" style="font-size: 24px; letter-spacing: 1px; color: #00ff00 !important; font-weight: bold;">¡Felicidades Crack!</h3>
+                <p class="text-white mb-3" style="font-size: 15px; line-height: 1.4;">
                    Has conseguido 100 Lisar Coins.<br><br>
-                   <span style="color: #00f3ff; font-size: 16px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
-                   y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800; font-size: 16px;">30% de Descuento</strong>.
+                   <span style="color: #00f3ff; font-size: 18px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
+                   y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800; font-size: 18px;">30% de Descuento</strong>.
                 </p>
-                <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" style="max-height: 35px; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00f3ff);">
-                <button id="continue-game-btn" class="btn btn-gold-primary mt-2" style="width: 100%; max-width: 200px; font-size: 15px; padding: 8px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+                <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" style="max-height: 40px; margin-bottom: 15px; filter: drop-shadow(0 0 10px #00f3ff);">
+                <button id="continue-game-btn" class="btn btn-gold-primary" style="width: 100%; font-size: 16px; padding: 10px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
             </div>
         </div>
       `;
