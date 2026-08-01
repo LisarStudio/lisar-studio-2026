@@ -999,6 +999,9 @@ class LisarRunner {
     const overlay = document.getElementById('game-overlay');
     if(overlay) {
       overlay.style.display = 'flex';
+      if (window.triggerPromoChatbot) {
+         window.triggerPromoChatbot();
+      }
       overlay.innerHTML = `
         <div class="neon-bubble" style="max-width: 90%; animation: scaleIn 0.3s ease-out;">
             <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; padding: 30px;">

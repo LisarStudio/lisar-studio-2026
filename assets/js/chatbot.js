@@ -307,4 +307,19 @@ document.addEventListener('DOMContentLoaded', () => {
       addBotMsg("✅ ¡PDF descargado! Hubo un detalle de red al enviar el correo automático, pero puedes contactarnos directamente al WhatsApp o al correo peter@lisarstudio.cl.");
     });
   }
+
+  window.triggerPromoChatbot = function() {
+    container.classList.add('show');
+    toggler.style.display = 'none';
+    
+    // Clear any previous chat
+    body.innerHTML = '';
+    footer.innerHTML = '';
+    
+    addBotMsg("🎉 ¡Felicidades por conseguir las 100 Lisar Coins! ¿Qué esperas para utilizar ese 30% de descuento en tu primer servicio? 🤩");
+    renderOptions([
+        { text: "¡Quiero cotizar ahora! 🚀", next: "servicios" },
+        { text: "Luego, gracias.", next: null }
+    ]);
+  };
 });
