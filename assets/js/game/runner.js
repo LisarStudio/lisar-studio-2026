@@ -891,9 +891,9 @@ class LisarRunner {
                this.msgEl.style.width = '80%';
                this.msgEl.style.textAlign = 'center';
                this.msgEl.innerHTML = `
-                   <div class="neon-bubble" style="display: inline-block; position: relative; opacity: 1; pointer-events: auto; max-width: 90%; animation: scaleIn 0.3s ease-out; padding: 20px;">
-                       <div class="neon-bubble-content">
-                           <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
+                   <div class="neon-bubble" style="display: inline-block; position: relative; opacity: 1; pointer-events: auto; width: 90%; max-width: 300px; animation: scaleIn 0.3s ease-out; padding: 10px;">
+                       <div class="neon-bubble-content" style="padding: 10px; font-size: 15px; line-height: 1.3;">
+                           <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <br><span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
                        </div>
                    </div>
                `;
@@ -1003,16 +1003,16 @@ class LisarRunner {
          window.triggerPromoChatbot();
       }
       overlay.innerHTML = `
-        <div class="neon-bubble" style="position: relative; opacity: 1; pointer-events: auto; max-width: 90%; animation: scaleIn 0.3s ease-out;">
-            <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; padding: 30px;">
-                <h3 class="text-success mb-2" style="font-size: 30px; letter-spacing: 1px; color: #00ff00 !important;">¡Felicidades Crack!</h3>
-                <p class="text-white mb-3" style="font-size: 18px; margin-top: 10px;">
+        <div class="neon-bubble" style="position: relative; opacity: 1; pointer-events: auto; width: 95%; max-width: 320px; animation: scaleIn 0.3s ease-out; padding: 10px;">
+            <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; padding: 15px;">
+                <h3 class="text-success mb-1" style="font-size: 22px; letter-spacing: 1px; color: #00ff00 !important; font-weight: bold;">¡Felicidades Crack!</h3>
+                <p class="text-white mb-2" style="font-size: 14px; margin-top: 5px; line-height: 1.3;">
                    Has conseguido 100 Lisar Coins.<br><br>
-                   <span style="color: #00f3ff; font-size: 22px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
-                   y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800;">30% de Descuento</strong>.
+                   <span style="color: #00f3ff; font-size: 16px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
+                   y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800; font-size: 16px;">30% de Descuento</strong>.
                 </p>
-                <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" style="max-height: 45px; margin-bottom: 20px; filter: drop-shadow(0 0 10px #00f3ff);">
-                <button id="continue-game-btn" class="btn btn-gold-primary mt-3" style="width: 100%; max-width: 250px; font-size: 18px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+                <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" style="max-height: 35px; margin-bottom: 10px; filter: drop-shadow(0 0 10px #00f3ff);">
+                <button id="continue-game-btn" class="btn btn-gold-primary mt-2" style="width: 100%; max-width: 200px; font-size: 15px; padding: 8px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
             </div>
         </div>
       `;
