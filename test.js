@@ -1,0 +1,1 @@
+const puppeteer = require('puppeteer'); (async () => { const browser = await puppeteer.launch({headless: 'new'}); const page = await browser.newPage(); page.on('console', msg => console.log('PAGE LOG:', msg.text())); await page.goto('file:///' + __dirname + '/index.html', {waitUntil: 'networkidle0'}); await browser.close(); })();
