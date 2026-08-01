@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/p/DaVr7Z4qhgi/",
       type: "video",
-      videoFile: "assets/video/vfx_ig.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-01.mp4",
       description: "Desglose visual y VFX con identidad visual única de LisarStudio.",
       tools: ["Cinema 4D", "After Effects", "Redshift"],
     },
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DaLveFxqqGb/",
       type: "video",
-      videoFile: "assets/video/anim_1.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-02.mp4",
       description: "Desarrollo de animación 3D de alta calidad.",
       tools: ["Blender", "Cinema 4D"],
     },
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DZz2EL9qoJ5/",
       type: "video",
-      videoFile: "assets/video/anim_2.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-03.mp4",
       description: "Secuencia animada y renderizado fotorrealista.",
       tools: ["Maya", "Arnold Render"],
     },
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DZtiUuyibjB/",
       type: "video",
-      videoFile: "assets/video/anim_3.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-04.mp4",
       description: "Cinemática y diseño de personajes dinámicos.",
       tools: ["Unreal Engine 5", "Sequencer"],
     },
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/Da65rYBqNu7/",
       type: "video",
-      videoFile: "assets/video/anim_4.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-05.mp4",
       description: "Animación dinámica y simulaciones orgánicas.",
       tools: ["Houdini", "Redshift"],
     },
@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DY7ZhFsKGZG/",
       type: "video",
-      videoFile: "assets/video/anim_5.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-06.mp4",
       description: "Modelado y animación de escenarios inmersivos.",
       tools: ["Cinema 4D", "Octane"],
     },
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DURjZrekRcn/",
       type: "video",
-      videoFile: "assets/video/anim_6.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-07.mp4",
       description: "Trabajo de texturizado e iluminación cinemática.",
       tools: ["Substance Painter", "Blender"],
     },
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DP8Jlu6jOX7/",
       type: "video",
-      videoFile: "assets/video/anim_7.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-08.mp4",
       description: "Animación comercial y presentación de producto.",
       tools: ["After Effects", "Cinema 4D"],
     },
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/p/DWUuR2vFjgd/?img_index=1",
       type: "video",
-      videoFile: "assets/video/anim_8.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-09.mp4",
       description: "Reel de animación 3D corporativa e institucional.",
       tools: ["Blender", "DaVinci Resolve"],
     },
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/p/DSz1I0NkqnR/",
       type: "video",
-      videoFile: "assets/video/vfx_ig_2.mp4",
+      videoFile: "assets/videos/instagram/instagram-video-10.mp4",
       description: "Desarrollo de piezas de motion graphics y animación publicitaria con alto impacto visual.",
       tools: ["After Effects", "Cinema 4D", "Illustrator"],
     }
@@ -250,7 +250,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let mediaHTML = '';
       if (item.type === 'video') {
-        mediaHTML = `<video class="w-100 h-100" style="object-fit:cover;border-radius:10px;" src="${item.videoFile}" autoplay muted loop playsinline preload="metadata"></video>`;
+        mediaHTML = `
+          <video
+            class="video-social"
+            controls
+            playsinline
+            preload="metadata"
+          >
+            <source src="${item.videoFile}" type="video/mp4">
+            Tu navegador no puede reproducir este video.
+          </video>`;
       } else if (item.type === 'iframe') {
         mediaHTML = `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`;
       }

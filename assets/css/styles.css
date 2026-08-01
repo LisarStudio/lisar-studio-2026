@@ -701,3 +701,26 @@ select.form-cyber-control {
   padding-bottom: 0 !important;
 }
 
+/* ==========================================================================
+   NATIVE HTML5 VIDEO PLAYER — Instagram / Social Portfolio Videos
+   ========================================================================== */
+.video-social {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  background: #000;
+  border-radius: 12px;
+  /* Prevent horizontal overflow on mobile */
+  overflow: hidden;
+}
+
+/* Override model-viewer-wrapper height for video items so aspect-ratio drives it */
+.model-viewer-wrapper:has(.video-social) {
+  height: auto !important;
+  aspect-ratio: unset !important;
+}
+
+
