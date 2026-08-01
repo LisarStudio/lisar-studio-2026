@@ -172,7 +172,47 @@ class LisarRunner {
     rightBar.appendChild(this.livesEl);
     rightBar.appendChild(this.pauseBtn);
 
-    this.uiContainer.appendChild(this.scoreEl);
+    const leftBar = document.createElement('div');
+    leftBar.style.display = 'flex';
+    leftBar.style.flexDirection = 'column';
+    leftBar.style.alignItems = 'flex-start';
+    
+    // Progress Bar (Song Meta)
+    this.progressContainer = document.createElement('div');
+    this.progressContainer.style.width = '200px';
+    this.progressContainer.style.height = '12px';
+    this.progressContainer.style.background = 'rgba(0,0,0,0.6)';
+    this.progressContainer.style.border = '2px solid #a200ff';
+    this.progressContainer.style.borderRadius = '6px';
+    this.progressContainer.style.marginTop = '8px';
+    this.progressContainer.style.position = 'relative';
+    this.progressContainer.style.boxShadow = '0 0 8px #a200ff';
+    this.progressContainer.style.pointerEvents = 'auto'; // Si el usuario quiere verla
+    
+    this.progressBar = document.createElement('div');
+    this.progressBar.style.height = '100%';
+    this.progressBar.style.width = '0%';
+    this.progressBar.style.background = '#a200ff'; 
+    this.progressBar.style.boxShadow = '0 0 10px #a200ff, 0 0 20px #a200ff';
+    this.progressBar.style.borderRadius = '3px';
+    
+    this.progressIcon = document.createElement('div');
+    this.progressIcon.innerHTML = '🐵';
+    this.progressIcon.style.position = 'absolute';
+    this.progressIcon.style.top = '-14px';
+    this.progressIcon.style.left = '0%';
+    this.progressIcon.style.transform = 'translateX(-50%)';
+    this.progressIcon.style.fontSize = '24px';
+    this.progressIcon.style.filter = 'drop-shadow(0 0 5px #ff8800)';
+    this.progressIcon.style.transition = 'left 0.2s linear';
+    
+    this.progressContainer.appendChild(this.progressBar);
+    this.progressContainer.appendChild(this.progressIcon);
+    
+    leftBar.appendChild(this.scoreEl);
+    leftBar.appendChild(this.progressContainer);
+
+    this.uiContainer.appendChild(leftBar);
     this.uiContainer.appendChild(rightBar);
     this.container.appendChild(this.uiContainer);
 
@@ -958,6 +998,29 @@ class LisarRunner {
         this.spawnCoin();
       }
       
+      // Song Progress, Meta, and Dynamic Intensity
+      if (this.bgMusic && this.bgMusic.duration > 0 && Number.isFinite(this.bgMusic.duration)) {
+         let pct = (this.bgMusic.currentTime / this.bgMusic.duration) * 100;
+         if(this.progressBar) this.progressBar.style.width = `${pct}%`;
+         if(this.progressIcon) this.progressIcon.style.left = `${pct}%`;
+         
+         // Incrementar velocidad sutilmente a medida que avanza la canción
+         this.speed = 0.12 + (pct / 100) * 0.15; 
+         
+         // Cambiar el color de la luz principal de Naranja a Magenta Neón para dar sensación de clímax
+         if(this.dirLight) {
+            let r = 255;
+            let g = Math.max(0, 136 - (136 * (pct / 100)));
+            let b = Math.min(255, 0 + (255 * (pct / 100)));
+            this.dirLight.color.setRGB(r/255, g/255, b/255);
+         }
+         
+         // Llegada a la meta al finalizar la canción
+         if (pct >= 99.5 && !this.isLevelCompleteAnim) {
+             this.levelComplete();
+         }
+      }
+      
       // Update obstacles
       for(let i = this.obstacles.length - 1; i >= 0; i--) {
         let obs = this.obstacles[i];
@@ -1006,10 +1069,6 @@ class LisarRunner {
             this.showMessage("¡Vida Recuperada! 💚");
           }
           
-          if (this.totalCoins >= 100) {
-             this.levelComplete();
-          }
-          
           // Mover a arreglo de desintegración
           this.collectedCoins.push(coin);
           this.coins.splice(i, 1);
@@ -1044,9 +1103,6 @@ class LisarRunner {
              this.collectedCoins.splice(i, 1);
          }
       }
-      
-      // Increase speed slightly
-      this.speed += 0.00005;
     }
     
     this.renderer.render(this.scene, this.camera);
