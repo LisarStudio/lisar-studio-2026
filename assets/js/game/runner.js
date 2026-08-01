@@ -241,16 +241,35 @@ class LisarRunner {
            80% { transform: scale(1.1); opacity: 1; }
            100% { transform: scale(1); opacity: 1; }
          }
+         
+         @keyframes shoot1 { to { transform: translate(-300px, -200px) rotate(-45deg); opacity: 0; } }
+         @keyframes shoot2 { to { transform: translate(-150px, 300px) rotate(20deg); opacity: 0; } }
+         @keyframes shoot3 { to { transform: translate(50px, -350px) rotate(-10deg); opacity: 0; } }
+         @keyframes shoot4 { to { transform: translate(150px, 250px) rotate(60deg); opacity: 0; } }
+         @keyframes shoot5 { to { transform: translate(300px, -150px) rotate(-30deg); opacity: 0; } }
+         @keyframes shoot6 { to { transform: translate(250px, 300px) rotate(90deg); opacity: 0; } }
+         
          .ready-futuristic {
-           font-size: 80px;
+           font-size: clamp(40px, 10vw, 70px);
            font-weight: 900;
-           color: transparent;
-           -webkit-text-stroke: 2px #ff8800;
+           color: #ffffff;
            text-shadow: 0 0 20px #ff8800, 0 0 40px #ff8800;
            animation: readyZoomIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-           letter-spacing: 15px;
+           letter-spacing: 5px;
            text-align: center;
+           display: flex;
+           justify-content: center;
          }
+         .ready-futuristic span {
+           display: inline-block;
+           opacity: 1;
+         }
+         .ready-futuristic span:nth-child(1) { animation: shoot1 0.4s 1.0s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+         .ready-futuristic span:nth-child(2) { animation: shoot2 0.4s 1.0s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+         .ready-futuristic span:nth-child(3) { animation: shoot3 0.4s 1.0s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+         .ready-futuristic span:nth-child(4) { animation: shoot4 0.4s 1.0s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+         .ready-futuristic span:nth-child(5) { animation: shoot5 0.4s 1.0s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+         .ready-futuristic span:nth-child(6) { animation: shoot6 0.4s 1.0s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
        `;
        document.head.appendChild(style);
     }
@@ -667,7 +686,9 @@ class LisarRunner {
         
         // Mostrar "READY!" superpuesto con animación futurista
         this.msgEl.style.fontSize = '60px';
-        this.msgEl.innerHTML = `<div class="ready-futuristic">READY!</div>`;
+        this.msgEl.innerHTML = `<div class="ready-futuristic">
+            <span>R</span><span>E</span><span>A</span><span>D</span><span>Y</span><span>!</span>
+        </div>`;
         this.msgEl.style.display = 'block';
         this.speak("Ready!");
         
