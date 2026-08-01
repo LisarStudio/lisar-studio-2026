@@ -70,6 +70,7 @@ class LisarRunner {
     this.lastBeatTime = 0;
     this.audioInitialized = false;
     this.coinModel = null;
+    this.isPaused = false;
     
     // Player
     this.player = null;
@@ -106,23 +107,21 @@ class LisarRunner {
     }, {passive: true});
     
     this.container.addEventListener('touchend', (e) => {
-      if(!this.isPlaying) return;
+      if(!this.isPlaying || this.isPaused) return;
       let touchEndX = e.changedTouches[0].screenX;
       let touchEndY = e.changedTouches[0].screenY;
       
-      // Si desliza hacia arriba (Salto)
-      if (touchStartY - touchEndY > 40) {
+      let dx = touchEndX - touchStartX;
+      let dy = touchEndY - touchStartY;
+      
+      // Tap para saltar
+      if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
         this.jump();
       } 
-      // Si fue un tap (sin mucho movimiento), mover a los lados basado en mitad de pantalla
-      else if (Math.abs(touchEndX - touchStartX) < 20 && Math.abs(touchEndY - touchStartY) < 20) {
-        if (touchEndX < this.width / 2) this.moveLeft();
+      // Deslizar horizontalmente para mover
+      else if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+        if (dx < 0) this.moveLeft();
         else this.moveRight();
-      }
-      // O deslizar a los lados
-      else {
-        if (touchEndX < touchStartX - 30) this.moveLeft();
-        if (touchEndX > touchStartX + 30) this.moveRight();
       }
     }, {passive: true});
 
@@ -153,9 +152,23 @@ class LisarRunner {
     this.livesEl.style.fontSize = '20px';
     this.livesEl.style.fontWeight = 'bold';
     this.updateLivesDisplay();
+    
+    this.pauseBtn = document.createElement('div');
+    this.pauseBtn.innerText = '⏸️';
+    this.pauseBtn.style.fontSize = '24px';
+    this.pauseBtn.style.cursor = 'pointer';
+    this.pauseBtn.style.pointerEvents = 'auto';
+    this.pauseBtn.style.marginLeft = '20px';
+    this.pauseBtn.addEventListener('click', () => this.togglePause());
+
+    const rightBar = document.createElement('div');
+    rightBar.style.display = 'flex';
+    rightBar.style.alignItems = 'center';
+    rightBar.appendChild(this.livesEl);
+    rightBar.appendChild(this.pauseBtn);
 
     this.uiContainer.appendChild(this.scoreEl);
-    this.uiContainer.appendChild(this.livesEl);
+    this.uiContainer.appendChild(rightBar);
     this.container.appendChild(this.uiContainer);
 
     this.msgEl = document.createElement('div');
@@ -188,6 +201,27 @@ class LisarRunner {
     this.jumpWarningEl.style.pointerEvents = 'none';
     this.jumpWarningEl.innerText = '¡SALTA!';
     this.container.appendChild(this.jumpWarningEl);
+    
+    this.controlsBubbleEl = document.createElement('div');
+    this.controlsBubbleEl.style.position = 'absolute';
+    this.controlsBubbleEl.style.top = '25%';
+    this.controlsBubbleEl.style.left = '50%';
+    this.controlsBubbleEl.style.transform = 'translate(-50%, -50%)';
+    this.controlsBubbleEl.style.background = 'rgba(0, 0, 0, 0.7)';
+    this.controlsBubbleEl.style.color = '#fff';
+    this.controlsBubbleEl.style.padding = '15px 30px';
+    this.controlsBubbleEl.style.borderRadius = '30px';
+    this.controlsBubbleEl.style.border = '2px solid #00ffff';
+    this.controlsBubbleEl.style.boxShadow = '0 0 15px #00ffff';
+    this.controlsBubbleEl.style.fontFamily = 'sans-serif';
+    this.controlsBubbleEl.style.fontSize = '18px';
+    this.controlsBubbleEl.style.textAlign = 'center';
+    this.controlsBubbleEl.style.display = 'none';
+    this.controlsBubbleEl.style.zIndex = '100';
+    this.controlsBubbleEl.style.pointerEvents = 'none';
+    this.controlsBubbleEl.style.opacity = '0';
+    this.controlsBubbleEl.style.transition = 'opacity 0.5s ease-in-out';
+    this.container.appendChild(this.controlsBubbleEl);
   }
 
   updateLivesDisplay() {
@@ -356,9 +390,32 @@ class LisarRunner {
   
   handleKeyDown(e) {
     if(!this.isPlaying) return;
+    if(e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+       this.togglePause();
+       return;
+    }
+    if(this.isPaused) return;
+    
     if(e.key === 'ArrowLeft' || e.key === 'a') this.moveLeft();
     if(e.key === 'ArrowRight' || e.key === 'd') this.moveRight();
     if(e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') this.jump();
+  }
+  
+  togglePause() {
+    if (!this.isPlaying) return;
+    this.isPaused = !this.isPaused;
+    
+    if (this.isPaused) {
+       this.bgMusic.pause();
+       this.pauseBtn.innerText = '▶️';
+       this.msgEl.style.fontSize = '40px';
+       this.msgEl.innerHTML = "PAUSA";
+       this.msgEl.style.display = 'block';
+    } else {
+       this.bgMusic.play();
+       this.pauseBtn.innerText = '⏸️';
+       this.msgEl.style.display = 'none';
+    }
   }
   
   jump() {
@@ -483,6 +540,19 @@ class LisarRunner {
         setTimeout(() => {
            this.msgEl.style.display = 'none';
            this.msgEl.innerHTML = ''; // reset
+           
+           // Show controls bubble
+           const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+           this.controlsBubbleEl.innerHTML = isMobile 
+              ? '👆 Desliza para moverte<br>👆 Toca para saltar'
+              : '⌨️ Flechas / A-D para moverte<br>⌨️ Espacio para saltar<br>⌨️ P para pausar';
+           this.controlsBubbleEl.style.display = 'block';
+           setTimeout(() => { this.controlsBubbleEl.style.opacity = '1'; }, 10);
+           setTimeout(() => { 
+              this.controlsBubbleEl.style.opacity = '0'; 
+              setTimeout(() => { this.controlsBubbleEl.style.display = 'none'; }, 500);
+           }, 4000);
+           
            this.beginGame();
         }, 1500);
       }
@@ -557,7 +627,7 @@ class LisarRunner {
   animate() {
     requestAnimationFrame(this.animate.bind(this));
     
-    if(this.isPlaying) {
+    if(this.isPlaying && !this.isPaused) {
       const dt = this.clock.getDelta();
       if(this.mixer) this.mixer.update(dt);
       if(this.rocketMixer) this.rocketMixer.update(dt);
