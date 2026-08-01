@@ -148,12 +148,14 @@ class LisarRunner {
         this.model.scale.set(0.7, 0.7, 0.7); // Escala corregida
         this.model.rotation.y = Math.PI; // Face forward
         
-        // Ensure materials display correctly
+        // Ensure materials display correctly (fix Blender default metalness)
         this.model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
             if(child.material) {
+              child.material.metalness = 0.1;
+              child.material.roughness = 0.8;
               child.material.needsUpdate = true;
             }
           }
@@ -317,16 +319,25 @@ class LisarRunner {
           this.velocityY += this.gravity;
           this.player.position.y += this.velocityY;
           
+          // Rotate while jumping
+          if(this.model) this.model.rotation.x = -0.2;
+          
           if (this.player.position.y <= baseY) {
             this.player.position.y = baseY;
             this.isJumping = false;
             this.velocityY = 0;
+            if(this.model) this.model.rotation.x = 0;
           }
         } else {
-          this.player.position.y = baseY + Math.abs(Math.sin(this.playerTime)) * 0.2;
+          this.player.position.y = baseY + Math.abs(Math.sin(this.playerTime * 1.5)) * 0.25;
+          // Fake running wobble since GLB has no animations
+          if(this.model) {
+            this.model.rotation.z = Math.sin(this.playerTime * 1.5) * 0.1;
+            this.model.rotation.x = Math.sin(this.playerTime * 3) * 0.05;
+          }
         }
         
-        // Tilt when moving
+        // Tilt when moving lanes
         this.player.rotation.z = (this.player.position.x - targetX) * 0.1;
       }
       
