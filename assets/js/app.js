@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 2. PORTFOLIO DATA — Proyectos 3D reales con archivos GLB
   // ============================================================
   const portfolioData = [
+    // --- 7 MODELOS 3D ---
     {
       id: 1,
       title: "Boss - Personaje",
@@ -71,7 +72,16 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     {
       id: 3,
-      title: "Casco Sci-Fi",
+      title: "Flutter - Creature",
+      category: "Modelos 3D para juegos y VR",
+      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/Flutter.glb",
+      description: "Criatura voladora para entorno de realidad virtual con mapeo UV de alta fidelidad.",
+      tools: ["ZBrush", "Blender 3D"],
+    },
+    {
+      id: 4,
+      title: "Casco Sci-Fi 1",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
       glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/helmet1.glb",
@@ -79,7 +89,25 @@ document.addEventListener('DOMContentLoaded', () => {
       tools: ["Blender 3D", "Marmoset Toolbag"],
     },
     {
-      id: 4,
+      id: 5,
+      title: "Casco Sci-Fi 2",
+      category: "Modelos 3D para juegos y VR",
+      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/Helmet2.glb",
+      description: "Variante con acabados cromados y visor modificado para juegos de acción en primera persona.",
+      tools: ["3ds Max", "Substance Painter"],
+    },
+    {
+      id: 6,
+      title: "Casco Sci-Fi 3",
+      category: "Modelos 3D para juegos y VR",
+      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      glbFile: "https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/helmet3.glb",
+      description: "Edición premium con detalles de lujo y pintura metálica especializada, ideal para asset de rareza Legendaria.",
+      tools: ["Blender 3D", "Substance 3D"],
+    },
+    {
+      id: 7,
       title: "Moto Cyberpunk",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
@@ -87,8 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
       description: "Vehículo futurista optimizado con materiales emisivos y translúcidos para entornos en tiempo real.",
       tools: ["3ds Max", "Unreal Engine 5", "Photoshop"],
     },
+
+    // --- 7 VIDEOS / ANIMACIONES ---
     {
-      id: 5,
+      id: 8,
       title: "Corto Animado: Conejo Gigante",
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
@@ -98,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tools: ["Blender", "Cycles", "DaVinci Resolve"],
     },
     {
-      id: 6,
+      id: 9,
       title: "Animación de Fauna y Entorno",
       category: "Animación 3D",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
@@ -108,7 +138,27 @@ document.addEventListener('DOMContentLoaded', () => {
       tools: ["Houdini FX", "Cinema 4D", "Redshift"],
     },
     {
-      id: 7,
+      id: 10,
+      title: "Animación 3D: Cacería",
+      category: "Animación 3D",
+      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      type: "video",
+      videoFile: "https://www.w3schools.com/html/mov_bbb.mp4",
+      description: "Secuencia de acción animada en entorno 3D. Trabajo avanzado de layout y blocking de cámaras.",
+      tools: ["Maya", "Arnold Render"],
+    },
+    {
+      id: 11,
+      title: "Cinemática de Presentación",
+      category: "Animación 3D",
+      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      type: "video",
+      videoFile: "https://www.w3schools.com/html/mov_bbb.mp4",
+      description: "Cinemática de presentación para introducción de personajes en cortometrajes y videojuegos.",
+      tools: ["Unreal Engine 5", "Sequencer"],
+    },
+    {
+      id: 12,
       title: "Reel Comercial Animado",
       category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
@@ -118,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
       tools: ["After Effects", "Nuke", "Cinema 4D"],
     },
     {
-      id: 8,
+      id: 13,
       title: "Motion Graphics Narrativo",
       category: "VFX y Motion Graphics",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
@@ -126,6 +176,16 @@ document.addEventListener('DOMContentLoaded', () => {
       videoFile: "https://www.w3schools.com/html/mov_bbb.mp4",
       description: "Pieza audiovisual dinámica utilizando recursos de animación tradicional con estética 3D cartoon.",
       tools: ["After Effects", "Illustrator", "Blender"],
+    },
+    {
+      id: 14,
+      title: "VFX: Simulación Dinámica",
+      category: "VFX y Motion Graphics",
+      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
+      type: "video",
+      videoFile: "https://www.w3schools.com/html/mov_bbb.mp4",
+      description: "Desglose de efectos visuales implementados en metraje animado. Composición multicapa y etalonaje.",
+      tools: ["Nuke", "Houdini FX", "DaVinci Resolve"],
     }
   ];
 
