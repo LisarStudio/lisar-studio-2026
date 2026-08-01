@@ -141,18 +141,17 @@ class LisarRunner {
     this.uiContainer.style.pointerEvents = 'none';
     
     this.scoreEl = document.createElement('div');
-    this.scoreEl.style.color = '#ffb703';
+    this.scoreEl.style.display = 'flex';
+    this.scoreEl.style.alignItems = 'center';
     this.scoreEl.style.fontFamily = "'Orbitron', sans-serif";
     this.scoreEl.style.fontSize = '22px';
     this.scoreEl.style.fontWeight = 'bold';
-    this.scoreEl.innerText = 'MONEDAS: 0';
+    this.scoreEl.style.marginRight = '20px';
+    this.totalCoins = this.totalCoins || 0;
     
-    this.livesEl = document.createElement('div');
-    this.livesEl.style.color = '#ff0055';
-    this.livesEl.style.fontFamily = "'Orbitron', sans-serif";
-    this.livesEl.style.fontSize = '20px';
-    this.livesEl.style.fontWeight = 'bold';
-    this.updateLivesDisplay();
+    this.energyContainer = document.createElement('div');
+    this.energyContainer.style.display = 'flex';
+    this.energyContainer.style.gap = '6px';
     
     this.pauseBtn = document.createElement('div');
     this.pauseBtn.innerHTML = '<i class="bi bi-pause-circle-fill" style="filter: drop-shadow(0 0 5px #ff8800);"></i>';
@@ -160,7 +159,7 @@ class LisarRunner {
     this.pauseBtn.style.color = '#ff8800';
     this.pauseBtn.style.cursor = 'pointer';
     this.pauseBtn.style.pointerEvents = 'auto';
-    this.pauseBtn.style.marginLeft = '20px';
+    this.pauseBtn.style.marginLeft = '5px';
     this.pauseBtn.style.transition = 'transform 0.2s';
     this.pauseBtn.addEventListener('mouseenter', () => this.pauseBtn.style.transform = 'scale(1.1)');
     this.pauseBtn.addEventListener('mouseleave', () => this.pauseBtn.style.transform = 'scale(1)');
@@ -169,7 +168,7 @@ class LisarRunner {
     const rightBar = document.createElement('div');
     rightBar.style.display = 'flex';
     rightBar.style.alignItems = 'center';
-    rightBar.appendChild(this.livesEl);
+    rightBar.appendChild(this.scoreEl);
     rightBar.appendChild(this.pauseBtn);
 
     const leftBar = document.createElement('div');
@@ -197,23 +196,29 @@ class LisarRunner {
     this.progressBar.style.borderRadius = '3px';
     
     this.progressIcon = document.createElement('div');
-    this.progressIcon.innerHTML = '🐵';
     this.progressIcon.style.position = 'absolute';
-    this.progressIcon.style.top = '-14px';
+    this.progressIcon.style.top = '-12px';
     this.progressIcon.style.left = '0%';
     this.progressIcon.style.transform = 'translateX(-50%)';
-    this.progressIcon.style.fontSize = '24px';
-    this.progressIcon.style.filter = 'drop-shadow(0 0 5px #ff8800)';
+    this.progressIcon.style.width = '26px';
+    this.progressIcon.style.height = '26px';
+    this.progressIcon.style.borderRadius = '50%';
+    this.progressIcon.style.background = "url('assets/img/wukong_face.png') center/cover";
+    this.progressIcon.style.border = '2px solid #ff8800';
+    this.progressIcon.style.boxShadow = '0 0 10px #ff8800';
     this.progressIcon.style.transition = 'left 0.2s linear';
     
     this.progressContainer.appendChild(this.progressBar);
     this.progressContainer.appendChild(this.progressIcon);
     
-    leftBar.appendChild(this.scoreEl);
+    leftBar.appendChild(this.energyContainer);
     leftBar.appendChild(this.progressContainer);
 
     this.uiContainer.appendChild(leftBar);
     this.uiContainer.appendChild(rightBar);
+    
+    this.updateScoreDisplay();
+    this.updateLivesDisplay();
     this.container.appendChild(this.uiContainer);
 
     this.msgEl = document.createElement('div');
@@ -328,12 +333,35 @@ class LisarRunner {
   }
 
   updateLivesDisplay() {
-    if(this.livesEl) {
-      let text = '';
-      for(let i=0; i<this.lives; i++) {
-        text += '<i class="bi bi-heart-fill" style="margin-right: 5px; color: #ff0055; filter: drop-shadow(0 0 5px #ff0055);"></i>';
+    if(this.energyContainer) {
+      this.energyContainer.innerHTML = '';
+      for(let i=0; i<3; i++) {
+        const bar = document.createElement('div');
+        bar.style.width = '30px';
+        bar.style.height = '14px';
+        bar.style.transform = 'skewX(-25deg)';
+        bar.style.transition = 'all 0.3s';
+        if (i < this.lives) {
+           bar.style.background = '#ff8800';
+           bar.style.boxShadow = '0 0 10px #ff8800';
+           bar.style.border = '1px solid #ffaa00';
+        } else {
+           bar.style.background = 'transparent';
+           bar.style.boxShadow = 'inset 0 0 8px #ff0055';
+           bar.style.border = '1px solid #ff0055';
+        }
+        this.energyContainer.appendChild(bar);
       }
-      this.livesEl.innerHTML = text;
+    }
+  }
+
+  updateScoreDisplay() {
+    if(this.scoreEl) {
+      this.scoreEl.innerHTML = `
+        <div style="width:24px; height:24px; border-radius:50%; background:#ff8800; border:2px solid #ffd700; box-shadow:0 0 5px #ff8800; margin-right:8px; background-image:url('assets/img/logo-lisar-studio.png'); background-size:cover;"></div>
+        <span style="font-size:18px; margin-right:5px; color:#fff;">✖</span> 
+        <span style="color:#ffb703;">${this.totalCoins || 0}</span>
+      `;
     }
   }
   
@@ -558,6 +586,19 @@ class LisarRunner {
   }
   
   spawnCoin() {
+    let lane;
+    let attempts = 0;
+    do {
+       lane = Math.floor(Math.random() * 3);
+       attempts++;
+       // Avoid overlapping with obstacles near spawn point
+       let conflict = this.obstacles.some(obs => 
+           Math.abs(obs.position.x - this.lanes[lane]) < 0.1 &&
+           obs.position.z < -20
+       );
+       if (!conflict) break;
+    } while(attempts < 10);
+    
     let coinObj;
     if(this.coinModel) {
       coinObj = this.coinModel.clone();
@@ -576,7 +617,6 @@ class LisarRunner {
     const coinGroup = new THREE.Group();
     coinGroup.add(coinObj);
     
-    const lane = Math.floor(Math.random() * 3);
     coinGroup.position.set(this.lanes[lane], 1, -40);
     this.scene.add(coinGroup);
     this.coins.push(coinGroup);
@@ -662,9 +702,9 @@ class LisarRunner {
     }
     
     this.uiContainer.style.display = 'flex';
-    this.scoreEl.innerText = 'MONEDAS: 0';
     this.lives = 3;
     this.totalCoins = 0;
+    this.updateScoreDisplay();
     this.updateLivesDisplay();
     
     // Clear old
@@ -1059,7 +1099,7 @@ class LisarRunner {
         if(this.player && Math.abs(coin.position.z - this.player.position.z) < 1.5 && Math.abs(coin.position.x - this.player.position.x) < 1.0) {
           
           this.totalCoins++;
-          this.scoreEl.innerText = 'MONEDAS: ' + this.totalCoins;
+          this.updateScoreDisplay();
           this.playCoinSound();
           
           // Recompensas
