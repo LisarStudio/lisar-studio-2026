@@ -112,15 +112,15 @@ class LisarRunner {
       let touchEndY = e.changedTouches[0].screenY;
       
       let dx = touchEndX - touchStartX;
-      let dy = touchEndY - touchStartY;
+      let dy = touchStartY - touchEndY; // positivo = arriba
       
-      // Tap para saltar
-      if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+      // Deslizar arriba para saltar
+      if (dy > 30) {
         this.jump();
       } 
-      // Deslizar horizontalmente para mover
-      else if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
-        if (dx < 0) this.moveLeft();
+      // Tap en los lados para mover
+      else if (Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+        if (touchEndX < this.width / 2) this.moveLeft();
         else this.moveRight();
       }
     }, {passive: true});
@@ -494,8 +494,9 @@ class LisarRunner {
     this.isPlaying = false; // No mover nada aún
     this.isIntro = false; // Empezará luego de las instrucciones
     this.introProgress = 0;
+    this.isShowingInstructions = true;
     
-    if(this.player) this.player.position.set(this.lanes[this.currentLane], 0, 0);
+    if(this.player) this.player.position.set(this.lanes[this.currentLane], 0, 20); // Empieza lejos para venir corriendo
     
     // Posición inicial de cámara para Intro
     this.camera.position.set(0, 1.0, -5);
@@ -504,7 +505,7 @@ class LisarRunner {
     // Primero mostrar las instrucciones
     const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
     this.controlsBubbleEl.innerHTML = isMobile 
-       ? '👆 Desliza para moverte<br><br>👆 Toca para saltar'
+       ? '👆 Toca los lados para moverte<br><br>👆 Desliza arriba para saltar'
        : '⌨️ Flechas / A-D moverte<br><br>⌨️ Espacio saltar<br><br>⌨️ P para pausar';
     this.controlsBubbleEl.style.display = 'block';
     setTimeout(() => { this.controlsBubbleEl.style.opacity = '1'; }, 10);
@@ -520,6 +521,9 @@ class LisarRunner {
   }
   
   startCountdownAndIntro() {
+    this.isShowingInstructions = false;
+    if(this.player) this.player.position.z = 0; // Lock en posición base
+    
     // Activa la animación de la cámara simultánea al contador
     this.isIntro = true; 
     this.introProgress = 0;
@@ -647,6 +651,11 @@ class LisarRunner {
       this.camera.position.lerpVectors(startPos, endPos, ease);
       const currentLook = new THREE.Vector3().lerpVectors(startLook, endLook, ease);
       this.camera.lookAt(currentLook);
+    }
+    
+    if (this.isShowingInstructions && !this.isPaused && this.player) {
+       // El personaje viene llegando desde atrás hacia su posición
+       this.player.position.z += (0 - this.player.position.z) * 0.05;
     }
     
     if(this.isPlaying && !this.isPaused) {
