@@ -606,18 +606,33 @@ class LisarRunner {
       } else {
         clearInterval(countInterval);
         
-        // Mostrar "READY!" con isotipo (estilo Megaman X6) centrado
+        // Mostrar "READY!" con texto HTML y preparar la moneda 3D
         this.msgEl.style.fontSize = '60px';
-        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite alternate;">
-                                  <img src="assets/img/lisar-studio-logo-white.webp" style="height: 60px; margin-right: 15px; object-fit: contain; filter: drop-shadow(0 0 10px #ff8800);">
-                                  <span style="line-height: 1;">READY!</span>
+        this.msgEl.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; animation: pulse 1s infinite alternate; padding-left: 100px;">
+                                  <span style="line-height: 1; letter-spacing: 5px;">READY!</span>
                                 </div>`;
         this.msgEl.style.display = 'block';
         this.speak("Ready!");
         
+        // Agregar la moneda 3D a la izquierda usando Three.js
+        if (this.models['assets/models/coin.glb']) {
+            this.readyCoin = this.models['assets/models/coin.glb'].scene.clone();
+            this.readyCoin.scale.setScalar(0.4);
+            // Posicionar relativo a la cámara: Izquierda (-0.8), Abajo (-0.1), Frente (-2.5)
+            this.readyCoin.position.set(-0.8, -0.1, -2.5);
+            this.camera.add(this.readyCoin);
+            this.scene.add(this.camera); // Asegurar que la cámara esté en la escena para ver sus hijos
+        }
+        
         setTimeout(() => {
            this.msgEl.style.display = 'none';
            this.msgEl.innerHTML = ''; // reset
+           
+           if(this.readyCoin) {
+               this.camera.remove(this.readyCoin);
+               this.readyCoin = null;
+           }
+           
            this.beginGame();
         }, 1500);
       }
@@ -646,7 +661,22 @@ class LisarRunner {
 
   levelComplete() {
     this.isPlaying = false;
-    this.bgMusic.pause();
+    this.isLevelCompleteAnim = true;
+    
+    // Smooth volume fade out for music
+    let fadeOut = setInterval(() => {
+      if (this.bgMusic.volume > 0.05) {
+        this.bgMusic.volume -= 0.05;
+      } else {
+        clearInterval(fadeOut);
+        this.bgMusic.pause();
+        this.bgMusic.volume = 0.5;
+      }
+    }, 100);
+  }
+
+  showLevelCompleteUI() {
+    this.isLevelCompleteAnim = false;
     const overlay = document.getElementById('game-overlay');
     if(overlay) {
       overlay.style.display = 'flex';
@@ -715,9 +745,27 @@ class LisarRunner {
       this.camera.lookAt(currentLook);
     }
     
+    if (this.readyCoin) {
+        this.readyCoin.rotation.y += 0.15; // Girar la moneda del READY
+    }
+    
     if (this.isShowingInstructions && !this.isPaused && this.player) {
        // El personaje viene llegando desde atrás hacia su posición
        this.player.position.z += (0 - this.player.position.z) * 0.05;
+    }
+    
+    if (this.isLevelCompleteAnim && !this.isPaused && this.player) {
+       // El personaje corre hacia el horizonte
+       this.player.position.z -= this.speed * 2.0;
+       
+       // Sigue simulando el rebote de carrera
+       let baseY = this.player.geometry ? 0.5 : 0;
+       this.playerTime += 0.1;
+       this.player.position.y = baseY + Math.abs(Math.sin(this.playerTime * 1.5)) * 0.25;
+       
+       if (this.player.position.z < -25) {
+           this.showLevelCompleteUI();
+       }
     }
     
     if(this.isPlaying && !this.isPaused) {
@@ -851,6 +899,10 @@ class LisarRunner {
             if(this.lives < 3) this.lives++;
             this.updateLivesDisplay();
             this.showMessage("¡Vida Recuperada! 💚");
+          }
+          
+          if (this.totalCoins >= 100) {
+             this.levelComplete();
           }
           
           // Mover a arreglo de desintegración
