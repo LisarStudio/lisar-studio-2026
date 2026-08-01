@@ -891,8 +891,10 @@ class LisarRunner {
                this.msgEl.style.width = '80%';
                this.msgEl.style.textAlign = 'center';
                this.msgEl.innerHTML = `
-                   <div class="neon-bubble-content" style="padding: 20px; animation: scaleIn 0.3s ease-out;">
-                       <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
+                   <div class="neon-bubble" style="display: inline-block; animation: scaleIn 0.3s ease-out;">
+                       <div class="neon-bubble-content" style="padding: 20px;">
+                           <span style="color: #ff8800; font-weight: bold;">Misión:</span> Consigue 100 Lisar Coins y gana un <span style="color: #00ff00;">30% de descuento</span> en tu primer servicio.
+                       </div>
                    </div>
                `;
                this.msgEl.style.display = 'block';
@@ -998,15 +1000,17 @@ class LisarRunner {
     if(overlay) {
       overlay.style.display = 'flex';
       overlay.innerHTML = `
-        <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; max-width: 90%; padding: 30px; animation: scaleIn 0.3s ease-out;">
-            <h3 class="text-success mb-2" style="font-size: 30px; letter-spacing: 1px; color: #00ff00 !important;">¡Felicidades Crack!</h3>
-            <p class="text-white mb-3" style="font-size: 18px; margin-top: 10px;">
-               Has conseguido 100 Lisar Coins.<br><br>
-               <span style="color: #00f3ff; font-size: 22px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
-               y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800;">30% de Descuento</strong>.
-            </p>
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 26px; color: #ffffff; letter-spacing: 2px; font-weight: bold; text-shadow: 0 0 15px #ffffff, 0 0 20px #00f3ff; margin-bottom: 20px;">LisarStudio</div>
-            <button id="continue-game-btn" class="btn btn-gold-primary mt-3" style="width: 100%; max-width: 250px; font-size: 18px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+        <div class="neon-bubble" style="max-width: 90%; animation: scaleIn 0.3s ease-out;">
+            <div class="neon-bubble-content" style="text-align: center; display: flex; flex-direction: column; align-items: center; padding: 30px;">
+                <h3 class="text-success mb-2" style="font-size: 30px; letter-spacing: 1px; color: #00ff00 !important;">¡Felicidades Crack!</h3>
+                <p class="text-white mb-3" style="font-size: 18px; margin-top: 10px;">
+                   Has conseguido 100 Lisar Coins.<br><br>
+                   <span style="color: #00f3ff; font-size: 22px; font-weight: bold;">Sácale una captura a esta pantalla</span><br><br>
+                   y muéstrala en tu primera compra para reclamar tu <strong style="color: #ff8800;">30% de Descuento</strong>.
+                </p>
+                <img src="assets/img/lisar-studio-logo-white.webp" alt="Lisar Studio" style="max-height: 45px; margin-bottom: 20px; filter: drop-shadow(0 0 10px #00f3ff);">
+                <button id="continue-game-btn" class="btn btn-gold-primary mt-3" style="width: 100%; max-width: 250px; font-size: 18px;"><i class="bi bi-play-fill"></i> Continuar Jugando</button>
+            </div>
         </div>
       `;
       document.getElementById('continue-game-btn').addEventListener('click', () => {
@@ -1149,7 +1153,7 @@ class LisarRunner {
         }
         
         // Generar Monedas al compás de las melodías fuertes/cajas
-        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 1200)) {
+        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 600)) {
            this.lastCoinBeatTime = now;
            this.spawnCoin(Math.floor(Math.random() * 2) + 1);
            coinSpawned = true;
@@ -1161,8 +1165,8 @@ class LisarRunner {
           if(!obstacleSpawned && Math.random() < 0.002) {
             this.spawnObstacle();
           }
-          if(!coinSpawned && Math.random() < 0.004) {
-            this.spawnCoin(Math.floor(Math.random() * 2) + 1);
+          if(!coinSpawned && Math.random() < 0.007) {
+            this.spawnCoin(Math.floor(Math.random() * 2) + 2);
           }
       }
       
