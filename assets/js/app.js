@@ -247,7 +247,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const model = gltf.scene;
 
-        // Centrar y escalar el modelo automáticamente
+        const pivot = new THREE.Group();
+        scene.add(pivot);
+
         const box    = new THREE.Box3().setFromObject(model);
         const center = box.getCenter(new THREE.Vector3());
         const size   = box.getSize(new THREE.Vector3());
@@ -265,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
-        scene.add(model);
+        pivot.add(model);
 
         // Ajustar cámara según tamaño real
         camera.position.z = 2.5;
@@ -284,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
           const delta = clock.getDelta();
           if (mixer) mixer.update(delta);
           if (autoRotate) rotY += 0.005;
-          model.rotation.y = rotY;
-          model.rotation.x = rotX * 0.3;
+          pivot.rotation.y = rotY;
+          pivot.rotation.x = rotX * 0.3;
           renderer.render(scene, camera);
         }
         animate();

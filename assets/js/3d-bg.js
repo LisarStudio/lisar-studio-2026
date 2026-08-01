@@ -11,7 +11,7 @@
   if (!canvas) return;
 
   let scene, camera, renderer;
-  
+  let studioGroup, particles;
   let mouseX = 0, mouseY = 0;
   let targetX = 0, targetY = 0;
 
@@ -42,7 +42,7 @@
     studioGroup = new THREE.Group();
 
     // Material Metálico Dorado & Ámbar
-    // Material Metálico Dorado y Ámbar (solo malla, sin aristas)
+    const goldEdgeMaterial = new THREE.LineBasicMaterial({ color: 0xffb703, linewidth: 2 });
     const goldFillMaterial = new THREE.MeshStandardMaterial({
       color: 0xffb703,
       emissive: 0x3d2500,
@@ -51,24 +51,35 @@
       transparent: true,
       opacity: 0.55
     });
-    // Geometría icosaedro para los objetos del estudio
+
+    // Geometría 3D de estudio (Icosaedro & Toros)
     const icoGeo = new THREE.IcosahedronGeometry(20, 0);
+
     const numObjects = 24;
     for (let i = 0; i < numObjects; i++) {
       const mesh = new THREE.Mesh(icoGeo, goldFillMaterial);
-      // Posicionamiento aleatorio en el espacio 3D
+
+      const edges = new THREE.EdgesGeometry(icoGeo);
+      const line = new THREE.LineSegments(edges, goldEdgeMaterial);
+      mesh.add(line);
+
+      // Posicionamiento en el espacio 3D
       mesh.position.x = (Math.random() - 0.5) * 580;
       mesh.position.y = (Math.random() - 0.5) * 480;
       mesh.position.z = (Math.random() - 0.5) * 380;
+
       mesh.rotation.x = Math.random() * Math.PI;
       mesh.rotation.y = Math.random() * Math.PI;
+
       const scale = 0.7 + Math.random() * 1.3;
       mesh.scale.set(scale, scale, scale);
+
       mesh.userData = {
         rotSpeedX: (Math.random() - 0.5) * 0.014,
         rotSpeedY: (Math.random() - 0.5) * 0.014,
         initialY: mesh.position.y
       };
+
       studioGroup.add(mesh);
     }
 
@@ -80,6 +91,29 @@
     studioGroup.add(studioRing);
 
     scene.add(studioGroup);
+
+    // 5. Partículas de Polvo Dorado
+    const particleCount = 220;
+    const particleGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      positions[i] = (Math.random() - 0.5) * 900;
+      positions[i + 1] = (Math.random() - 0.5) * 800;
+      positions[i + 2] = (Math.random() - 0.5) * 800;
+    }
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      color: 0xffb703,
+      size: 3.5,
+      transparent: true,
+      opacity: 0.65
+    });
+
+    particles = new THREE.Points(particleGeo, particleMat);
+    scene.add(particles);
 
     // 6. Luces de Escenario 3D
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -134,8 +168,9 @@
       });
     }
 
-
-
+    if (particles) {
+      particles.rotation.y -= 0.001;
+    }
 
     renderer.render(scene, camera);
   }
