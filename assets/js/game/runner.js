@@ -115,14 +115,14 @@ class LisarRunner {
       let dx = touchEndX - touchStartX;
       let dy = touchStartY - touchEndY; // positivo = arriba
       
-      // Deslizar arriba para saltar
-      if (dy > 30) {
-        this.jump();
-      } 
-      // Tap en los lados para mover
+      // Deslizar horizontal para mover
+      if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) {
+         if (dx > 0) this.moveRight();
+         else this.moveLeft();
+      }
+      // Tap para saltar
       else if (Math.abs(dx) < 30 && Math.abs(dy) < 30) {
-        if (touchEndX < this.width / 2) this.moveLeft();
-        else this.moveRight();
+         this.jump();
       }
     }, {passive: true});
 
@@ -257,7 +257,7 @@ class LisarRunner {
 
     this.controlsBubbleEl = document.createElement('div');
     this.controlsBubbleEl.className = 'neon-bubble';
-    this.controlsBubbleEl.style.top = '25%';
+    this.controlsBubbleEl.style.top = '50%';
     this.controlsBubbleEl.style.left = '50%';
     this.controlsBubbleEl.style.transform = 'translate(-50%, -50%)';
     this.controlsBubbleEl.style.display = 'none';
@@ -625,7 +625,7 @@ class LisarRunner {
     const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
     this.controlsBubbleEl.innerHTML = `<div class="neon-bubble-content">` + 
        (isMobile 
-       ? '👆 Toca los lados para moverte<br><br>👆 Desliza arriba para saltar'
+       ? '👆 Desliza a los lados para moverte<br><br>👆 Toca la pantalla para saltar'
        : '⌨️ Flechas / A-D moverte<br><br>⌨️ Espacio saltar<br><br>⌨️ P para pausar') +
        `</div>`;
     this.controlsBubbleEl.style.display = 'block';
@@ -886,7 +886,10 @@ class LisarRunner {
         const now = performance.now();
         
         // Generar Obstáculo si el Bajo golpea muy fuerte
-        if(avgBass > 180 && (now - (this.lastBeatTime || 0) > 450)) {
+        let isMobile = window.innerWidth <= 768;
+        let cooldown = isMobile ? 800 : 500;
+        
+        if (bassSum > 850 && (now - (this.lastBeatTime || 0) > cooldown)) {
            this.lastBeatTime = now;
            this.spawnObstacle();
            obstacleSpawned = true;
