@@ -211,11 +211,18 @@ class LisarRunner {
         this.model.scale.set(1.2, 1.2, 1.2); // Escala aumentada para que el personaje se vea más grande
         this.model.rotation.y = Math.PI; // Face forward
         
-        // Ensure materials display correctly without overriding user's blender materials
+        // Fix para materiales metálicos en entornos oscuros:
+        // Si el modelo tiene alto "metalness" en Blender, en Three.js con fondo negro reflejará negro/café.
         this.model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
+            if (child.material) {
+              // Forzamos a que no sea un espejo perfecto para que las texturas sean visibles
+              child.material.metalness = 0.1;
+              child.material.roughness = 0.8;
+              child.material.needsUpdate = true;
+            }
           }
         });
 
