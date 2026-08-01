@@ -20,8 +20,8 @@ class LisarRunner {
     
     // Aumentamos el FOV (de 60 a 75) para hacer un efecto de "zoom out"
     this.camera = new THREE.PerspectiveCamera(75, this.width / this.height, 0.1, 100);
-    this.camera.position.set(0, 2, 4.0); // Cámara más cerca y más abajo
-    this.camera.lookAt(0, 1.2, -2); // Mirar un poco hacia adelante para que el personaje se vea bien posicionado
+    this.camera.position.set(0, 3.5, 5.5); // Cámara un poco más lejos
+    this.camera.lookAt(0, -0.5, -3); // Mirar más hacia abajo para que el personaje baje al borde de la pantalla
     
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(this.width, this.height);
@@ -79,8 +79,9 @@ class LisarRunner {
     
     this.initPlayer();
     
-    // Floor
+    // Floor & Environment
     this.initFloor();
+    this.initStars();
     
     // Audio
     this.bgMusic = new Audio('assets/audio/level1.mp3');
@@ -263,7 +264,7 @@ class LisarRunner {
         // Escalar y posicionar el cohete en el cielo (lejos a la izquierda)
         this.rocketModel.scale.set(2.0, 2.0, 2.0); 
         this.rocketModel.position.set(-40, 12, -20);
-        this.rocketModel.rotation.y = Math.PI / 2; // Apuntar hacia la derecha
+        this.rocketModel.rotation.y = -Math.PI / 2; // Apuntar hacia la derecha (espejo en X)
         this.rocketModel.rotation.z = -0.15; // Inclinación ligera hacia arriba
         
         this.rocketModel.traverse((child) => {
@@ -277,9 +278,35 @@ class LisarRunner {
           }
         });
         
+        if (gltf.animations && gltf.animations.length > 0) {
+          this.rocketMixer = new THREE.AnimationMixer(this.rocketModel);
+          this.rocketMixer.clipAction(gltf.animations[0]).play();
+        }
+        
         this.scene.add(this.rocketModel);
       });
     }
+  }
+  
+  initStars() {
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 300;
+    const starArray = new Float32Array(starCount * 3);
+    for(let i=0; i < starCount * 3; i++) {
+      starArray[i] = (Math.random() - 0.5) * 100;
+      // Empujar las estrellas hacia el fondo y hacia arriba
+      if (i % 3 === 1) starArray[i] = Math.random() * 50; // Y (altura)
+      if (i % 3 === 2) starArray[i] = -20 - Math.random() * 50; // Z (profundidad)
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starArray, 3));
+    const starMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.3,
+      transparent: true,
+      opacity: 0.8
+    });
+    this.stars = new THREE.Points(starGeo, starMat);
+    this.scene.add(this.stars);
   }
   
   initFloor() {
@@ -505,6 +532,7 @@ class LisarRunner {
     if(this.isPlaying) {
       const dt = this.clock.getDelta();
       if(this.mixer) this.mixer.update(dt);
+      if(this.rocketMixer) this.rocketMixer.update(dt);
       
       this.playerTime += 0.1;
 
