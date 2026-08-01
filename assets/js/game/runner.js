@@ -372,7 +372,17 @@ class LisarRunner {
   }
   
   handleKeyDown(e) {
+    const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'w', 'a', 's', 'd', 'p', 'P', 'Escape'];
+    
+    // Solo bloqueamos el comportamiento por defecto si el juego está activo o en intro
+    if (this.isPlaying || this.isIntro || this.isShowingInstructions) {
+       if (gameKeys.includes(e.key)) {
+           e.preventDefault();
+       }
+    }
+    
     if(!this.isPlaying) return;
+    
     if(e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
        this.togglePause();
        return;
