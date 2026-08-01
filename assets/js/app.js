@@ -119,13 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 7 VIDEOS / ANIMACIONES ---
     {
       id: 8,
-      title: "Corto Animado: Conejo Gigante",
-      category: "Animación 3D",
-      instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      type: "video",
-      videoFile: "https://res.cloudinary.com/demo/video/upload/v1689255877/dog.mp4",
-      description: "Desarrollo de corto animado 3D protagonizado por un simpático conejo. Modelado orgánico, rigging facial y renderizado cinemático.",
-      tools: ["Blender", "Cycles", "DaVinci Resolve"],
+      title: "VFX & CGI Reel",
+      category: "VFX y Motion Graphics",
+      instagramUrl: "https://www.instagram.com/p/DaVr7Z4qhgi/",
+      type: "iframe",
+      iframeUrl: "https://www.instagram.com/p/DaVr7Z4qhgi/embed",
+      description: "Desglose visual y VFX con identidad visual única de LisarStudio.",
+      tools: ["Cinema 4D", "After Effects", "Redshift"],
     },
     {
       id: 9,
@@ -216,11 +216,13 @@ document.addEventListener('DOMContentLoaded', () => {
             </span>
             ${item.type === 'video' 
               ? `<video src="${item.videoFile}" class="w-100 h-100" style="object-fit:cover;border-radius:10px;" controls muted loop></video>`
-              : `<canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
-                 <div class="model-loading-bar" id="loading-${item.id}">
-                   <div class="loading-bar-fill"></div>
-                   <span>Cargando modelo 3D...</span>
-                 </div>`
+              : item.type === 'iframe'
+                ? `<iframe src="${item.iframeUrl}" class="w-100 h-100" style="border-radius:10px;" frameborder="0" scrolling="no" allowtransparency="true"></iframe>`
+                : `<canvas class="glb-canvas" id="canvas-${item.id}" style="width:100%;height:100%;display:block;border-radius:10px;cursor:grab;"></canvas>
+                   <div class="model-loading-bar" id="loading-${item.id}">
+                     <div class="loading-bar-fill"></div>
+                     <span>Cargando modelo 3D...</span>
+                   </div>`
             }
           </div>
 
@@ -242,9 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `).join('');
 
-    // Inicializar visor 3D Three.js para cada tarjeta que no sea video
+    // Inicializar visor 3D Three.js para cada tarjeta que no sea video ni iframe
     filtered.forEach(item => {
-      if (item.type !== 'video') {
+      if (item.type !== 'video' && item.type !== 'iframe') {
         initGLBViewer(`canvas-${item.id}`, `loading-${item.id}`, item.glbFile);
       }
     });
