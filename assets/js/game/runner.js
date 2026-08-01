@@ -1,0 +1,283 @@
+/**
+ * Lisar Runner 3D - Minijuego Endless Runner
+ */
+class LisarRunner {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    if (!this.container) return;
+    
+    this.width = this.container.clientWidth;
+    this.height = this.container.clientHeight;
+    
+    // Scene, Camera, Renderer
+    this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.Fog(0x0b0c10, 10, 50);
+    this.scene.background = new THREE.Color(0x0b0c10);
+    
+    this.camera = new THREE.PerspectiveCamera(60, this.width / this.height, 0.1, 100);
+    this.camera.position.set(0, 3, 7);
+    this.camera.lookAt(0, 0, 0);
+    
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.renderer.setSize(this.width, this.height);
+    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.container.appendChild(this.renderer.domElement);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    this.scene.add(ambientLight);
+    
+    const dirLight = new THREE.DirectionalLight(0xffb703, 1);
+    dirLight.position.set(5, 10, 5);
+    this.scene.add(dirLight);
+
+    const dirLight2 = new THREE.DirectionalLight(0x9b59b6, 0.8);
+    dirLight2.position.set(-5, 5, -5);
+    this.scene.add(dirLight2);
+    
+    // Game State
+    this.isPlaying = false;
+    this.score = 0;
+    this.speed = 0.2;
+    this.lanes = [-2, 0, 2];
+    this.currentLane = 1; // Middle lane
+    
+    this.obstacles = [];
+    this.coins = [];
+    
+    // Player
+    this.player = null;
+    this.initPlayer();
+    
+    // Floor
+    this.initFloor();
+    
+    // UI
+    this.initUI();
+    
+    // Events
+    window.addEventListener('resize', this.onWindowResize.bind(this));
+    
+    // Controls
+    document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    
+    // Touch Controls
+    let touchStartX = 0;
+    this.container.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+    
+    this.container.addEventListener('touchend', (e) => {
+      if(!this.isPlaying) return;
+      let touchEndX = e.changedTouches[0].screenX;
+      if (touchEndX < touchStartX - 30) this.moveLeft();
+      if (touchEndX > touchStartX + 30) this.moveRight();
+    }, {passive: true});
+
+    this.animate();
+  }
+  
+  initUI() {
+    this.scoreEl = document.createElement('div');
+    this.scoreEl.style.position = 'absolute';
+    this.scoreEl.style.top = '10px';
+    this.scoreEl.style.left = '10px';
+    this.scoreEl.style.color = '#ffb703';
+    this.scoreEl.style.fontFamily = 'monospace';
+    this.scoreEl.style.fontSize = '20px';
+    this.scoreEl.style.fontWeight = 'bold';
+    this.scoreEl.style.zIndex = '100';
+    this.scoreEl.innerText = 'SCORE: 0';
+    this.scoreEl.style.display = 'none';
+    this.container.appendChild(this.scoreEl);
+  }
+
+  initPlayer() {
+    // Simple glowing box as placeholder for Tron Bot
+    const geo = new THREE.BoxGeometry(1, 1, 2);
+    const mat = new THREE.MeshStandardMaterial({ 
+      color: 0x9b59b6,
+      emissive: 0x6c3483,
+      emissiveIntensity: 0.5
+    });
+    this.player = new THREE.Mesh(geo, mat);
+    this.player.position.set(this.lanes[this.currentLane], 0.5, 0);
+    this.scene.add(this.player);
+    
+    // Try to load GLB (tron.glb)
+    if(window.THREE && window.THREE.GLTFLoader) {
+      const loader = new THREE.GLTFLoader();
+      loader.load('https://raw.githubusercontent.com/LisarStudio/lisar-studio-2026/main/assets/models/tron.glb', (gltf) => {
+        this.scene.remove(this.player);
+        this.player = gltf.scene;
+        this.player.scale.set(0.5, 0.5, 0.5); // Adjust scale
+        this.player.position.set(this.lanes[this.currentLane], 0, 0);
+        // Face forward
+        this.player.rotation.y = Math.PI; 
+        this.scene.add(this.player);
+      }, undefined, (err) => {
+        console.warn("Could not load tron.glb for minigame, using placeholder", err);
+      });
+    }
+  }
+  
+  initFloor() {
+    const geo = new THREE.PlaneGeometry(20, 100, 10, 50);
+    const mat = new THREE.MeshBasicMaterial({ 
+      color: 0x111111, 
+      wireframe: true 
+    });
+    this.floor = new THREE.Mesh(geo, mat);
+    this.floor.rotation.x = -Math.PI / 2;
+    this.floor.position.z = -30;
+    this.scene.add(this.floor);
+  }
+  
+  moveLeft() {
+    if(this.currentLane > 0) {
+      this.currentLane--;
+    }
+  }
+  
+  moveRight() {
+    if(this.currentLane < 2) {
+      this.currentLane++;
+    }
+  }
+  
+  handleKeyDown(e) {
+    if(!this.isPlaying) return;
+    if(e.key === 'ArrowLeft' || e.key === 'a') this.moveLeft();
+    if(e.key === 'ArrowRight' || e.key === 'd') this.moveRight();
+  }
+  
+  spawnObstacle() {
+    const geo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const obs = new THREE.Mesh(geo, mat);
+    const lane = Math.floor(Math.random() * 3);
+    obs.position.set(this.lanes[lane], 0.75, -40);
+    this.scene.add(obs);
+    this.obstacles.push(obs);
+  }
+  
+  spawnCoin() {
+    const geo = new THREE.TorusGeometry(0.5, 0.15, 8, 16);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xffb703, emissive: 0xffb703, emissiveIntensity: 0.5 });
+    const coin = new THREE.Mesh(geo, mat);
+    const lane = Math.floor(Math.random() * 3);
+    coin.position.set(this.lanes[lane], 1, -40);
+    this.scene.add(coin);
+    this.coins.push(coin);
+  }
+  
+  startGame() {
+    const overlay = document.getElementById('game-overlay');
+    if(overlay) overlay.style.display = 'none';
+    
+    this.scoreEl.style.display = 'block';
+    
+    // Clear old
+    this.obstacles.forEach(o => this.scene.remove(o));
+    this.coins.forEach(c => this.scene.remove(c));
+    this.obstacles = [];
+    this.coins = [];
+    
+    this.score = 0;
+    this.speed = 0.2;
+    this.currentLane = 1;
+    this.isPlaying = true;
+  }
+  
+  gameOver() {
+    this.isPlaying = false;
+    const overlay = document.getElementById('game-overlay');
+    if(overlay) {
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <h3 class="text-danger mb-2">¡Juego Terminado!</h3>
+        <p class="text-white mb-3">Puntuación: ${this.score}</p>
+        <button id="restart-game-btn" class="btn btn-gold-primary mt-2"><i class="bi bi-arrow-clockwise"></i> Volver a Jugar</button>
+      `;
+      document.getElementById('restart-game-btn').addEventListener('click', () => this.startGame());
+    }
+  }
+  
+  onWindowResize() {
+    if (!this.container) return;
+    this.width = this.container.clientWidth;
+    this.height = this.container.clientHeight;
+    this.camera.aspect = this.width / this.height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(this.width, this.height);
+  }
+  
+  animate() {
+    requestAnimationFrame(this.animate.bind(this));
+    
+    if(this.isPlaying) {
+      // Move player smoothly to lane
+      if(this.player) {
+        const targetX = this.lanes[this.currentLane];
+        this.player.position.x += (targetX - this.player.position.x) * 0.2;
+      }
+      
+      // Move floor texture (illusion of speed)
+      this.floor.position.z += this.speed;
+      if(this.floor.position.z > 10) this.floor.position.z = -30;
+      
+      // Spawn logic
+      if(Math.random() < 0.02) this.spawnObstacle();
+      if(Math.random() < 0.03) this.spawnCoin();
+      
+      // Update obstacles
+      for(let i = this.obstacles.length - 1; i >= 0; i--) {
+        let obs = this.obstacles[i];
+        obs.position.z += this.speed;
+        
+        // Collision (simple AABB distance check)
+        if(this.player && Math.abs(obs.position.z - this.player.position.z) < 1.5 && Math.abs(obs.position.x - this.player.position.x) < 1.0) {
+          this.gameOver();
+        }
+        
+        if(obs.position.z > 10) {
+          this.scene.remove(obs);
+          this.obstacles.splice(i, 1);
+          this.score += 10; // points for dodging
+          this.scoreEl.innerText = 'SCORE: ' + this.score;
+        }
+      }
+      
+      // Update coins
+      for(let i = this.coins.length - 1; i >= 0; i--) {
+        let coin = this.coins[i];
+        coin.position.z += this.speed;
+        coin.rotation.y += 0.05;
+        
+        if(this.player && Math.abs(coin.position.z - this.player.position.z) < 1.5 && Math.abs(coin.position.x - this.player.position.x) < 1.0) {
+          this.scene.remove(coin);
+          this.coins.splice(i, 1);
+          this.score += 50; // points for coin
+          this.scoreEl.innerText = 'SCORE: ' + this.score;
+        } else if(coin.position.z > 10) {
+          this.scene.remove(coin);
+          this.coins.splice(i, 1);
+        }
+      }
+      
+      // Increase speed slightly
+      this.speed += 0.0001;
+    }
+    
+    this.renderer.render(this.scene, this.camera);
+  }
+}
+
+// Initialize when ready
+document.addEventListener('DOMContentLoaded', () => {
+  const runner = new LisarRunner('runner-game-container');
+  const btn = document.getElementById('start-game-btn');
+  if(btn) {
+    btn.addEventListener('click', () => runner.startGame());
+  }
+});

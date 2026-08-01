@@ -389,6 +389,61 @@
         </div>
       </div>
     </section>
+    <!-- ==========================================================================
+         GAME DEV SECTION
+         ========================================================================== -->
+    <section class="section-padding bg-dark" id="videojuegos">
+      <div class="container">
+        <div class="row align-items-center mb-5">
+          <div class="col-lg-8 mx-auto text-center">
+            <span class="section-eyebrow text-warning">Desarrollo a Medida</span>
+            <h2 class="section-title">Videojuegos Corporativos & Educativos</h2>
+            <p class="text-muted font-size-1-1rem">
+              Creamos experiencias interactivas, advergames y simuladores 3D para potenciar tu marca. 
+              Prueba nuestro prototipo de "Endless Runner" optimizado para móviles a continuación:
+            </p>
+          </div>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-lg-4 col-md-6 mb-4">
+            <div class="glass-card text-center p-0 overflow-hidden" style="border: 2px solid var(--lisar-gold);">
+              <div class="game-container" id="runner-game-container" style="position: relative; width: 100%; height: 500px; background: #000;">
+                <!-- Overlay Start -->
+                <div id="game-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                  <h3 class="text-white mb-2 font-weight-bold">Lisar Runner 3D</h3>
+                  <p class="text-white-50 small px-3">Toca los lados de la pantalla o usa las flechas de tu teclado para esquivar los obstáculos.</p>
+                  <button id="start-game-btn" class="btn btn-gold-primary mt-3"><i class="bi bi-play-fill"></i> Jugar Ahora</button>
+                </div>
+                <!-- Canvas will be injected here -->
+              </div>
+              <div class="p-3 bg-surface">
+                <h4 class="h6 font-weight-bold mb-1 text-warning">Advergames (Móvil)</h4>
+                <p class="text-muted small mb-0">Juegos adictivos diseñados para campañas de marketing.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-lg-4 col-md-6 mb-4">
+             <div class="glass-card text-center p-4 h-100 d-flex flex-column justify-content-center align-items-center opacity-75">
+               <i class="bi bi-joystick text-warning mb-3" style="font-size: 3rem;"></i>
+               <h4 class="h6 font-weight-bold mb-2">Juegos Retro & Arcade</h4>
+               <p class="text-muted small">Desarrollo de niveles y mecánicas personalizadas en 2D/3D al estilo clásico.</p>
+               <span class="badge badge-outline-warning mt-2">Próximamente</span>
+             </div>
+          </div>
+
+          <div class="col-lg-4 col-md-6 mb-4">
+             <div class="glass-card text-center p-4 h-100 d-flex flex-column justify-content-center align-items-center opacity-75">
+               <i class="bi bi-mortarboard text-warning mb-3" style="font-size: 3rem;"></i>
+               <h4 class="h6 font-weight-bold mb-2">Serious Games</h4>
+               <p class="text-muted small">Simuladores educativos y experiencias gamificadas para capacitación.</p>
+               <span class="badge badge-outline-warning mt-2">Próximamente</span>
+             </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- ==========================================================================
@@ -522,6 +577,7 @@
    
    <!-- App Custom Scripts -->
    <script src="assets/js/3d-bg.js"></script>
+   <script src="assets/js/game/runner.js"></script>
    <script src="assets/js/chatbot.js?v=4"></script>
    <script src="assets/js/app.js?v=15"></script>
    
