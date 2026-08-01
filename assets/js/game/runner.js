@@ -155,11 +155,15 @@ class LisarRunner {
     this.updateLivesDisplay();
     
     this.pauseBtn = document.createElement('div');
-    this.pauseBtn.innerText = '⏸️';
-    this.pauseBtn.style.fontSize = '24px';
+    this.pauseBtn.innerHTML = '<i class="bi bi-pause-circle-fill" style="filter: drop-shadow(0 0 5px #ff8800);"></i>';
+    this.pauseBtn.style.fontSize = '32px';
+    this.pauseBtn.style.color = '#ff8800';
     this.pauseBtn.style.cursor = 'pointer';
     this.pauseBtn.style.pointerEvents = 'auto';
     this.pauseBtn.style.marginLeft = '20px';
+    this.pauseBtn.style.transition = 'transform 0.2s';
+    this.pauseBtn.addEventListener('mouseenter', () => this.pauseBtn.style.transform = 'scale(1.1)');
+    this.pauseBtn.addEventListener('mouseleave', () => this.pauseBtn.style.transform = 'scale(1)');
     this.pauseBtn.addEventListener('click', () => this.togglePause());
 
     const rightBar = document.createElement('div');
@@ -286,7 +290,9 @@ class LisarRunner {
   updateLivesDisplay() {
     if(this.livesEl) {
       let text = '';
-      for(let i=0; i<this.lives; i++) text += '❤️ ';
+      for(let i=0; i<this.lives; i++) {
+        text += '<i class="bi bi-heart-fill" style="margin-right: 5px; color: #ff0055; filter: drop-shadow(0 0 5px #ff0055);"></i>';
+      }
       this.livesEl.innerHTML = text;
     }
   }
@@ -310,6 +316,7 @@ class LisarRunner {
     });
     this.player = new THREE.Mesh(geo, mat);
     this.player.position.set(this.lanes[this.currentLane], 0.5, 0);
+    this.player.visible = false;
     this.scene.add(this.player);
     
     // Try to load GLB (wukonglisar.glb)
@@ -351,6 +358,7 @@ class LisarRunner {
           action.play();
         }
         
+        this.player.visible = false;
         this.scene.add(this.player);
       }, undefined, (err) => {
         console.warn("Could not load wukonglisar.glb for minigame, using placeholder", err);
@@ -476,13 +484,13 @@ class LisarRunner {
     
     if (this.isPaused) {
        this.bgMusic.pause();
-       this.pauseBtn.innerText = '▶️';
+       this.pauseBtn.innerHTML = '<i class="bi bi-play-circle-fill" style="filter: drop-shadow(0 0 5px #ff8800);"></i>';
        this.msgEl.style.fontSize = '40px';
        this.msgEl.innerHTML = "PAUSA";
        this.msgEl.style.display = 'block';
     } else {
        this.bgMusic.play();
-       this.pauseBtn.innerText = '⏸️';
+       this.pauseBtn.innerHTML = '<i class="bi bi-pause-circle-fill" style="filter: drop-shadow(0 0 5px #ff8800);"></i>';
        this.msgEl.style.display = 'none';
     }
   }
@@ -634,7 +642,10 @@ class LisarRunner {
     this.introProgress = 0;
     this.isShowingInstructions = true;
     
-    if(this.player) this.player.position.set(this.lanes[this.currentLane], 0, 20); // Empieza lejos para venir corriendo
+    if(this.player) {
+        this.player.visible = true;
+        this.player.position.set(this.lanes[this.currentLane], 0, 50); // Empieza lejos para venir corriendo
+    }
     
     // Posición inicial de cámara para Intro
     this.camera.position.set(0, 1.0, -5);
