@@ -65,6 +65,9 @@
 
   <link rel="stylesheet" href="assets/css/custom.css">
   <link rel="stylesheet" href="assets/css/chatbot.css">
+  
+  <!-- AOS Scroll Animations CSS -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
 <body>
 
@@ -129,7 +132,7 @@
     <!-- ==========================================================================
          HERO SHOWCASE SECTION
          ========================================================================== -->
-    <section class="hero-section" id="inicio">
+    <section class="hero-section" id="inicio" data-aos="fade-up">
       <div class="container">
         <div class="row align-items-center gy-5">
           <div class="col-lg-7">
@@ -179,7 +182,7 @@
     <!-- ==========================================================================
          SERVICES SECTION
          ========================================================================== -->
-    <section class="section-padding" id="servicios">
+    <section class="section-padding" id="servicios" data-aos="fade-up">
       <div class="container">
         <div class="row mb-5 align-items-center justify-content-center text-left">
           <div class="col-md-5 col-lg-4 text-center text-md-right mb-4 mb-md-0">
@@ -246,7 +249,7 @@
     <!-- ==========================================================================
          PORTFOLIO SECTION WITH INSTAGRAM REELS
          ========================================================================== -->
-    <section class="section-padding bg-surface" id="portafolio">
+    <section class="section-padding bg-surface" id="portafolio" data-aos="fade-up">
       <div class="container">
         <div class="row align-items-center mb-4">
           <div class="col-lg-12 d-flex align-items-center flex-wrap">
@@ -276,7 +279,7 @@
     <!-- ==========================================================================
          PLANES WEB
          ========================================================================== -->
-    <section class="section-padding" id="planes-web">
+    <section class="section-padding" id="planes-web" data-aos="fade-up">
       <div class="container">
         <div class="text-center mb-5">
           <span class="section-eyebrow">Desarrollo Web Profesional</span>
@@ -353,7 +356,7 @@
     <!-- ==========================================================================
          CONTACT & QUOTATION FORM
          ========================================================================== -->
-    <section class="section-padding bg-surface" id="contacto">
+    <section class="section-padding bg-surface" id="contacto" data-aos="fade-up">
       <div class="container">
         <div class="row gy-5">
           <div class="col-lg-5">
@@ -672,11 +675,20 @@
    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
    
+   <!-- model-viewer para 3D -->
+   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+
+   <!-- AOS Scroll Animations JS -->
+   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+   <script>
+     AOS.init({ once: true, offset: 100, duration: 800 });
+   </script>
+
    <!-- App Custom Scripts -->
    <script src="assets/js/3d-bg.js"></script>
    <script src="assets/js/game/runner.js?v=58"></script>
    <script src="assets/js/chatbot.js?v=7"></script>
-   <script src="assets/js/app.js?v=32"></script>
+   <script src="assets/js/app.js?v=33"></script>
    
    <!-- Floating WhatsApp Button -->
    <a href="https://api.whatsapp.com/send?phone=56964486208" class="whatsapp-float" target="_blank" title="Contáctanos por WhatsApp">
