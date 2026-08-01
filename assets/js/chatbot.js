@@ -20,14 +20,64 @@ document.addEventListener('DOMContentLoaded', () => {
   // Árbol de conversación
   const chatFlow = {
     start: {
-      msg: "¡Hola! Soy Lisar IA 🤖. Estoy aquí para ayudarte a cotizar. ¿Qué servicio te gustaría cotizar hoy?",
+      msg: "¡Hola! Soy Lisar IA 🤖. Estoy aquí para ayudarte a cotizar o resolver tus dudas. ¿Qué te interesa?",
       options: [
-        { label: "Animación 3D", next: "anim_duration", val: 0 },
-        { label: "Modelo 3D", next: "model_type", val: 0 },
-        { label: "Sitio Web", next: "web_type", val: 0 }
+        { label: "Cotizar Animación 3D", next: "anim_duration", val: 0 },
+        { label: "Cotizar Modelo 3D", next: "model_type", val: 0 },
+        { label: "Cotizar Desarrollo Web", next: "web_type", val: 0 },
+        { label: "Cotizar Videojuegos", next: "game_type", val: 0 },
+        { label: "¿Dudas sobre nuestros servicios?", next: "service_faq", val: 0 }
       ]
     },
     
+    // ---------------- FAQ / CONOCIMIENTO DE PIPELINES ----------------
+    service_faq: {
+      msg: "¡Claro! En Lisar Studio nos destacamos por nuestros flujos de trabajo claros y comunicación constante. ¿Sobre qué servicio tienes dudas del proceso o plazos?",
+      options: [
+        { label: "Pipeline de Desarrollo Web", next: "faq_web", val: 0 },
+        { label: "Pipeline de Videojuegos / Advergames", next: "faq_games", val: 0 },
+        { label: "Pipeline de Diseño 3D / Reels", next: "faq_3d", val: 0 }
+      ]
+    },
+    faq_web: {
+      msg: "<b>Desarrollo Web (Plazo: 2 a 3 semanas):</b><br>1. <b>Briefing:</b> Definimos tus metas y referencias.<br>2. <b>Diseño UI/UX:</b> Aprobamos maquetas visuales.<br>3. <b>Desarrollo:</b> Programamos tu sitio con tecnología moderna.<br>4. <b>Testeo y Entrega:</b> Tu web lista y optimizada.<br><br>¿Te animas a cotizar uno?",
+      options: [
+        { label: "Sí, Cotizar Web", next: "web_type", val: 0 },
+        { label: "Volver al inicio", next: "start", val: 0 }
+      ]
+    },
+    faq_games: {
+      msg: "<b>Videojuegos Corporativos (Plazo: 2 a 4 semanas):</b><br>1. <b>Concepto y Guion:</b> Definimos la mecánica (ej. Runner 3D).<br>2. <b>Arte 3D y Sonido:</b> Creamos tu marca en el juego.<br>3. <b>Programación:</b> Lógica y recompensas.<br>4. <b>QA y Lanzamiento:</b> ¡Listo para enganchar a tu audiencia!<br><br>¿Hacemos uno para tu marca?",
+      options: [
+        { label: "Sí, Cotizar Videojuego", next: "game_type", val: 0 },
+        { label: "Volver al inicio", next: "start", val: 0 }
+      ]
+    },
+    faq_3d: {
+      msg: "<b>Diseño 3D y Animación (Plazo: 1 a 3 semanas):</b><br>1. <b>Storyboard y Concepto:</b> Visualizamos la idea.<br>2. <b>Modelado y Texturizado:</b> Esculpimos tus activos.<br>3. <b>Animación y Render:</b> Le damos vida e iluminamos.<br>4. <b>Postproducción:</b> Edición final de alto impacto.<br><br>¿Cotizamos tu Reel o render 3D?",
+      options: [
+        { label: "Sí, Cotizar Animación", next: "anim_duration", val: 0 },
+        { label: "Volver al inicio", next: "start", val: 0 }
+      ]
+    },
+
+    // ---------------- VIDEOJUEGOS (NUEVO) ----------------
+    game_type: {
+      msg: "¡Excelente! Los videojuegos disparan la interacción de tus clientes. ¿Qué formato prefieres?",
+      options: [
+        { label: "Minijuego Web (Ej. Runner 3D)", next: "game_art", val: 950 },
+        { label: "Simulador Educativo / Corporativo", next: "game_art", val: 1500 },
+        { label: "Experiencia AR / Realidad Aumentada", next: "game_art", val: 1800 }
+      ]
+    },
+    game_art: {
+      msg: "¿El arte del juego será en 2D o 3D?",
+      options: [
+        { label: "2D Ilustrado", next: "urgency", val: 0 },
+        { label: "3D de Alta Calidad", next: "urgency", val: 400 }
+      ]
+    },
+
     // ---------------- ANIMACIÓN 3D ----------------
     anim_duration: {
       msg: "¡Excelente! Para animación 3D, ¿qué duración aproximada necesitas?",
@@ -346,5 +396,58 @@ document.addEventListener('DOMContentLoaded', () => {
         footer.appendChild(btnSi);
         footer.appendChild(btnNo);
     }, 1000);
+  };
+
+  let persuasionTriggered = false;
+  window.triggerAIPersuasion = function(context) {
+    if (persuasionTriggered) return;
+    persuasionTriggered = true;
+    
+    container.classList.add('show');
+    toggler.style.display = 'none';
+    
+    body.innerHTML = '';
+    footer.innerHTML = '';
+    
+    showTyping();
+    setTimeout(() => {
+        hideTyping();
+        let customMsg = "¡Hola! Veo que te interesan nuestros servicios. ¿Tienes alguna duda sobre nuestro proceso de trabajo o plazos de entrega?";
+        if (context === 'advergames') {
+            customMsg = "¡Hola! Veo que te interesan los Advergames y Videojuegos Corporativos. ¿Sabías que los juegos disparan la interacción y conversión de tu marca? 🤩 ¿Tienes dudas sobre cómo es el proceso para crear uno?";
+        } else if (context === 'web') {
+            customMsg = "¡Hola! Veo que estás explorando nuestros Planes Web. Una web rápida y optimizada para ventas es vital hoy en día. ¿Te gustaría saber cómo es nuestro proceso de desarrollo (pipeline)?";
+        } else if (context === '3d') {
+            customMsg = "¡Hola! Veo que te interesa el Diseño 3D o los Reels Virales. Nuestros renders logran hasta 300% más alcance en Instagram. ¿Quieres saber sobre los plazos y proceso de animación?";
+        }
+        
+        addBotMsg(customMsg);
+        
+        const btnFAQ = document.createElement('button');
+        btnFAQ.className = 'chat-option-btn';
+        btnFAQ.innerText = 'Sí, cuéntame el proceso 🤔';
+        btnFAQ.onclick = () => {
+            addUserMsg('Sí, cuéntame el proceso 🤔');
+            if (context === 'advergames') loadState('faq_games');
+            else if (context === 'web') loadState('faq_web');
+            else if (context === '3d') loadState('faq_3d');
+            else loadState('service_faq');
+        };
+        
+        const btnNo = document.createElement('button');
+        btnNo.className = 'chat-option-btn';
+        btnNo.innerText = 'Solo quiero cotizar 🚀';
+        btnNo.onclick = () => {
+            addUserMsg('Solo quiero cotizar 🚀');
+            if (context === 'advergames') loadState('game_type');
+            else if (context === 'web') loadState('web_type');
+            else if (context === '3d') loadState('anim_duration');
+            else loadState('start');
+        };
+        
+        footer.innerHTML = '';
+        footer.appendChild(btnFAQ);
+        footer.appendChild(btnNo);
+    }, 1500);
   };
 });

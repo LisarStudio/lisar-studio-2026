@@ -506,4 +506,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Render inicial
   renderPortfolio();
+
+  // ============================================================
+  // 9. PROACTIVE AI PERSUASION (SCROLL SPY)
+  // ============================================================
+  const persuasionObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        let context = 'general';
+        if (entry.target.id === 'servicios') {
+            context = '3d';
+        } else if (entry.target.id === 'planes-web') {
+            context = 'web';
+        }
+        
+        // Wait 5 seconds before triggering persuasion
+        entry.target.persuasionTimeout = setTimeout(() => {
+          if (window.triggerAIPersuasion && typeof window.triggerAIPersuasion === 'function') {
+              window.triggerAIPersuasion(context);
+          }
+        }, 5000);
+      } else {
+        // Cancel timeout if user scrolls away before 5 seconds
+        if(entry.target.persuasionTimeout) {
+            clearTimeout(entry.target.persuasionTimeout);
+        }
+      }
+    });
+  }, { threshold: 0.6 }); // 60% visibility required
+
+  const sectionsToSpy = [document.getElementById('servicios'), document.getElementById('planes-web')];
+  sectionsToSpy.forEach(sec => {
+      if(sec) persuasionObserver.observe(sec);
+  });
 });
