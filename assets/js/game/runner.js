@@ -862,11 +862,11 @@ class LisarRunner {
       this.audioContext.resume();
     }
     
-    // Pre-reproducción silenciosa para desbloquear el audio en móviles Chrome/Safari
+    // Iniciar reproducción de la música sincronizada con el click del usuario (evita bloqueos de autoplay)
     if(this.bgMusic) {
-      this.bgMusic.volume = 0;
+      this.bgMusic.volume = 0.5;
       this.bgMusic.currentTime = 0;
-      this.bgMusic.play().catch(e => console.log("Audio unlock error:", e));
+      this.bgMusic.play().catch(e => console.log("Music play error:", e));
     }
     
     this.uiContainer.style.display = 'flex';
@@ -1018,12 +1018,7 @@ class LisarRunner {
     this.isPromoActive = true;
     this.msgEl.style.fontSize = '50px'; // reset font size
     
-    // Activar volumen y reproducir la música
-    if(this.bgMusic) {
-      this.bgMusic.volume = 0.5;
-      this.bgMusic.currentTime = 0;
-      this.bgMusic.play().catch(e => console.log("Music play blocked by browser:", e));
-    }
+    // La música ya está sonando desde el inicio (startGame) sin interrupciones
   }
 
   levelComplete() {
