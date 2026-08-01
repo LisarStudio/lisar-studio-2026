@@ -440,6 +440,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ============================================================
+  // 8. ASISTENTE DE IA
+  // ============================================================
+  const aiBubble = document.getElementById('ai-bubble');
+  if(aiBubble) {
+    // Show first message after 3 seconds
+    setTimeout(() => {
+      aiBubble.classList.add('show');
+      
+      // Change to second message after 3 more seconds
+      setTimeout(() => {
+        aiBubble.style.opacity = '0'; // Fade out
+        setTimeout(() => {
+          aiBubble.textContent = "¡Te ayudo a cotizar!";
+          aiBubble.style.opacity = '1'; // Fade back in
+          
+          // Disappear completely after 4 seconds
+          setTimeout(() => {
+            aiBubble.classList.remove('show');
+          }, 4000);
+        }, 500);
+      }, 3000);
+    }, 3000);
+  }
+
   // Render inicial
   renderPortfolio();
 });
