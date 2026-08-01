@@ -484,9 +484,36 @@ class LisarRunner {
     const osc = this.audioContext.createOscillator();
     const gainNode = this.audioContext.createGain();
     
-    // Frecuencias pentatónicas mayores (C, D, E, G, A, C) para que siempre suene "musical" y agradable
-    const freqs = [1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 2093.00];
-    const freq = freqs[Math.floor(Math.random() * freqs.length)];
+    // Frecuencia por defecto (C6) si no hay audio analizable
+    let freq = 1046.50; 
+    
+    // Armonización dinámica leyendo el espectro FFT en tiempo real
+    if (this.analyser && this.dataArray) {
+       this.analyser.getByteFrequencyData(this.dataArray);
+       
+       let maxVal = 0;
+       let maxIndex = 10;
+       
+       // Encontrar la frecuencia de mayor volumen (ignorando bajos < 10)
+       for (let i = 10; i < this.dataArray.length; i++) {
+           if (this.dataArray[i] > maxVal) {
+               maxVal = this.dataArray[i];
+               maxIndex = i;
+           }
+       }
+       
+       // Convertir bin index a Hertz (Nyquist / (fftSize/2))
+       const nyquist = this.audioContext.sampleRate / 2;
+       const binSize = nyquist / (this.analyser.fftSize / 2);
+       let fundamentalFreq = maxIndex * binSize;
+       
+       // Multiplicar por octavas (x2) para que suene como campana brillante
+       if (fundamentalFreq > 0) {
+           freq = fundamentalFreq;
+           while(freq < 800) { freq *= 2; }
+           while(freq > 2400) { freq /= 2; }
+       }
+    }
     
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
@@ -736,32 +763,46 @@ class LisarRunner {
       
       // Spawn logic with Audio Beat Detection
       let obstacleSpawned = false;
+      let coinSpawned = false;
+      
       if(this.analyser && this.isPlaying) {
         this.analyser.getByteFrequencyData(this.dataArray);
-        // Analizar SOLO frecuencias sub-bass y graves (bins 0 a 3) para aislar los verdaderos golpes de percusión
-        let sum = 0;
-        const lowFreqCount = 4;
-        for(let j = 0; j < lowFreqCount; j++){
-           sum += this.dataArray[j];
-        }
-        const avg = sum / lowFreqCount;
+        
+        // Analizar bajos para Obstáculos (bins 0 a 4)
+        let bassSum = 0;
+        for(let j = 0; j < 4; j++){ bassSum += this.dataArray[j]; }
+        const avgBass = bassSum / 4;
+        
+        // Analizar notas medias/altas para Monedas (bins 15 a 35)
+        let midSum = 0;
+        const midCount = 20;
+        for(let j = 15; j < 15 + midCount; j++){ midSum += this.dataArray[j]; }
+        const avgMid = midSum / midCount;
         
         const now = performance.now();
-        // Umbral alto (180) para que sólo detecte los bombos fuertes, y mínimo 450ms entre obstáculos
-        if(avg > 180 && (now - this.lastBeatTime > 450)) {
+        
+        // Generar Obstáculo si el Bajo golpea muy fuerte
+        if(avgBass > 180 && (now - (this.lastBeatTime || 0) > 450)) {
            this.lastBeatTime = now;
            this.spawnObstacle();
            obstacleSpawned = true;
         }
+        
+        // Generar Monedas al compás de las melodías fuertes/cajas
+        if (avgMid > 110 && (now - (this.lastCoinBeatTime || 0) > 300)) {
+           this.lastCoinBeatTime = now;
+           this.spawnCoin();
+           coinSpawned = true;
+        }
       }
       
       // Fallback mínimo para que nunca haya silencios totales
-      if(!obstacleSpawned && Math.random() < 0.005) {
+      if(!obstacleSpawned && Math.random() < 0.002) {
         this.spawnObstacle();
       }
-      
-      // Spawn coins aleatoriamente
-      if(Math.random() < 0.03) this.spawnCoin();
+      if(!coinSpawned && Math.random() < 0.005) {
+        this.spawnCoin();
+      }
       
       // Update obstacles
       for(let i = this.obstacles.length - 1; i >= 0; i--) {
@@ -837,10 +878,10 @@ class LisarRunner {
       // Animación de desintegración futurista para monedas recolectadas
       for (let i = this.collectedCoins.length - 1; i >= 0; i--) {
          let c = this.collectedCoins[i];
-         c.scale.multiplyScalar(0.85); // Encogerse rápidamente
-         c.position.y += 0.2; // Subir volando
-         c.rotation.y += 0.4; // Girar súper rápido
-         c.rotation.x += 0.2;
+         c.scale.multiplyScalar(0.95); // Encogerse mucho más lento (antes 0.85)
+         c.position.y += 0.05; // Subir volando mucho más lento (antes 0.2)
+         c.rotation.y += 0.2; // Girar 
+         c.rotation.x += 0.1;
          if (c.scale.x < 0.05) {
              this.scene.remove(c);
              this.collectedCoins.splice(i, 1);
