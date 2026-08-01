@@ -6,7 +6,7 @@
 .chatbot-toggler {
   position: fixed;
   bottom: 25px;
-  right: 25px;
+  right: 100px;
   width: 60px;
   height: 60px;
   background: linear-gradient(135deg, var(--lisar-gold), #b38400);

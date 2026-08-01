@@ -9,6 +9,20 @@
 }
 
 /* Hero overlay to improve legibility over 3D background */
+.project-overlay p {
+  transform: translateY(20px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+/* Center text on mobile */
+@media (max-width: 991px) {
+  .section-title, .section-eyebrow, p:not(.chat-msg) {
+    text-align: center !important;
+  }
+}
+
 .hero-overlay {
   position: relative;
   background: rgba(0, 0, 0, 0.45);
