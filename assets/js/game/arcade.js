@@ -233,6 +233,7 @@ class LisarArcade2D {
     this.extraDiscountBonus = 0;
     this.lisarWordBonusGranted = false;
     this.celebrationTimer = 0;
+    this.luBoostCharges = 3; // Máximo 3 ayudas de Lu por partida
 
     // Partículas de Lluvia Diagonal
     this.rainDrops = [];
@@ -647,9 +648,22 @@ class LisarArcade2D {
       <span id="letter-badge-R" style="padding:1px 4px; border-radius:3px; background:rgba(30,20,0,0.8); border:1px solid #554400; color:#554400; font-weight:bold; font-size:0.7rem; font-family:'Orbitron',sans-serif;">R</span>
     `;
 
+    // INDICADOR DE AYUDAS DE LU (Max 3 por partida)
+    const luChargeRow = document.createElement('div');
+    luChargeRow.id = 'arcade-lu-charge-row';
+    luChargeRow.style.display = 'flex';
+    luChargeRow.style.alignItems = 'center';
+    luChargeRow.style.gap = '3px';
+    luChargeRow.style.marginTop = '4px';
+    luChargeRow.innerHTML = `
+      <div style="font-size:0.58rem; color:#00ffaa; font-weight:bold; margin-right:2px; text-shadow:0 0 5px #00ffaa;">AYUDAS LU:</div>
+      <span id="lu-charge-icons" style="color:#ffd700; font-size:0.75rem; letter-spacing:2px; font-weight:bold;">⚡⚡⚡</span>
+    `;
+
     leftBar.appendChild(this.energyContainer);
     leftBar.appendChild(coinRow);
     leftBar.appendChild(lisarRow);
+    leftBar.appendChild(luChargeRow);
 
     // CENTER: Spacer
     const centerBar = document.createElement('div');
@@ -739,27 +753,37 @@ class LisarArcade2D {
   updateHUD() {
     this.updateEnergyBars();
     this.updateLetterBadges();
+
+    const luIconsEl = document.getElementById('lu-charge-icons');
+    if (luIconsEl) {
+      const remaining = Math.max(0, this.luBoostCharges !== undefined ? this.luBoostCharges : 3);
+      luIconsEl.innerText = remaining > 0 ? '⚡'.repeat(remaining) : '❌ AGOTADAS';
+    }
+
     const coins = document.getElementById('arcade-coin-text');
     if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
 
-    // Actualización de la barra de progreso de descuento
-    const currentTier = Math.min(5, Math.floor(this.coinsCollected / 20));
-    const currentDiscountPct = currentTier * 5;
-    const coinsInTier = currentTier >= 5 ? 20 : (this.coinsCollected % 20);
-    const progressPct = currentTier >= 5 ? 100 : (coinsInTier / 20) * 100;
+    // Actualización de la barra de progreso de descuento (Max 20% Monedas + 10% LISAR = 30% TOTAL)
+    const baseDiscount = Math.min(20, Math.floor(this.coinsCollected / 20) * 5);
+    const extraBonus = (this.lisarWordBonusGranted ? 10 : 0);
+    const totalDiscountPct = Math.min(30, baseDiscount + extraBonus);
+
+    const progressPct = Math.min(100, (this.coinsCollected / 100) * 100);
 
     const discountPctEl = document.getElementById('arcade-discount-pct');
-    if (discountPctEl) discountPctEl.innerText = `${currentDiscountPct}%`;
+    if (discountPctEl) discountPctEl.innerText = `${totalDiscountPct}%`;
 
     const discountBarEl = document.getElementById('arcade-discount-bar');
     if (discountBarEl) discountBarEl.style.width = `${progressPct}%`;
 
     const discountSubEl = document.getElementById('arcade-discount-sub');
     if (discountSubEl) {
-      if (currentTier >= 5) {
-        discountSubEl.innerText = '¡MÁXIMO 25% ALCANZADO!';
+      if (this.coinsCollected >= 100) {
+        discountSubEl.innerText = '¡MÁXIMO 20% MONEDAS ALCANZADO!';
         discountSubEl.style.color = '#00ffaa';
       } else {
+        const currentTier = Math.floor(this.coinsCollected / 20);
+        const coinsInTier = this.coinsCollected % 20;
         discountSubEl.innerText = `Próximo +5%: ${coinsInTier}/20`;
         discountSubEl.style.color = '#a0a0b0';
       }
@@ -852,14 +876,14 @@ class LisarArcade2D {
     }
   }
 
-  showMessage(title, subtitle, btnText, btnAction) {
+  showMessage(title, subtitle, buttons = [], legacyAction = null) {
     this.msgOverlay.style.display    = 'flex';
     this.msgOverlay.style.pointerEvents = 'auto';
     this.msgOverlay.innerHTML = `
-      <div style="background:rgba(10,12,28,0.98); border:2.5px solid #00f3ff; box-shadow:0 0 24px rgba(0,243,255,0.9); border-radius:12px; padding:20px 24px; max-width:88%; width:420px; text-align:center; box-sizing:border-box;">
-        <h2 style="font-size:1.5rem; color:#ffffff; margin:0 0 10px 0; text-shadow:0 0 12px #00f3ff, 0 0 24px #00f3ff; font-family:'Orbitron',sans-serif; font-weight:900; letter-spacing:1px;">${title}</h2>
-        <div style="font-size:0.95rem; margin:0 0 16px 0; text-align:center; line-height:1.5; font-family:'Orbitron',sans-serif; color:#ffffff; font-weight:bold; text-shadow:0 0 8px #ffffff;">${subtitle}</div>
-        <div id="msg-btn-container" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; margin-top:12px;"></div>
+      <div style="background:rgba(10,12,28,0.98); border:2.5px solid #00f3ff; box-shadow:0 0 24px rgba(0,243,255,0.9); border-radius:12px; padding:20px 24px; max-width:88%; width:440px; text-align:center; box-sizing:border-box;">
+        <h2 style="font-size:1.45rem; color:#ffffff; margin:0 0 10px 0; text-shadow:0 0 12px #00f3ff, 0 0 24px #00f3ff; font-family:'Orbitron',sans-serif; font-weight:900; letter-spacing:1px;">${title}</h2>
+        <div style="font-size:0.92rem; margin:0 0 16px 0; text-align:center; line-height:1.5; font-family:'Orbitron',sans-serif; color:#ffffff; font-weight:bold; text-shadow:0 0 8px #ffffff;">${subtitle}</div>
+        <div id="msg-btn-container" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; margin-top:12px;"></div>
       </div>
     `;
 
@@ -869,7 +893,7 @@ class LisarArcade2D {
     const shareBtn = document.createElement('button');
     shareBtn.innerHTML = '📲 COMPARTIR PUNTAJE';
     Object.assign(shareBtn.style, {
-      padding: '12px 20px', fontSize: '0.95rem',
+      padding: '10px 16px', fontSize: '0.88rem',
       background: 'linear-gradient(90deg, #00f3ff, #a200ff)',
       color: '#fff', border: '2px solid #00ffff', borderRadius: '8px',
       cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 14px #00f3ff',
@@ -885,14 +909,22 @@ class LisarArcade2D {
     });
     if (btnContainer) btnContainer.appendChild(shareBtn);
 
-    if (btnText) {
+    let btnList = [];
+    if (typeof buttons === 'string') {
+      btnList = [{ text: buttons, action: legacyAction, primary: true }];
+    } else if (Array.isArray(buttons)) {
+      btnList = buttons;
+    }
+
+    btnList.forEach(b => {
+      if (!b || !b.text) return;
       const btn = document.createElement('button');
-      btn.innerText = btnText;
+      btn.innerText = b.text;
       Object.assign(btn.style, {
-        padding: '12px 30px', fontSize: '1.1rem',
-        background: 'linear-gradient(90deg,#ff9900,#ff2200)',
+        padding: '10px 18px', fontSize: '0.95rem',
+        background: b.primary ? 'linear-gradient(90deg,#ff9900,#ff2200)' : 'linear-gradient(90deg,#00ffaa,#00aa66)',
         color: '#fff', border: '2px solid #fff', borderRadius: '8px',
-        cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 15px #ff6600',
+        cursor: 'pointer', fontWeight: 'bold', boxShadow: b.primary ? '0 0 15px #ff6600' : '0 0 15px #00ffaa',
         fontFamily: "'Orbitron', sans-serif",
         letterSpacing: '1px',
         pointerEvents: 'auto',
@@ -904,13 +936,13 @@ class LisarArcade2D {
           e.preventDefault();
           e.stopPropagation();
         }
-        btnAction();
+        if (b.action) b.action();
       };
 
       btn.addEventListener('click', handleBtnClick);
       btn.addEventListener('touchstart', handleBtnClick, { passive: false });
       if (btnContainer) btnContainer.appendChild(btn);
-    }
+    });
   }
 
   hideMessage() {
@@ -948,7 +980,10 @@ class LisarArcade2D {
     this.player.flyAscendIndex = 0;
     this.coinsCollected        = 0;
     this.lastDiscountThreshold = 0;
-    localStorage.removeItem('lisar_discount_game2_claimed');
+    this.luBoostCharges = 3;
+    this.luBoostActive  = false;
+    this.luBoostCooldown = 0;
+    this.lisarWordBonusGranted = false;
 
     this.enemies     = [];
     this.projectiles = [];
@@ -985,27 +1020,36 @@ class LisarArcade2D {
     this.audio.pause();
     this.hud.style.display = 'none';
 
-    // Descuento final basado en monedas recogidas + bonus extra L-I-S-A-R (+10%)
-    const baseDiscount = Math.min(25, Math.floor(this.coinsCollected / 20) * 5);
-    const extraBonus = (this.extraDiscountBonus || 0);
-    const totalDiscount = Math.min(35, baseDiscount + extraBonus);
+    // Descuento final (Max 20% por Monedas + 10% por Palabra L-I-S-A-R = 30% MÁXIMO TOTAL)
+    const baseDiscount = Math.min(20, Math.floor(this.coinsCollected / 20) * 5);
+    const extraBonus = (this.lisarWordBonusGranted ? 10 : 0);
+    const totalDiscount = Math.min(30, baseDiscount + extraBonus);
     localStorage.setItem('lisar_discount_game2', totalDiscount.toString());
 
     if (victory) {
       this.showMessage(
         '🎉 ¡DEMO JUGABLE COMPLETADA!',
-        `<div style="font-size:0.95rem; color:#ffffff; font-weight:bold; margin-bottom:6px;">Lu y Peter te agradecen por terminar nuestro Demo jugable.</div>` +
-        `Sobreviviste los 3:00 minutos de vuelo y recolectaste ${this.coinsCollected} monedas.<br>` +
-        (extraBonus > 0 ? `<div style="color:#ffd700; font-weight:bold; margin:6px 0; font-size:1rem;">🔥 ¡Bonus Palabra L-I-S-A-R (+10% Extra) Incluido!</div>` : '') +
-        `<div style="font-size:1.35rem; color:#00ffaa; font-weight:bold; text-shadow:0 0 10px #00ffaa; margin-top:8px;">¡DESCUENTO TOTAL GANADO: ${totalDiscount}%!</div><br>` +
-        `Puntaje Final: ${(this.coinsCollected * 120) + (extraBonus * 200)} pts`,
-        'Reclamar Premio',
-        () => {
-          this.destroy();
-          const ov = document.getElementById('arcade-overlay');
-          if (ov) ov.style.display = 'flex';
-          if (window.triggerPromoChatbot) window.triggerPromoChatbot(totalDiscount);
-        }
+        `<div style="font-size:0.95rem; color:#ffffff; font-weight:bold; margin-bottom:6px;">¡Lu y Peter te felicitan por sobrevivir los 3:00 minutos de juego!</div>` +
+        `Monedas recolectadas: <b>${this.coinsCollected} / 100</b><br>` +
+        (extraBonus > 0 ? `<div style="color:#ffd700; font-weight:bold; margin:6px 0; font-size:0.95rem;">🔥 Bonus Palabra L-I-S-A-R (+10% Extra) Incluido</div>` : '') +
+        `<div style="font-size:1.35rem; color:#00ffaa; font-weight:900; text-shadow:0 0 10px #00ffaa; margin-top:8px;">¡DESCUENTO TOTAL GANADO: ${totalDiscount}%!</div>`,
+        [
+          {
+            text: '🎮 JUGAR DE NUEVO',
+            primary: true,
+            action: () => this.startGame()
+          },
+          {
+            text: '📲 RECLAMAR PREMIO',
+            primary: false,
+            action: () => {
+              this.destroy();
+              const ov = document.getElementById('arcade-overlay');
+              if (ov) ov.style.display = 'flex';
+              if (window.triggerPromoChatbot) window.triggerPromoChatbot(totalDiscount);
+            }
+          }
+        ]
       );
     } else {
       let motivo = this.player.hp <= 0
@@ -1015,9 +1059,14 @@ class LisarArcade2D {
       this.showMessage(
         'MISIÓN FALLIDA',
         `${motivo}<br><br>` +
-        `<div style="font-size:1.15rem; color:#ffd700; font-weight:bold;">Igual acumulaste un ${discount}% de descuento para servicios.</div>`,
-        'REINTENTAR',
-        () => this.startGame()
+        `<div style="font-size:1.15rem; color:#ffd700; font-weight:bold;">Lograste un ${totalDiscount}% de descuento para servicios.</div>`,
+        [
+          {
+            text: '🎮 REINTENTAR',
+            primary: true,
+            action: () => this.startGame()
+          }
+        ]
       );
     }
   }
