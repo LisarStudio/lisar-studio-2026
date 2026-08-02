@@ -142,6 +142,21 @@ class LisarArcade2D {
     this.logoImg.src = 'assets/img/logo-lisar-studio.png';
     this.logoImg.onload = () => { this.logoImg.loaded = true; };
 
+    // Sprites de Ataque (Tierra y Aire)
+    this.attackFrames = [];
+    for (let i = 1; i <= 5; i++) {
+      const img = new Image();
+      img.loaded = false;
+      img.src = `assets/img/spritelisaratack${i === 1 ? '' : i}.png`;
+      img.onload = function() { this.loaded = true; };
+      this.attackFrames.push(img);
+    }
+
+    this.flyAttackFrames = [];
+    const flyAtk1 = new Image(); flyAtk1.loaded = false; flyAtk1.src = 'assets/img/Spritelisarfly7.png'; flyAtk1.onload = function() { this.loaded = true; };
+    const flyAtk2 = new Image(); flyAtk2.loaded = false; flyAtk2.src = 'assets/img/Spritelisarfly8.png'; flyAtk2.onload = function() { this.loaded = true; };
+    this.flyAttackFrames.push(flyAtk1, flyAtk2);
+
     this.sprites = {
       floor:    { src: 'images/sprites_arcade/tiling_floor.png',    img: new Image(), loaded: false, cols: 1, rows: 1, totalFrames: 1 }
     };
@@ -163,6 +178,9 @@ class LisarArcade2D {
       invulnerable: 0,
       frame: 0,
       frameTimer: 0,
+      isAttacking: false,
+      attackTimer: 0,
+      attackFrame: 0,
       
       wasFlying: false,
       landTimer: 0,
@@ -174,6 +192,17 @@ class LisarArcade2D {
     this.coins       = [];
     this.particles   = [];
     this.powerups    = [];
+
+    // Partículas de Lluvia Diagonal
+    this.rainDrops = [];
+    for (let i = 0; i < 60; i++) {
+      this.rainDrops.push({
+        x: Math.random() * (this.logicalWidth + 200),
+        y: Math.random() * this.logicalHeight,
+        length: 12 + Math.random() * 16,
+        speed: 400 + Math.random() * 300
+      });
+    }
 
     this.floorOffset    = 0;
     this.floorSpeed     = 200;
@@ -355,11 +384,78 @@ class LisarArcade2D {
     } catch(e) {}
   }
 
+  playAttackSound() {
+    if (!this.audioCtx || this.audioCtx.state !== 'running') return;
+    try {
+      const osc = this.audioCtx.createOscillator();
+      const gainNode = this.audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, this.audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, this.audioCtx.currentTime + 0.15);
+      gainNode.gain.setValueAtTime(0.25, this.audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.15);
+      osc.connect(gainNode);
+      gainNode.connect(this.audioCtx.destination);
+      osc.start();
+      osc.stop(this.audioCtx.currentTime + 0.15);
+    } catch(e) {}
+  }
+
+  performAttack() {
+    if (this.state !== 'playing' || this.introActive) return;
+    if (this.player.isAttacking) return;
+    
+    this.player.isAttacking = true;
+    this.player.attackTimer = 0.28;
+    this.player.attackFrame = 0;
+    this.playAttackSound();
+
+    const px = this.player.x + 80;
+    const py = this.player.y + 65;
+    const pw = 80;
+    const ph = 110;
+
+    const slashX = px + pw - 10;
+    const slashY = py - 30;
+    const slashW = 140;
+    const slashH = ph + 60;
+
+    // Destellos de corte de espada neón
+    for (let i = 0; i < 10; i++) {
+      this.particles.push({
+        x: slashX + Math.random() * slashW,
+        y: slashY + Math.random() * slashH,
+        vx: 180 + Math.random() * 220,
+        vy: (Math.random() - 0.5) * 160,
+        life: 0.22,
+        maxLife: 0.22,
+        color: Math.random() > 0.5 ? '#00ffff' : '#ff00ff',
+        size: 4 + Math.random() * 6
+      });
+    }
+
+    // Destrucción instantánea de enemigos al ser atacados con espada
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const e = this.enemies[i];
+      if (slashX < e.x + e.width && slashX + slashW > e.x && slashY < e.y + e.height && slashY + slashH > e.y) {
+        this.createExplosion(e.x + e.width / 2, e.y + e.height / 2, 'enemy_explode', 1, e.width);
+        this.playExplosionSound();
+        this.enemies.splice(i, 1);
+        this.coinsCollected += 1;
+      }
+    }
+  }
+
   setupControls() {
     window.addEventListener('keydown', e => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         if (this.state === 'ready') this.startGame();
         this.input.up = true;
+        e.preventDefault();
+      }
+      if (e.code === 'KeyX' || e.code === 'KeyJ' || e.code === 'KeyZ') {
+        if (this.state === 'ready') this.startGame();
+        this.performAttack();
         e.preventDefault();
       }
       if (e.code === 'Escape' || e.code === 'KeyP') this.togglePause();
@@ -1059,15 +1155,32 @@ class LisarArcade2D {
     this.checkCollisions();
 
     // ================================================================
-    // ANIMACIÓN DEL JUGADOR - VUELO ESTABLE & FLUIDO
+    // ANIMACIÓN DEL JUGADOR - MÁQUINA DE ESTADOS (CORRE, VUELA, ATACA)
     // ================================================================
     this.player.frameTimer += dt;
     const onGround = this.player.y >= floorY - 2 || this.player.onCube;
 
+    if (this.player.isAttacking) {
+      this.player.attackTimer -= dt;
+      if (this.player.attackTimer <= 0) {
+        this.player.isAttacking = false;
+      }
+    }
+
     this.activeAnim = [];
     this.loopAnim   = false;
 
-    if (onGround) {
+    if (this.player.isAttacking) {
+      if (onGround) {
+        this.activeAnim = this.attackFrames;
+        this.loopAnim   = false;
+        this.player.frame = Math.min(4, Math.floor((1 - this.player.attackTimer / 0.28) * 5));
+      } else {
+        this.activeAnim = this.flyAttackFrames;
+        this.loopAnim   = false;
+        this.player.frame = Math.min(1, Math.floor((1 - this.player.attackTimer / 0.28) * 2));
+      }
+    } else if (onGround) {
       this.player.angle = 0;
       if (this.player.wasFlying) {
         this.player.landTimer = 0.15;
@@ -1084,7 +1197,6 @@ class LisarArcade2D {
         this.loopAnim   = true;
         this.animSpeed  = 0.08;
 
-        // Partículas de humo en los pies mientras corre en tierra
         if (speedBoost > 1.3 && this.particles.length < 40 && Math.random() > 0.45) {
           this.particles.push({
             x: this.player.x + this.player.width / 2 - 20 + Math.random() * 40,
@@ -1103,20 +1215,16 @@ class LisarArcade2D {
       this.player.landTimer = 0;
 
       if (this.player.vy > 80) {
-        // Caída libre / descenso
         this.activeAnim = [this.flyFallImg];
         this.loopAnim   = false;
         this.player.angle = (this.player.angle || 0) + (0.12 - (this.player.angle || 0)) * dt * 6;
       } else {
-        // Postura de vuelo estable y elegante sin parpadeo (lisarfly5)
         this.activeAnim = [this.flyLoopFrames[0]];
         this.loopAnim   = false;
 
-        // Inclinación de vuelo suave según velocidad vertical
         const targetAngle = this.player.vy < -100 ? -0.14 : -0.05;
         this.player.angle = (this.player.angle || 0) + (targetAngle - (this.player.angle || 0)) * dt * 6;
 
-        // Partículas de propulsión de jetpack
         if (this.input.up && Math.random() > 0.35) {
           this.particles.push({
             x: this.player.x + 30 + Math.random() * 15,
@@ -1132,13 +1240,15 @@ class LisarArcade2D {
       }
     }
 
-    if (this.loopAnim && this.activeAnim && this.activeAnim.length > 0) {
-      if (this.player.frameTimer > this.animSpeed) {
-        this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
-        this.player.frameTimer = 0;
+    if (!this.player.isAttacking) {
+      if (this.loopAnim && this.activeAnim && this.activeAnim.length > 0) {
+        if (this.player.frameTimer > this.animSpeed) {
+          this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
+          this.player.frameTimer = 0;
+        }
+      } else {
+        this.player.frame = 0;
       }
-    } else {
-      this.player.frame = 0;
     }
 
     // Generator de letreros pixel en el fondo (Lisar Studio billboards)
@@ -1337,21 +1447,48 @@ class LisarArcade2D {
     this.ctx.stroke();
     this.ctx.restore();
 
-    // Rayos dinámicos en el mapa al ritmo de la batería según intensidad del juego
-    const beatTime = performance.now() / 500; // 120 BPM drum beat
-    const beatPulse = Math.pow(Math.sin(beatTime * Math.PI), 4);
-    const gameIntensity = Math.min(1, this.gameTimer / 120);
+    // ================================================================
+    // TIMELINE SYNC WEATHER FX (2:22 Lightnings -> 2:12 Rain -> 2:04 Psychedelic -> 3:00 Calm)
+    // ================================================================
+    const remainingSec = Math.max(0, Math.ceil(180 - this.gameTimer));
 
-    if (gameIntensity > 0.10 && beatPulse > 0.65) {
+    // Lluvia de ladito (de 2:12 a 2:04 y durante desenlace final)
+    const isRaining = (remainingSec <= 132 && remainingSec > 124) || (remainingSec <= 20 && remainingSec > 8);
+    if (isRaining) {
       this.ctx.save();
-      // Destello púrpura cibernético en el fondo al ritmo de la batería
-      this.ctx.fillStyle = `rgba(162, 0, 255, ${0.05 + beatPulse * 0.12 * gameIntensity})`;
-      this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+      this.ctx.strokeStyle = 'rgba(180, 220, 255, 0.55)';
+      this.ctx.lineWidth = 1.8;
+      this.rainDrops.forEach(r => {
+        r.x -= r.speed * 0.45 * 0.016;
+        r.y += r.speed * 0.016;
+        if (r.y > this.logicalHeight) { r.y = -20; r.x = Math.random() * (this.logicalWidth + 200); }
+        if (r.x < -50) { r.x = this.logicalWidth + 50; }
+        this.ctx.beginPath();
+        this.ctx.moveTo(r.x, r.y);
+        this.ctx.lineTo(r.x - r.length * 0.5, r.y + r.length);
+        this.ctx.stroke();
+      });
+      this.ctx.restore();
+    }
 
-      // Rayo neón zig-zag cayendo al mapa
-      this.ctx.strokeStyle = Math.random() > 0.4 ? 'rgba(0, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.95)';
+    // Rayos & Modo Psicodélico (2:22 inicio de rayos | 2:04 psicodélico intenso)
+    const isLightningActive = (remainingSec <= 142 && remainingSec > 132) || (remainingSec <= 124 && remainingSec > 15);
+    const isPsychedelic = remainingSec <= 124 && remainingSec > 15;
+
+    const beatTime = performance.now() / 500;
+    const beatPulse = Math.pow(Math.sin(beatTime * Math.PI), 4);
+
+    if (isLightningActive && beatPulse > 0.60) {
+      this.ctx.save();
+      if (isPsychedelic) {
+        const flashHue = Math.floor((performance.now() / 250) % 3) === 0 ? 'rgba(255, 0, 255, 0.14)' : 'rgba(0, 255, 255, 0.14)';
+        this.ctx.fillStyle = flashHue;
+        this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+      }
+
+      this.ctx.strokeStyle = Math.random() > 0.4 ? 'rgba(0, 255, 255, 0.90)' : 'rgba(255, 255, 255, 0.95)';
       this.ctx.lineWidth = 2 + beatPulse * 3;
-      this.ctx.shadowBlur = 15;
+      this.ctx.shadowBlur = 18;
       this.ctx.shadowColor = '#00ffff';
       this.ctx.beginPath();
       let lx = (Math.random() * 0.8 + 0.1) * this.logicalWidth;
@@ -1542,6 +1679,95 @@ class LisarArcade2D {
       }
       this.ctx.restore();
     });
+
+    // ================================================================
+    // META LISAR STUDIO & PERSONAJES LU Y PETER BAILANDO EN LA LLEGADA
+    // ================================================================
+    if (this.gameTimer >= 165) {
+      const archX = Math.max(this.logicalWidth * 0.50, this.logicalWidth + 100 - (this.gameTimer - 165) * 110);
+      const floorY = this.logicalHeight - 70;
+
+      this.ctx.save();
+      
+      // Pilares de la Meta neón
+      this.ctx.shadowBlur = 20;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.fillRect(archX, floorY - 170, 16, 170);
+      this.ctx.fillRect(archX + 220, floorY - 170, 16, 170);
+
+      // Pancarta Meta
+      this.ctx.fillStyle = 'rgba(15, 15, 35, 0.92)';
+      this.ctx.strokeStyle = '#ff00ff';
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowColor = '#ff00ff';
+      this.ctx.fillRect(archX - 10, floorY - 200, 256, 45);
+      this.ctx.strokeRect(archX - 10, floorY - 200, 256, 45);
+
+      this.ctx.font = 'bold 18px "Orbitron", monospace';
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('🏆 META LISAR STUDIO', archX + 118, floorY - 172);
+
+      // Personajes Lu y Peter Bailando en la Meta
+      const dance1 = Math.sin(performance.now() / 120) * 8;
+      const dance2 = Math.sin(performance.now() / 120 + Math.PI) * 8;
+
+      // Lu (Avatar 1)
+      const luX = archX + 40;
+      const luY = floorY - 80 + dance1;
+      this.ctx.save();
+      this.ctx.shadowBlur = 12; this.ctx.shadowColor = '#00ffaa';
+      this.ctx.fillStyle = '#00ffaa';
+      this.ctx.beginPath();
+      this.ctx.arc(luX + 20, luY + 15, 16, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(luX + 8, luY + 31, 24, 42);
+      this.ctx.font = 'bold 13px "Orbitron", monospace';
+      this.ctx.fillText('LU', luX + 20, luY - 5);
+      this.ctx.restore();
+
+      // Peter (Avatar 2)
+      const peterX = archX + 150;
+      const peterY = floorY - 80 + dance2;
+      this.ctx.save();
+      this.ctx.shadowBlur = 12; this.ctx.shadowColor = '#ff9900';
+      this.ctx.fillStyle = '#ff9900';
+      this.ctx.beginPath();
+      this.ctx.arc(peterX + 20, peterY + 15, 16, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(peterX + 8, peterY + 31, 24, 42);
+      this.ctx.font = 'bold 13px "Orbitron", monospace';
+      this.ctx.fillText('PETER', peterX + 20, peterY - 5);
+      this.ctx.restore();
+
+      // Globo de Diálogo de Lu y Peter
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowBlur = 16;
+      this.ctx.shadowColor = '#00ffaa';
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) {
+        this.ctx.roundRect(archX - 25, floorY - 120, 270, 48, 8);
+      } else {
+        this.ctx.rect(archX - 25, floorY - 120, 270, 48);
+      }
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.font = 'bold 11px "Orbitron", monospace';
+      this.ctx.fillStyle = '#0a0a0c';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText("¡Felicidades por terminar nuestro Demo jugable!", archX + 110, floorY - 98);
+      this.ctx.font = '900 10px "Orbitron", monospace';
+      this.ctx.fillStyle = '#ff0055';
+      this.ctx.fillText("— Lu & Peter (Lisar Studio)", archX + 110, floorY - 82);
+
+      this.ctx.restore();
+    }
 
     // Jugador (Lisar)
     const blink = this.player.invulnerable <= 0 || Math.floor(this.player.invulnerable * 14) % 2 === 0;
