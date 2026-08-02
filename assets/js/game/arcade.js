@@ -142,20 +142,25 @@ class LisarArcade2D {
     this.logoImg.src = 'assets/img/logo-lisar-studio.png';
     this.logoImg.onload = () => { this.logoImg.loaded = true; };
 
-    // Sprites de Ataque (Tierra y Aire)
+    // Sprites de Ataque Oficiales (Atack1.png a atack8.png para Tierra | flyatack1.png a flyatack9.png para Aire)
     this.attackFrames = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 8; i++) {
       const img = new Image();
       img.loaded = false;
-      img.src = `assets/img/spritelisaratack${i === 1 ? '' : i}.png`;
+      const fileName = i <= 4 ? `Atack${i}.png` : `atack${i}.png`;
+      img.src = `assets/img/${fileName}`;
       img.onload = function() { this.loaded = true; };
       this.attackFrames.push(img);
     }
 
     this.flyAttackFrames = [];
-    const flyAtk1 = new Image(); flyAtk1.loaded = false; flyAtk1.src = 'assets/img/Spritelisarfly7.png'; flyAtk1.onload = function() { this.loaded = true; };
-    const flyAtk2 = new Image(); flyAtk2.loaded = false; flyAtk2.src = 'assets/img/Spritelisarfly8.png'; flyAtk2.onload = function() { this.loaded = true; };
-    this.flyAttackFrames.push(flyAtk1, flyAtk2);
+    for (let i = 1; i <= 9; i++) {
+      const img = new Image();
+      img.loaded = false;
+      img.src = `assets/img/flyatack${i}.png`;
+      img.onload = function() { this.loaded = true; };
+      this.flyAttackFrames.push(img);
+    }
 
     this.sprites = {
       floor:    { src: 'images/sprites_arcade/tiling_floor.png',    img: new Image(), loaded: false, cols: 1, rows: 1, totalFrames: 1 }
@@ -1174,11 +1179,13 @@ class LisarArcade2D {
       if (onGround) {
         this.activeAnim = this.attackFrames;
         this.loopAnim   = false;
-        this.player.frame = Math.min(4, Math.floor((1 - this.player.attackTimer / 0.28) * 5));
+        const total = this.attackFrames.length || 8;
+        this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.28) * total));
       } else {
         this.activeAnim = this.flyAttackFrames;
         this.loopAnim   = false;
-        this.player.frame = Math.min(1, Math.floor((1 - this.player.attackTimer / 0.28) * 2));
+        const total = this.flyAttackFrames.length || 9;
+        this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.28) * total));
       }
     } else if (onGround) {
       this.player.angle = 0;
