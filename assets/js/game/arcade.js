@@ -227,6 +227,11 @@ class LisarArcade2D {
     this.coins       = [];
     this.particles   = [];
     this.powerups    = [];
+    this.letterItems = [];
+    this.collectedLisarLetters = { L: false, I: false, S: false, A: false, R: false };
+    this.extraDiscountBonus = 0;
+    this.lisarWordBonusGranted = false;
+    this.celebrationTimer = 0;
 
     // Partículas de Lluvia Diagonal
     this.rainDrops = [];
@@ -625,8 +630,25 @@ class LisarArcade2D {
       <span id="arcade-coin-text" style="color:#ffd700;font-weight:bold;">0 / 100</span>
     `;
 
+    // TRACKER DE LETRAS LISAR EN EL HUD (Naranja Brillante)
+    const lisarRow = document.createElement('div');
+    lisarRow.id = 'arcade-lisar-row';
+    lisarRow.style.display = 'flex';
+    lisarRow.style.alignItems = 'center';
+    lisarRow.style.gap = '3px';
+    lisarRow.style.marginTop = '4px';
+    lisarRow.innerHTML = `
+      <div style="font-size:0.58rem; color:#ff9900; font-weight:bold; margin-right:1px; text-shadow:0 0 5px #ff8800;">BONUS:</div>
+      <span id="letter-badge-L" style="padding:1px 4px; border-radius:3px; background:rgba(30,20,0,0.8); border:1px solid #554400; color:#554400; font-weight:bold; font-size:0.7rem; font-family:'Orbitron',sans-serif;">L</span>
+      <span id="letter-badge-I" style="padding:1px 4px; border-radius:3px; background:rgba(30,20,0,0.8); border:1px solid #554400; color:#554400; font-weight:bold; font-size:0.7rem; font-family:'Orbitron',sans-serif;">I</span>
+      <span id="letter-badge-S" style="padding:1px 4px; border-radius:3px; background:rgba(30,20,0,0.8); border:1px solid #554400; color:#554400; font-weight:bold; font-size:0.7rem; font-family:'Orbitron',sans-serif;">S</span>
+      <span id="letter-badge-A" style="padding:1px 4px; border-radius:3px; background:rgba(30,20,0,0.8); border:1px solid #554400; color:#554400; font-weight:bold; font-size:0.7rem; font-family:'Orbitron',sans-serif;">A</span>
+      <span id="letter-badge-R" style="padding:1px 4px; border-radius:3px; background:rgba(30,20,0,0.8); border:1px solid #554400; color:#554400; font-weight:bold; font-size:0.7rem; font-family:'Orbitron',sans-serif;">R</span>
+    `;
+
     leftBar.appendChild(this.energyContainer);
     leftBar.appendChild(coinRow);
+    leftBar.appendChild(lisarRow);
 
     // CENTER: Spacer
     const centerBar = document.createElement('div');
@@ -700,8 +722,22 @@ class LisarArcade2D {
     }
   }
 
+  updateLetterBadges() {
+    ['L', 'I', 'S', 'A', 'R'].forEach(l => {
+      const el = document.getElementById(`letter-badge-${l}`);
+      if (el && this.collectedLisarLetters && this.collectedLisarLetters[l]) {
+        el.style.background = 'linear-gradient(180deg, #ff9900, #ff4400)';
+        el.style.border = '1px solid #ffd700';
+        el.style.color = '#ffffff';
+        el.style.boxShadow = '0 0 10px #ff8800';
+        el.style.textShadow = '0 0 6px #ffffff';
+      }
+    });
+  }
+
   updateHUD() {
     this.updateEnergyBars();
+    this.updateLetterBadges();
     const coins = document.getElementById('arcade-coin-text');
     if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
 
@@ -947,22 +983,26 @@ class LisarArcade2D {
     this.audio.pause();
     this.hud.style.display = 'none';
 
-    // Descuento final basado en monedas recogidas (5% cada 20, max 25%)
-    const discount = Math.min(25, Math.floor(this.coinsCollected / 20) * 5);
-    localStorage.setItem('lisar_discount_game2', discount.toString());
+    // Descuento final basado en monedas recogidas + bonus extra L-I-S-A-R (+10%)
+    const baseDiscount = Math.min(25, Math.floor(this.coinsCollected / 20) * 5);
+    const extraBonus = (this.extraDiscountBonus || 0);
+    const totalDiscount = Math.min(35, baseDiscount + extraBonus);
+    localStorage.setItem('lisar_discount_game2', totalDiscount.toString());
 
     if (victory) {
       this.showMessage(
-        '¡MISIÓN COMPLETADA!',
-        `Sobreviviste los 3 minutos de vuelo y recolectaste ${this.coinsCollected} monedas.<br><br>` +
-        `<div style="font-size:1.35rem; color:#00ff00; font-weight:bold; text-shadow:0 0 10px #00ff00;">¡DESCUENTO TOTAL ACUMULADO: ${discount}%!</div><br>` +
-        `Puntaje Final: ${this.coinsCollected * 120} pts`,
+        '🎉 ¡DEMO JUGABLE COMPLETADA!',
+        `<div style="font-size:0.95rem; color:#ffffff; font-weight:bold; margin-bottom:6px;">Lu y Peter te agradecen por terminar nuestro Demo jugable.</div>` +
+        `Sobreviviste los 3:00 minutos de vuelo y recolectaste ${this.coinsCollected} monedas.<br>` +
+        (extraBonus > 0 ? `<div style="color:#ffd700; font-weight:bold; margin:6px 0; font-size:1rem;">🔥 ¡Bonus Palabra L-I-S-A-R (+10% Extra) Incluido!</div>` : '') +
+        `<div style="font-size:1.35rem; color:#00ffaa; font-weight:bold; text-shadow:0 0 10px #00ffaa; margin-top:8px;">¡DESCUENTO TOTAL GANADO: ${totalDiscount}%!</div><br>` +
+        `Puntaje Final: ${(this.coinsCollected * 120) + (extraBonus * 200)} pts`,
         'Reclamar Premio',
         () => {
           this.destroy();
           const ov = document.getElementById('arcade-overlay');
           if (ov) ov.style.display = 'flex';
-          if (window.triggerPromoChatbot) window.triggerPromoChatbot(discount);
+          if (window.triggerPromoChatbot) window.triggerPromoChatbot(totalDiscount);
         }
       );
     } else {
@@ -982,6 +1022,24 @@ class LisarArcade2D {
 
   spawnEntity(dt) {
     this.spawnTimer += dt;
+
+    // Generador de Letras Naranjas L-I-S-A-R
+    const letterSequence = ['L', 'I', 'S', 'A', 'R'];
+    const intervalSec = 32;
+    const letterIdx = Math.floor(this.gameTimer / intervalSec);
+    if (letterIdx < 5) {
+      const targetLetter = letterSequence[letterIdx];
+      if (!this.collectedLisarLetters[targetLetter] && !this.letterItems.some(item => item.letter === targetLetter)) {
+        this.letterItems.push({
+          letter: targetLetter,
+          x: this.logicalWidth + 80,
+          y: 185,
+          width: 55, height: 55,
+          vx: -this.floorSpeed
+        });
+      }
+    }
+
     // Spacing interval: 2.4s between challenge waves ensures zero screen clutter!
     if (this.spawnTimer < 2.4) return;
     this.spawnTimer = 0;
@@ -1159,6 +1217,38 @@ class LisarArcade2D {
           this.lastDiscountThreshold = currentThreshold;
           const currentPct = currentThreshold * 5;
           this.showTemporaryAlert("🎁 ¡DESCUENTO ACUMULADO!", `¡Has ganado un ${currentPct}% de descuento acumulable!`, 3.5);
+        }
+      }
+    }
+
+    // Colisión y Recolección de Letras Naranjas L-I-S-A-R
+    for (let i = this.letterItems.length - 1; i >= 0; i--) {
+      const item = this.letterItems[i];
+      const itemCenterX = item.x + item.width / 2;
+      const itemCenterY = item.y + item.height / 2;
+      const dist = Math.hypot(playerCenterX - itemCenterX, playerCenterY - itemCenterY);
+
+      if (dist < 90) {
+        const l = item.letter;
+        this.collectedLisarLetters[l] = true;
+        this.updateLetterBadges();
+        this.createExplosion(itemCenterX, itemCenterY, '#ff8800', 16);
+        this.playCoinSound();
+        this.showTemporaryAlert("🔥 ¡LETRA [" + l + "] RECOLECTADA!", "¡Completa L-I-S-A-R para +10% Extra!", 2.5);
+        this.speak(`Letter ${l} collected!`);
+        this.letterItems.splice(i, 1);
+
+        const allCollected = ['L', 'I', 'S', 'A', 'R'].every(letra => this.collectedLisarLetters[letra]);
+        if (allCollected && !this.lisarWordBonusGranted) {
+          this.lisarWordBonusGranted = true;
+          this.extraDiscountBonus = (this.extraDiscountBonus || 0) + 10;
+          this.speak("Word Lisar Complete! Extra 10% Discount Unlocked!");
+          this.showTemporaryAlert(
+            "🎁 ¡PALABRA LISAR COMPLETADA!",
+            "¡HAS GANADO UN +10% DE DESCUENTO EXTRA ACUMULABLE!",
+            4.5
+          );
+          this.updateHUD();
         }
       }
     }
@@ -1561,6 +1651,13 @@ class LisarArcade2D {
       if (c.x < -c.width * 2) this.coins.splice(i, 1);
     }
 
+    // Movimiento de Letras Naranjas L-I-S-A-R
+    for (let i = this.letterItems.length - 1; i >= 0; i--) {
+      const item = this.letterItems[i];
+      item.x += item.vx * dt;
+      if (item.x < -item.width * 2) this.letterItems.splice(i, 1);
+    }
+
     // Powerups (Bota de Energía Magnética Homing / Rayitos)
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
@@ -1671,7 +1768,36 @@ class LisarArcade2D {
     if (this.player.hp <= 0 && this.state === 'playing') {
       this.endGame(false);
     } else if (this.gameTimer >= 180 && this.state === 'playing') {
-      this.endGame(true);
+      this.state = 'celebration';
+      this.celebrationTimer = 7.0;
+      this.speak("Congratulations on finishing our playable demo!");
+      this.showTemporaryAlert(
+        "🎉 ¡META ALCANZADA!",
+        "¡Lu y Peter te felicitan por terminar nuestro Demo jugable!",
+        6.5
+      );
+    }
+
+    if (this.state === 'celebration') {
+      this.celebrationTimer -= dt;
+
+      // Fuegos artificiales neón de celebración
+      if (Math.random() > 0.35) {
+        this.particles.push({
+          x: Math.random() * this.logicalWidth,
+          y: Math.random() * (this.logicalHeight - 90),
+          vx: (Math.random() - 0.5) * 220,
+          vy: (Math.random() - 0.5) * 220,
+          life: 0.8,
+          maxLife: 0.8,
+          color: ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa'][Math.floor(Math.random() * 4)],
+          size: 4 + Math.random() * 6
+        });
+      }
+
+      if (this.celebrationTimer <= 0) {
+        this.endGame(true);
+      }
     }
   }
 
@@ -2011,6 +2137,35 @@ class LisarArcade2D {
       }
     });
 
+    // Renderizado de Letras Naranjas Brillantes L-I-S-A-R
+    this.letterItems.forEach(item => {
+      this.ctx.save();
+      const cx = item.x + item.width / 2;
+      const cy = item.y + item.height / 2;
+      const floatY = cy + Math.sin(performance.now() / 140) * 4;
+
+      this.ctx.shadowBlur = 22;
+      this.ctx.shadowColor = '#ff7700';
+
+      this.ctx.fillStyle = 'rgba(255, 110, 0, 0.94)';
+      this.ctx.strokeStyle = '#ffd700';
+      this.ctx.lineWidth = 2.8;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, floatY, 25, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.font = '900 22px "Orbitron", sans-serif';
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.fillText(item.letter, cx, floatY + 1);
+
+      this.ctx.restore();
+    });
+
     // Powerups (Rayitos de Energía Eléctrica)
     this.powerups.forEach(p => {
       this.ctx.save();
@@ -2161,51 +2316,45 @@ class LisarArcade2D {
       this.ctx.textAlign = 'center';
       this.ctx.fillText('🏆 META LISAR STUDIO', archX + 118, floorY - 172);
 
-      // Personajes Lu y Peter Bailando en la Meta
-      const dance1 = Math.sin(performance.now() / 120) * 8;
-      const dance2 = Math.sin(performance.now() / 120 + Math.PI) * 8;
+      // Renderizado de Sprites Oficiales de Lu y Peter Bailando en la Meta
+      const animIdx = Math.floor(performance.now() / 100) % 10;
+      const luImg = this.luFrames[animIdx];
+      const peterImg = this.peterFrames[animIdx];
+      const charH = 145;
 
-      // Lu (Avatar 1)
-      const luX = archX + 40;
-      const luY = floorY - 80 + dance1;
-      this.ctx.save();
-      this.ctx.shadowBlur = 12; this.ctx.shadowColor = '#00ffaa';
-      this.ctx.fillStyle = '#00ffaa';
-      this.ctx.beginPath();
-      this.ctx.arc(luX + 20, luY + 15, 16, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(luX + 8, luY + 31, 24, 42);
-      this.ctx.font = 'bold 13px "Orbitron", monospace';
-      this.ctx.fillText('LU', luX + 20, luY - 5);
-      this.ctx.restore();
+      if (luImg && luImg.loaded) {
+        const luW = luImg.width * (charH / luImg.height);
+        this.ctx.save();
+        this.ctx.shadowBlur = 16;
+        this.ctx.shadowColor = '#00ffaa';
+        this.ctx.drawImage(luImg, archX + 25 - luW / 2, floorY - charH + 10, luW, charH);
+        this.ctx.restore();
+      }
 
-      // Peter (Avatar 2)
-      const peterX = archX + 150;
-      const peterY = floorY - 80 + dance2;
-      this.ctx.save();
-      this.ctx.shadowBlur = 12; this.ctx.shadowColor = '#ff9900';
-      this.ctx.fillStyle = '#ff9900';
-      this.ctx.beginPath();
-      this.ctx.arc(peterX + 20, peterY + 15, 16, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(peterX + 8, peterY + 31, 24, 42);
-      this.ctx.font = 'bold 13px "Orbitron", monospace';
-      this.ctx.fillText('PETER', peterX + 20, peterY - 5);
-      this.ctx.restore();
+      if (peterImg && peterImg.loaded) {
+        const peterW = peterImg.width * (charH / peterImg.height);
+        this.ctx.save();
+        this.ctx.shadowBlur = 16;
+        this.ctx.shadowColor = '#ff8800';
+        this.ctx.drawImage(peterImg, archX + 175 - peterW / 2, floorY - charH + 10, peterW, charH);
+        this.ctx.restore();
+      }
 
-      // Globo de Diálogo de Lu y Peter
+      // Globo de diálogo de Lu y Peter en la Meta
       this.ctx.fillStyle = '#ffffff';
       this.ctx.strokeStyle = '#000000';
       this.ctx.lineWidth = 3;
-      this.ctx.shadowBlur = 16;
-      this.ctx.shadowColor = '#00ffaa';
+      this.ctx.shadowBlur = 18;
+      this.ctx.shadowColor = '#00ffff';
       this.ctx.beginPath();
+      const bubbleW = 330;
+      const bubbleH = 34;
+      const bubbleX = archX + 100 - bubbleW / 2;
+      const bubbleY = floorY - charH - 42;
       if (this.ctx.roundRect) {
-        this.ctx.roundRect(archX - 25, floorY - 120, 270, 48, 8);
+        this.ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 8);
       } else {
-        this.ctx.rect(archX - 25, floorY - 120, 270, 48);
+        this.ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
       }
       this.ctx.fill();
       this.ctx.stroke();
@@ -2213,10 +2362,7 @@ class LisarArcade2D {
       this.ctx.font = 'bold 11px "Orbitron", monospace';
       this.ctx.fillStyle = '#0a0a0c';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText("¡Felicidades por terminar nuestro Demo jugable!", archX + 110, floorY - 98);
-      this.ctx.font = '900 10px "Orbitron", monospace';
-      this.ctx.fillStyle = '#ff0055';
-      this.ctx.fillText("— Lu & Peter (Lisar Studio)", archX + 110, floorY - 82);
+      this.ctx.fillText("¡FELICIDADES POR TERMINAR NUESTRO DEMO JUGABLE!", bubbleX + bubbleW / 2, bubbleY + 21);
 
       this.ctx.restore();
     }
