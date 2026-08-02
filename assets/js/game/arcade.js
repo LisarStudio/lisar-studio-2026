@@ -263,20 +263,68 @@ class LisarArcade2D {
   }
 
   showInstructions() {
-    this.showMessage(
-      '🎮 LISAR JET RUSH',
-      `<div style="text-align:center; max-width:94%; color:#ffffff; font-family:'Orbitron', sans-serif;">` +
-      `<p style="margin:4px 0 12px 0; font-size:1.05rem; color:#ffd700; font-weight:bold;">¡Guía de Controles & Instrucciones de Vuelo!</p>` +
-      `<div style="background:rgba(15,15,35,0.88); border:2px solid #00f3ff; border-radius:10px; padding:14px 20px; margin-bottom:14px; box-shadow:0 0 15px #00f3ff; text-align:left;">` +
-      `<p style="margin:6px 0; font-size:1rem; color:#ffffff;"><span style="color:#ffd700; font-weight:bold;">🚀 VUELO / JETPACK:</span> Tecla <b style="color:#00ffff;">Espacio</b> / <b style="color:#00ffff;">Flecha Arriba</b> / <b style="color:#00ffff;">Touch Pantalla</b></p>` +
-      `<p style="margin:6px 0; font-size:1rem; color:#ffffff;"><span style="color:#ff00ff; font-weight:bold;">⚔️ ATAQUE CON BÁCULO:</span> Tecla <b style="color:#00ffff;">X</b> / <b style="color:#00ffff;">J</b> / <b style="color:#00ffff;">Z</b> / <b style="color:#00ffff;">Botón Atacar</b></p>` +
-      `<p style="margin:6px 0; font-size:1rem; color:#ffffff;"><span style="color:#00ffaa; font-weight:bold;">⏸️ PAUSA:</span> Tecla <b style="color:#00ffff;">ESC</b> / <b style="color:#00ffff;">P</b></p>` +
-      `</div>` +
-      `<p style="font-size:0.92rem; color:#ffffff; line-height:1.4;">Sobrevive los <b style="color:#00ffff;">3:00 minutos</b>, destruye enemigos con tu báculo y acumula hasta un <b style="color:#00ffaa;">25% de descuento</b> acumulable para servicios.</p>` +
-      `</div>`,
-      '¡INICIAR JUEGO!',
-      () => this.startGame()
-    );
+    if (this.instructionCardEl) this.instructionCardEl.remove();
+
+    this.instructionCardEl = document.createElement('div');
+    Object.assign(this.instructionCardEl.style, {
+      position: 'absolute',
+      top: '105px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: '88%',
+      maxWidth: '440px',
+      background: 'rgba(10, 12, 28, 0.96)',
+      border: '2.5px solid #00f3ff',
+      boxShadow: '0 0 22px rgba(0, 243, 255, 0.8), inset 0 0 15px rgba(0, 243, 255, 0.2)',
+      borderRadius: '12px',
+      padding: '16px 20px',
+      color: '#ffffff',
+      fontFamily: "'Orbitron', sans-serif",
+      zIndex: '30',
+      textAlign: 'center',
+      pointerEvents: 'auto',
+      transition: 'opacity 0.4s ease-out'
+    });
+
+    this.instructionCardEl.innerHTML = `
+      <h3 style="margin:0 0 8px 0; color:#00f3ff; font-size:1.15rem; font-weight:900; text-shadow:0 0 10px #00f3ff; letter-spacing:1px;">
+        🎮 LISAR JET RUSH — GUÍA DE VUELO
+      </h3>
+      <div style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(0,243,255,0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; text-align:left;">
+        <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#ffd700;">🚀 VUELO / JETPACK:</span> <b style="color:#ffffff;">Espacio</b> / <b style="color:#ffffff;">Flecha Arriba</b> / <b style="color:#ffffff;">Touch</b></p>
+        <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#ff00ff;">⚔️ ATAQUE CON BÁCULO:</span> Tecla <b style="color:#ffffff;">X</b> / <b style="color:#ffffff;">J</b> / <b style="color:#ffffff;">Z</b> / <b style="color:#ffffff;">Botón</b></p>
+        <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#00ffaa;">⏸️ PAUSA:</span> Tecla <b style="color:#ffffff;">ESC</b> / <b style="color:#ffffff;">P</b></p>
+      </div>
+      <p style="margin:0 0 12px 0; font-size:0.85rem; color:#ffffff; font-weight:bold; line-height:1.35;">
+        ¡Sobrevive los <span style="color:#00ffff;">3:00 minutos</span>, destruye enemigos con tu báculo y acumula hasta <span style="color:#00ffaa;">25% de descuento</span>!
+      </p>
+      <button id="start-instructions-btn" style="padding:10px 26px; font-size:1.05rem; background:linear-gradient(90deg, #ff9900, #ff0055); color:#fff; border:2px solid #fff; border-radius:8px; cursor:pointer; font-weight:bold; boxShadow:0 0 16px #ff8800; fontFamily:'Orbitron', sans-serif;">
+        ¡INICIAR JUEGO!
+      </button>
+    `;
+
+    this.container.appendChild(this.instructionCardEl);
+
+    const startBtn = document.getElementById('start-instructions-btn');
+    if (startBtn) {
+      const handleStart = (e) => {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        this.hideInstructionsCard();
+        this.startGame();
+      };
+      startBtn.addEventListener('click', handleStart);
+      startBtn.addEventListener('touchstart', handleStart, { passive: false });
+    }
+  }
+
+  hideInstructionsCard() {
+    if (this.instructionCardEl) {
+      this.instructionCardEl.style.opacity = '0';
+      setTimeout(() => {
+        if (this.instructionCardEl) this.instructionCardEl.remove();
+        this.instructionCardEl = null;
+      }, 400);
+    }
   }
 
   initReadyCSS() {
@@ -844,6 +892,7 @@ class LisarArcade2D {
 
   startGame() {
     this.hideMessage();
+    this.hideInstructionsCard();
     if (this.readyOverlayEl) this.readyOverlayEl.style.display = 'none';
     this.state = 'playing';
     this.resize();
@@ -1448,7 +1497,7 @@ class LisarArcade2D {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
       this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
-      this.luBoostY = 210;  // Altura exacta marcada en la captura por el usuario
+      this.luBoostY = 175;  // Altura exacta marcada en la franja por el usuario
       this.luBoostFrame = 0;
       this.luBoostTimer = 0;
       this.luBoostDropped = false;
@@ -1471,14 +1520,14 @@ class LisarArcade2D {
       }
 
       // Al aproximarse sobre el jugador, Lu le lanza la Bota de Energía hacia abajo
-      if (this.luBoostX >= (this.player.x + 40) && !this.luBoostDropped) {
+      if (this.luBoostX >= (this.player.x + 30) && !this.luBoostDropped) {
         this.luBoostDropped = true;
         this.powerups.push({
           x: this.luBoostX + 20,
           y: this.luBoostY + 40,
           width: 60, height: 60,
-          vx: 50,
-          vy: 140,
+          vx: 0,
+          vy: 0,
           isBoot: true,
           frameTimer: 0
         });
@@ -1507,12 +1556,37 @@ class LisarArcade2D {
       if (c.x < -c.width * 2) this.coins.splice(i, 1);
     }
 
-    // Powerups (Rayitos de Energía)
+    // Powerups (Bota de Energía Magnética Homing / Rayitos)
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
-      p.x += p.vx * dt;
-      p.frameTimer += dt * 5;
-      p.y += Math.sin(p.frameTimer) * 1.8;
+      if (p.isBoot) {
+        // HOMING MAGNÉTICO DIRECTO AL JUGADOR (Va directo al personaje automáticamente)
+        const targetX = this.player.x + 40;
+        const targetY = this.player.y + 45;
+        const dx = targetX - (p.x + p.width / 2);
+        const dy = targetY - (p.y + p.height / 2);
+        const dist = Math.hypot(dx, dy);
+
+        if (dist > 10) {
+          p.x += (dx / dist) * 480 * dt;
+          p.y += (dy / dist) * 480 * dt;
+        }
+
+        // Absorción Automática cuando está cerca del personaje
+        if (dist < 50) {
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + 35);
+          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 16);
+          this.playCoinSound();
+          this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
+          this.speak("Energy Restored!");
+          this.powerups.splice(i, 1);
+          continue;
+        }
+      } else {
+        p.x += p.vx * dt;
+        p.frameTimer += dt * 5;
+        p.y += Math.sin(p.frameTimer) * 1.8;
+      }
       if (p.x < -p.width * 2) this.powerups.splice(i, 1);
     }
 
