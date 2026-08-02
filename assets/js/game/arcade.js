@@ -229,6 +229,7 @@ class LisarArcade2D {
     this.powerups    = [];
     this.letterItems = [];
     this.collectedLisarLetters = { L: false, I: false, S: false, A: false, R: false };
+    this.spawnedLetters = { L: false, I: false, S: false, A: false, R: false };
     this.extraDiscountBonus = 0;
     this.lisarWordBonusGranted = false;
     this.celebrationTimer = 0;
@@ -273,19 +274,19 @@ class LisarArcade2D {
     this.instructionCardEl = document.createElement('div');
     Object.assign(this.instructionCardEl.style, {
       position: 'absolute',
-      top: '105px',
+      top: '155px',
       left: '50%',
       transform: 'translateX(-50%)',
       width: '88%',
       maxWidth: '440px',
-      background: 'rgba(10, 12, 28, 0.96)',
+      background: 'rgba(10, 12, 28, 0.97)',
       border: '2.5px solid #00f3ff',
-      boxShadow: '0 0 22px rgba(0, 243, 255, 0.8), inset 0 0 15px rgba(0, 243, 255, 0.2)',
+      boxShadow: '0 0 24px rgba(0, 243, 255, 0.9), inset 0 0 15px rgba(0, 243, 255, 0.2)',
       borderRadius: '12px',
       padding: '16px 20px',
       color: '#ffffff',
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: '30',
+      zIndex: '50',
       textAlign: 'center',
       pointerEvents: 'auto',
       transition: 'opacity 0.4s ease-out'
@@ -687,8 +688,8 @@ class LisarArcade2D {
     Object.assign(this.msgOverlay.style, {
       position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-      paddingTop: '105px', boxSizing: 'border-box',
-      background: 'rgba(5,6,15,0.92)', color: '#fff', zIndex: '20', pointerEvents: 'none'
+      paddingTop: '160px', boxSizing: 'border-box',
+      background: 'rgba(5,6,15,0.92)', color: '#fff', zIndex: '40', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
 
@@ -1023,21 +1024,29 @@ class LisarArcade2D {
   spawnEntity(dt) {
     this.spawnTimer += dt;
 
-    // Generador de Letras Naranjas L-I-S-A-R
-    const letterSequence = ['L', 'I', 'S', 'A', 'R'];
-    const intervalSec = 32;
-    const letterIdx = Math.floor(this.gameTimer / intervalSec);
-    if (letterIdx < 5) {
-      const targetLetter = letterSequence[letterIdx];
-      if (!this.collectedLisarLetters[targetLetter] && !this.letterItems.some(item => item.letter === targetLetter)) {
-        this.letterItems.push({
-          letter: targetLetter,
-          x: this.logicalWidth + 80,
-          y: 185,
-          width: 55, height: 55,
-          vx: -this.floorSpeed
-        });
-      }
+    // Generador de Letras Naranjas L-I-S-A-R (Inicia a los 20s, 1 sola vez por letra, alturas aleatorias)
+    if (this.gameTimer >= 20.0) {
+      const letterSchedule = [
+        { time: 25.0, letter: 'L' },
+        { time: 55.0, letter: 'I' },
+        { time: 85.0, letter: 'S' },
+        { time: 115.0, letter: 'A' },
+        { time: 145.0, letter: 'R' }
+      ];
+
+      letterSchedule.forEach(item => {
+        if (this.gameTimer >= item.time && !this.spawnedLetters[item.letter]) {
+          this.spawnedLetters[item.letter] = true;
+          const randomY = 130 + Math.random() * 160;
+          this.letterItems.push({
+            letter: item.letter,
+            x: this.logicalWidth + 80,
+            y: randomY,
+            width: 55, height: 55,
+            vx: -this.floorSpeed
+          });
+        }
+      });
     }
 
     // Spacing interval: 2.4s between challenge waves ensures zero screen clutter!
@@ -1072,11 +1081,11 @@ class LisarArcade2D {
         });
       }
     } else if (challengeIndex === 1) {
-      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Franja Verde (Y = 180-195px)
+      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Altura Media (Y = 220-240px)
       this.spawnEnemy1(progress);
 
       for (let i = 0; i < 5; i++) {
-        const archY = 190 - Math.sin((i / 4) * Math.PI) * 15;
+        const archY = 240 - Math.sin((i / 4) * Math.PI) * 20;
         this.coins.push({
           x: startX + i * 48,
           y: archY,
@@ -1086,12 +1095,12 @@ class LisarArcade2D {
         });
       }
     } else if (challengeIndex === 2) {
-      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Franja Verde (Y = 185px)
+      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Altura Media (Y = 235px)
       this.spawnEnemy2(progress);
 
-      const highY = 185;
+      const highY = 235;
       const diamondOffsets = [
-        { dx: 0, dy: 0 }, { dx: 36, dy: -12 }, { dx: 36, dy: 12 }, { dx: 72, dy: 0 }
+        { dx: 0, dy: 0 }, { dx: 36, dy: -14 }, { dx: 36, dy: 14 }, { dx: 72, dy: 0 }
       ];
       diamondOffsets.forEach(off => {
         this.coins.push({
@@ -1103,11 +1112,11 @@ class LisarArcade2D {
         });
       });
     } else if (challengeIndex === 3) {
-      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Franja Verde
+      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Altura Media (Y = 235px)
       if (this.player.hp < this.player.maxHp * 0.8) {
         this.powerups.push({
           x: startX + 40,
-          y: 185,
+          y: 235,
           width: 50, height: 50,
           vx: -(this.floorSpeed + 15),
           frameTimer: 0
@@ -1117,14 +1126,14 @@ class LisarArcade2D {
       for (let i = 0; i < 6; i++) {
         this.coins.push({
           x: startX + i * 50,
-          y: 185 + Math.sin(i * 0.9) * 14,
+          y: 235 + Math.sin(i * 0.9) * 20,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
         });
       }
     } else if (challengeIndex === 4) {
-      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Medio de Monedas en Franja Verde
+      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Medio de Monedas en Altura Media (Y = 245px)
       this.enemies.push({
         type: 0,
         x: startX,
@@ -1137,7 +1146,7 @@ class LisarArcade2D {
       for (let i = 0; i < 5; i++) {
         this.coins.push({
           x: startX + i * 46,
-          y: 190,
+          y: 245,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
@@ -1160,8 +1169,8 @@ class LisarArcade2D {
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    const minY = 35;
-    const maxY = 210;
+    const minY = 160;
+    const maxY = 260;
     const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
       type: 1,
@@ -1592,7 +1601,7 @@ class LisarArcade2D {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
       this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
-      this.luBoostY = 185;  // Altura exacta marcada en la franja verde por el usuario
+      this.luBoostY = 225;  // Altura cómoda de vuelo medio (Y = 225px)
       this.luBoostFrame = 0;
       this.luBoostTimer = 0;
       this.luBoostDropped = false;
