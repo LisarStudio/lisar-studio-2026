@@ -729,128 +729,108 @@ class LisarArcade2D {
 
   spawnEntity(dt) {
     this.spawnTimer += dt;
-    const t = this.gameTimer;
-    const progress  = Math.min(1, t / 60);
-    
-    // Pacing changes with time phases (Inafune/Kojima style design)
-    let spawnRate = 1.8;
-    if (t > 45) spawnRate = 0.65;
-    else if (t > 30) spawnRate = 0.9;
-    else if (t > 15) spawnRate = 1.3;
-
-    // High Density Coin Wave Generator (100+ coins per minute guaranteed)
-    this.coinSpawnTimer = (this.coinSpawnTimer || 0) + dt;
-    if (this.coinSpawnTimer > 1.25) {
-      this.coinSpawnTimer = 0;
-      const pattern = Math.floor(Math.random() * 5);
-      const startX = this.logicalWidth + 40;
-      const startY = 70 + Math.random() * (this.logicalHeight - 220);
-
-      if (pattern === 0) {
-        // Fila recta horizontal (7 monedas)
-        for (let i = 0; i < 7; i++) {
-          this.coins.push({
-            x: startX + i * 48,
-            y: startY,
-            width: 70, height: 70,
-            vx: -this.floorSpeed,
-            frame: 0, frameTimer: 0
-          });
-        }
-      } else if (pattern === 1) {
-        // Arco parabólico (8 monedas)
-        for (let i = 0; i < 8; i++) {
-          const archY = startY - Math.sin((i / 7) * Math.PI) * 85;
-          this.coins.push({
-            x: startX + i * 46,
-            y: Math.max(30, Math.min(this.logicalHeight - 140, archY)),
-            width: 70, height: 70,
-            vx: -this.floorSpeed,
-            frame: 0, frameTimer: 0
-          });
-        }
-      } else if (pattern === 2) {
-        // Matriz 3x3 de monedas (9 monedas)
-        for (let row = 0; row < 3; row++) {
-          for (let col = 0; col < 3; col++) {
-            this.coins.push({
-              x: startX + col * 46,
-              y: startY + row * 46,
-              width: 65, height: 65,
-              vx: -this.floorSpeed,
-              frame: 0, frameTimer: 0
-            });
-          }
-        }
-      } else if (pattern === 3) {
-        // Onda doble arriba y abajo (10 monedas)
-        for (let i = 0; i < 5; i++) {
-          this.coins.push({
-            x: startX + i * 50,
-            y: 50,
-            width: 70, height: 70,
-            vx: -this.floorSpeed,
-            frame: 0, frameTimer: 0
-          });
-          this.coins.push({
-            x: startX + i * 50,
-            y: this.logicalHeight - 150,
-            width: 70, height: 70,
-            vx: -this.floorSpeed,
-            frame: 0, frameTimer: 0
-          });
-        }
-      } else {
-        // Rampa diagonal (6 monedas)
-        for (let i = 0; i < 6; i++) {
-          this.coins.push({
-            x: startX + i * 48,
-            y: startY + i * 18,
-            width: 70, height: 70,
-            vx: -this.floorSpeed,
-            frame: 0, frameTimer: 0
-          });
-        }
-      }
-    }
-
-    if (this.spawnTimer < spawnRate) return;
+    // Spacing interval: 2.4s between challenge waves ensures zero screen clutter!
+    if (this.spawnTimer < 2.4) return;
     this.spawnTimer = 0;
 
-    const r = Math.random();
+    this.stageStep = (this.stageStep || 0) + 1;
+    const challengeIndex = this.stageStep % 5;
+    const progress = Math.min(1, this.gameTimer / 180);
+    const startX = this.logicalWidth + 30;
 
-    // Powerups si hace falta vida
-    if (r > 0.88 && this.player.hp < this.player.maxHp) {
-      this.powerups.push({
-        x: this.logicalWidth + 30,
-        y: 60 + Math.random() * (this.logicalHeight - 200),
-        width: 50, height: 50,
-        vx: -(this.floorSpeed + 25),
-        frameTimer: 0
+    if (challengeIndex === 0) {
+      // DESAFÍO TIPO MEGAMAN X4 - A: Plataforma de Cubo + Monedas sobre la superficie
+      const cubeY = this.logicalHeight - 200 - 70;
+      this.enemies.push({
+        type: 0,
+        x: startX,
+        y: cubeY,
+        width: 140, height: 200,
+        vx: -this.floorSpeed,
+        hp: 9999
       });
-      return;
-    }
 
-    // Olas y Patrones
-    let p = Math.random();
-    if (t < 15) {
-      this.spawnEnemy0();
-    } else if (t < 30) {
-      if (p < 0.5) this.spawnEnemy0();
-      else this.spawnEnemy1(progress);
-    } else if (t < 45) {
-      if (p < 0.33) this.spawnEnemy0();
-      else if (p < 0.66) this.spawnEnemy1(progress);
-      else this.spawnEnemy2(progress);
-    } else {
-      if (p < 0.3) {
-        this.spawnEnemy1(progress);
-        this.spawnEnemy2(progress, 200);
-      } else if (p < 0.6) {
-        this.spawnEnemy0();
-        this.spawnEnemy2(progress, 300); 
-      } else {
-        this.spawnEnemy1(progress);
+      // 4 Monedas descansando sobre el cubo (recompensa por pisar el bloque)
+      for (let i = 0; i < 4; i++) {
+        this.coins.push({
+          x: startX + 15 + i * 30,
+          y: cubeY - 60,
+          width: 60, height: 60,
+          vx: -this.floorSpeed,
+          frame: 0, frameTimer: 0
+        });
+      }
+    } else if (challengeIndex === 1) {
+      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico de Monedas por abajo
+      this.spawnEnemy1(progress);
+
+      for (let i = 0; i < 5; i++) {
+        const archY = (this.logicalHeight - 160) - Math.sin((i / 4) * Math.PI) * 70;
+        this.coins.push({
+          x: startX + i * 48,
+          y: archY,
+          width: 60, height: 60,
+          vx: -this.floorSpeed,
+          frame: 0, frameTimer: 0
+        });
+      }
+    } else if (challengeIndex === 2) {
+      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en el Cielo Alto
+      this.spawnEnemy2(progress);
+
+      const highY = 60;
+      const diamondOffsets = [
+        { dx: 0, dy: 0 }, { dx: 40, dy: -30 }, { dx: 40, dy: 30 }, { dx: 80, dy: 0 }
+      ];
+      diamondOffsets.forEach(off => {
+        this.coins.push({
+          x: startX + 60 + off.dx,
+          y: highY + off.dy,
+          width: 60, height: 60,
+          vx: -this.floorSpeed,
+          frame: 0, frameTimer: 0
+        });
+      });
+    } else if (challengeIndex === 3) {
+      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Rayito Powerup + Onda S de Monedas
+      if (this.player.hp < this.player.maxHp * 0.8) {
+        this.powerups.push({
+          x: startX + 40,
+          y: 110,
+          width: 50, height: 50,
+          vx: -(this.floorSpeed + 15),
+          frameTimer: 0
+        });
+      }
+
+      for (let i = 0; i < 6; i++) {
+        this.coins.push({
+          x: startX + i * 50,
+          y: 130 + Math.sin(i * 0.9) * 55,
+          width: 60, height: 60,
+          vx: -this.floorSpeed,
+          frame: 0, frameTimer: 0
+        });
+      }
+    } else if (challengeIndex === 4) {
+      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Bajo de Monedas
+      this.enemies.push({
+        type: 0,
+        x: startX,
+        y: 0,
+        width: 140, height: 180,
+        vx: -this.floorSpeed,
+        hp: 9999
+      });
+
+      for (let i = 0; i < 5; i++) {
+        this.coins.push({
+          x: startX + i * 46,
+          y: this.logicalHeight - 150,
+          width: 60, height: 60,
+          vx: -this.floorSpeed,
+          frame: 0, frameTimer: 0
+        });
       }
     }
   }
