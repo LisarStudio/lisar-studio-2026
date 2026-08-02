@@ -52,7 +52,7 @@ class LisarArcade2D {
     
     // Propiedades del jugador (Escalado +40%)
     this.player = {
-      x: 100, y: 200, width: 90, height: 90,
+      x: 100, y: 100, width: 140, height: 140,
       vy: 0, gravity: 900, jumpForce: -400,
       hp: 100, maxHp: 100, invulnerable: 0,
       frame: 0, frameTimer: 0
@@ -368,7 +368,7 @@ class LisarArcade2D {
         this.coins.push({
           x: this.logicalWidth + 50,
           y: 50 + Math.random() * (this.logicalHeight - 150),
-          width: 45, height: 45,
+          width: 65, height: 65,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
         });
@@ -377,7 +377,7 @@ class LisarArcade2D {
           type: 1,
           x: this.logicalWidth + 50,
           y: 50 + Math.random() * (this.logicalHeight - 150),
-          width: 70, height: 70,
+          width: 100, height: 100,
           vx: -(this.floorSpeed + 50 + progress*80), 
           hp: 1, shootTimer: Math.random() * 1.0,
           frame: 0, frameTimer: 0
@@ -387,7 +387,7 @@ class LisarArcade2D {
           type: 2,
           x: this.logicalWidth + 50,
           y: 50 + Math.random() * (this.logicalHeight - 150),
-          width: 85, height: 85,
+          width: 120, height: 120,
           vx: -(this.floorSpeed + 30),
           vy: (Math.random() > 0.5 ? 1 : -1) * (50 + progress*50),
           hp: 3, shootTimer: 0,
@@ -399,7 +399,7 @@ class LisarArcade2D {
           type: 0, 
           x: this.logicalWidth + 50,
           y: isTop ? 0 : this.logicalHeight - 115 - 40, 
-          width: 85, height: 115,
+          width: 120, height: 160,
           vx: -this.floorSpeed,
           hp: 9999
         });
