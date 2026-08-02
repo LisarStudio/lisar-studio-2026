@@ -352,44 +352,20 @@ class LisarArcade2D {
       <span id="arcade-coin-text" style="color:#ffd700;font-weight:bold;">0 / 100</span>
     `;
 
-    this.progressContainer = document.createElement('div');
-    Object.assign(this.progressContainer.style, {
-      position: 'relative',
-      width: '200px', height: '12px',
-      background: 'rgba(0,0,0,0.6)',
-      border: '2px solid #a200ff',
-      borderRadius: '4px',
-      overflow: 'visible'
-    });
-
-    this.progressBar = document.createElement('div');
-    Object.assign(this.progressBar.style, {
-      height: '100%', width: '0%',
-      background: '#a200ff',
-      boxShadow: '0 0 10px #a200ff, 0 0 20px #a200ff',
-      borderRadius: '3px',
-      transition: 'width 0.25s linear'
-    });
-
-    this.progressIcon = document.createElement('div');
-    Object.assign(this.progressIcon.style, {
-      position: 'absolute',
-      top: '-9px', left: '0%',
-      transform: 'translateX(-50%)',
-      width: '28px', height: '28px',
-      borderRadius: '50%',
-      background: "url('assets/img/spritelisar1.png') center/cover",
-      border: '2px solid #ff8800',
-      boxShadow: '0 0 10px #ff8800',
-      transition: 'left 0.25s linear'
-    });
-
-    this.progressContainer.appendChild(this.progressBar);
-    this.progressContainer.appendChild(this.progressIcon);
-
     leftBar.appendChild(this.energyContainer);
     leftBar.appendChild(coinRow);
-    leftBar.appendChild(this.progressContainer);
+
+    const centerBar = document.createElement('div');
+    centerBar.style.position = 'absolute';
+    centerBar.style.left = '50%';
+    centerBar.style.transform = 'translateX(-50%)';
+    centerBar.style.display = 'flex';
+    centerBar.style.flexDirection = 'column';
+    centerBar.style.alignItems = 'center';
+    centerBar.innerHTML = `
+      <div style="font-size:0.7rem; color:#00ffff; text-shadow:0 0 5px #00ffff; letter-spacing:2px; margin-bottom:2px;">TIME LEFT</div>
+      <div id="arcade-timer-text" style="font-size:1.8rem; font-weight:bold; color:#fff; text-shadow:0 0 10px #a200ff, 0 0 20px #a200ff;">1:00</div>
+    `;
 
     const rightBar = document.createElement('div');
     rightBar.style.display = 'flex';
@@ -401,6 +377,7 @@ class LisarArcade2D {
     `;
 
     this.hud.appendChild(leftBar);
+    this.hud.appendChild(centerBar);
     this.hud.appendChild(rightBar);
     this.container.appendChild(this.hud);
 
@@ -439,10 +416,16 @@ class LisarArcade2D {
     this.updateEnergyBars();
     const coins = document.getElementById('arcade-coin-text');
     if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
-    if (this.audio.duration && this.progressBar && this.progressIcon) {
-      const pct = Math.min(100, (this.audio.currentTime / this.audio.duration) * 100);
-      this.progressBar.style.width  = pct + '%';
-      this.progressIcon.style.left  = pct + '%';
+    const timerText = document.getElementById('arcade-timer-text');
+    if (timerText) {
+      const remaining = Math.max(0, Math.ceil(60 - this.gameTimer));
+      const m = Math.floor(remaining / 60);
+      const s = (remaining % 60).toString().padStart(2, '0');
+      timerText.innerText = `${m}:${s}`;
+      if (remaining <= 10) {
+        timerText.style.color = '#ff0055';
+        timerText.style.textShadow = '0 0 15px #ff0055, 0 0 30px #ff0055';
+      }
     }
   }
 
@@ -528,6 +511,7 @@ class LisarArcade2D {
     this.particles   = [];
     this.powerups    = [];
     this.spawnTimer  = 0;
+    this.gameTimer   = 0;
 
     this.audio.currentTime = 0;
     this.audio.play().catch(() => {});
@@ -562,7 +546,7 @@ class LisarArcade2D {
     if (victory) {
       this.showMessage(
         '¡MISIÓN COMPLETADA!',
-        `Sobreviviste toda la canción y recolectaste ${this.coinsCollected} monedas.<br><br>` +
+        `Sobreviviste el tiempo límite y recolectaste ${this.coinsCollected} monedas.<br><br>` +
         `<div style="font-size:1.35rem; color:#00ff00; font-weight:bold; text-shadow:0 0 10px #00ff00;">¡DESCUENTO TOTAL ACUMULADO: ${discount}%!</div><br>` +
         `Puntaje Final: ${this.coinsCollected * 120} pts`,
         'Reclamar Premio',
@@ -590,7 +574,7 @@ class LisarArcade2D {
 
   spawnEntity(dt) {
     this.spawnTimer += dt;
-    const progress  = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
+    const progress  = Math.min(1, this.gameTimer / 60);
     
     // Tasa de generación acelerada para más protagonismo
     const spawnRate = Math.max(0.65, 1.8 - progress * 1.3);
@@ -609,7 +593,7 @@ class LisarArcade2D {
         frame: 0, frameTimer: 0
       });
 
-    } else if (r < 0.70) {
+    } else if (r < 0.65) {
       this.enemies.push({
         type: 1,
         x: this.logicalWidth + 30,
@@ -622,15 +606,28 @@ class LisarArcade2D {
         isHit: 0
       });
 
-    } else if (progress > 0.10 && r < 0.85) {
-      // Items de energia en lugar de enemy 2
-      this.powerups.push({
-        x: this.logicalWidth + 30,
-        y: 60 + Math.random() * (this.logicalHeight - 200),
-        width: 50, height: 50,
-        vx: -(this.floorSpeed + 25),
-        frameTimer: 0
-      });
+    } else if (r < 0.85) {
+      if (Math.random() > 0.5) {
+        // Items de energia
+        this.powerups.push({
+          x: this.logicalWidth + 30,
+          y: 60 + Math.random() * (this.logicalHeight - 200),
+          width: 50, height: 50,
+          vx: -(this.floorSpeed + 25),
+          frameTimer: 0
+        });
+      } else {
+        // Enemy 2 (Bola pegada al piso)
+        this.enemies.push({
+          type: 2,
+          x: this.logicalWidth + 30,
+          y: this.logicalHeight - 120 - 40,
+          width: 120, height: 120,
+          vx: -(this.floorSpeed + 120 + progress * 60),
+          hp: 1, shootTimer: 0,
+          frame: 0, frameTimer: 0
+        });
+      }
 
     } else {
       // Obstáculos tipo cubo magenta - se mueven verticalmente más rápido
@@ -690,15 +687,25 @@ class LisarArcade2D {
       const ew = e.type === 0 ? e.width : e.width  - 16;
       const eh = e.type === 0 ? e.height: e.height - 16;
       if (px < ex + ew && px + pw > ex && py < ey + eh && py + ph > ey) {
-        this.player.hp -= e.type === 0 ? 12 : 20;
-        this.player.invulnerable = 1.5;
-        if (e.type === 1) {
-          this.createExplosion(ex + ew / 2, ey + eh / 2, 'enemy_explode', 1, ew);
-          this.playExplosionSound();
+        if (e.type === 0) {
+          // Obstáculos tipo 0 (cubos) empujan al jugador y hacen un poco de daño constante si está aplastado
+          this.player.x = ex - this.player.width + 15;
+          if (this.player.invulnerable <= 0) {
+            this.player.hp -= 2;
+            this.player.invulnerable = 0.2;
+            this.createExplosion(px + pw, py + ph / 2, '#ff2200', 3);
+          }
         } else {
-          this.createExplosion(px + pw / 2, py + ph / 2, '#ff2200', 14);
+          this.player.hp -= 20;
+          this.player.invulnerable = 1.5;
+          if (e.type === 1) {
+            this.createExplosion(ex + ew / 2, ey + eh / 2, 'enemy_explode', 1, ew);
+            this.playExplosionSound();
+          } else {
+            this.createExplosion(px + pw / 2, py + ph / 2, '#ff2200', 14);
+          }
+          this.enemies.splice(i, 1);
         }
-        if (e.type !== 0) this.enemies.splice(i, 1);
       }
     }
 
@@ -740,12 +747,20 @@ class LisarArcade2D {
   update(dt) {
     if (this.state !== 'playing') return;
 
+    this.gameTimer += dt;
+    const remaining = Math.max(0, 60 - this.gameTimer);
+    
     // Aumento progresivo de velocidad mucho más notable
-    const progress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
+    const progress = Math.min(1, this.gameTimer / 60);
     const speedBoost = 1.0 + progress * 0.90; // Hasta 90% más rápido al final
     dt *= 1.30 * speedBoost; // 30% base extra siempre
 
     // Físicas del jugador
+    if (this.player.x < 80) {
+      this.player.x += dt * 100; // Fuerza para regresar a la posición original
+      if (this.player.x > 80) this.player.x = 80;
+    }
+
     if (this.input.up) {
       this.player.vy += this.player.jumpForce * dt * 5;
       if (this.player.vy < -340) this.player.vy = -340;
@@ -928,8 +943,13 @@ class LisarArcade2D {
     this.checkCollisions();
     this.updateHUD();
 
-    if (this.player.hp <= 0 && this.state === 'playing') {
+    if (this.player.x + this.player.width < 0 && this.state === 'playing') {
+      this.player.hp = 0;
+      this.endGame(false); // Arrastrado por un cubo
+    } else if (this.player.hp <= 0 && this.state === 'playing') {
       this.endGame(false);
+    } else if (this.gameTimer >= 60 && this.state === 'playing') {
+      this.endGame(true);
     }
   }
 
@@ -959,6 +979,28 @@ class LisarArcade2D {
       this.ctx.fillStyle = 'rgba(255, 255, 255, ' + a + ')';
       this.ctx.fillRect(s.x, s.y, s.size, s.size);
     });
+
+    const remaining = Math.max(0, 60 - this.gameTimer);
+    if (remaining < 30) {
+      const intensity = 1 - (remaining / 30); // 0 to 1
+      if (Math.random() < 0.02 * intensity) {
+        this.ctx.fillStyle = `rgba(162, 0, 255, ${0.1 + Math.random() * 0.2 * intensity})`;
+        this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+        // Rayo
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + Math.random() * 0.5})`;
+        this.ctx.lineWidth = 2 + Math.random() * 4;
+        this.ctx.beginPath();
+        let lx = Math.random() * this.logicalWidth;
+        let ly = 0;
+        this.ctx.moveTo(lx, ly);
+        while (ly < this.logicalHeight) {
+          lx += (Math.random() - 0.5) * 150;
+          ly += 40 + Math.random() * 60;
+          this.ctx.lineTo(lx, ly);
+        }
+        this.ctx.stroke();
+      }
+    }
 
     this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.03)';
     this.ctx.lineWidth = 1;
@@ -1102,12 +1144,14 @@ class LisarArcade2D {
         }
         
         this.ctx.save();
-        const progress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
-        if (progress > 0.15) {
-          // Tint purple effect depending on speed
-          this.ctx.filter = `drop-shadow(0 0 ${progress * 15}px #a200ff) hue-rotate(${progress * 60}deg) saturate(${1 + progress})`;
+        const progress = Math.min(1, this.gameTimer / 60);
+        const onGround = this.player.y >= (this.logicalHeight - this.player.height - 42);
+        if (progress > 0.15 && onGround) {
+          // Purple aura effect depending on speed
+          this.ctx.filter = `drop-shadow(0 0 ${progress * 25}px #a200ff) drop-shadow(0 0 ${progress * 10}px #ff00ff)`;
         }
         this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        this.ctx.filter = 'none';
         this.ctx.restore();
       } else {
         this.ctx.fillStyle = '#4488ff';
