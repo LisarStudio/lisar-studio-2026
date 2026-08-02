@@ -430,15 +430,27 @@ class LisarArcade2D {
     // CENTER: Spacer
     const centerBar = document.createElement('div');
 
-    // RIGHT: TIMER — big, bold, glowing at TOP RIGHT
+    // RIGHT: TIMER & DISCOUNT PROGRESS BAR — positioned at TOP RIGHT (in red/orange marked box)
     const rightBar = document.createElement('div');
     rightBar.style.display = 'flex';
     rightBar.style.flexDirection = 'column';
     rightBar.style.alignItems = 'flex-end';
-    rightBar.style.minWidth = '130px';
+    rightBar.style.minWidth = '160px';
     rightBar.innerHTML = `
       <div style="font-size:0.65rem; color:#00ffff; text-shadow:0 0 5px #00ffff; letter-spacing:2px; margin-bottom:2px; font-weight:bold;">TIEMPO RESTANTE</div>
       <div id="arcade-timer-text" style="font-size:2.2rem; font-weight:900; color:#ffffff; text-shadow:0 0 12px #a200ff, 0 0 24px #a200ff; line-height:1; font-family:'Orbitron',monospace;">3:00</div>
+
+      <!-- BARRA DE PROGRESO DE DESCUENTO ACUMULABLE (Ubicación marcada en cuadrado naranja) -->
+      <div style="margin-top:6px; display:flex; flex-direction:column; align-items:flex-end; width:150px;">
+        <div style="display:flex; justify-content:space-between; width:100%; font-size:0.65rem; font-weight:bold; color:#ffd700; text-shadow:0 0 6px #ff8800; margin-bottom:3px;">
+          <span>DESCUENTO:</span>
+          <span id="arcade-discount-pct" style="color:#00ffaa; font-size:0.75rem;">0%</span>
+        </div>
+        <div style="width:100%; height:11px; background:rgba(0,0,0,0.8); border:1.5px solid #ff8800; border-radius:4px; overflow:hidden; box-shadow:0 0 8px #ff8800; position:relative;">
+          <div id="arcade-discount-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #ff8800, #ffd700, #00f3ff); transition:width 0.25s ease-out; box-shadow:0 0 10px #00f3ff;"></div>
+        </div>
+        <div id="arcade-discount-sub" style="font-size:0.58rem; color:#a0a0b0; margin-top:2px; letter-spacing:0.5px;">Próximo +5%: 0/20</div>
+      </div>
     `;
 
     this.hud.appendChild(leftBar);
@@ -490,6 +502,47 @@ class LisarArcade2D {
     this.updateEnergyBars();
     const coins = document.getElementById('arcade-coin-text');
     if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
+
+    // Actualización de la barra de progreso de descuento
+    const currentTier = Math.min(5, Math.floor(this.coinsCollected / 20));
+    const currentDiscountPct = currentTier * 5;
+    const coinsInTier = currentTier >= 5 ? 20 : (this.coinsCollected % 20);
+    const progressPct = currentTier >= 5 ? 100 : (coinsInTier / 20) * 100;
+
+    const discountPctEl = document.getElementById('arcade-discount-pct');
+    if (discountPctEl) discountPctEl.innerText = `${currentDiscountPct}%`;
+
+    const discountBarEl = document.getElementById('arcade-discount-bar');
+    if (discountBarEl) discountBarEl.style.width = `${progressPct}%`;
+
+    const discountSubEl = document.getElementById('arcade-discount-sub');
+    if (discountSubEl) {
+      if (currentTier >= 5) {
+        discountSubEl.innerText = '¡MÁXIMO 25% ALCANZADO!';
+        discountSubEl.style.color = '#00ffaa';
+      } else {
+        discountSubEl.innerText = `Próximo +5%: ${coinsInTier}/20`;
+        discountSubEl.style.color = '#a0a0b0';
+      }
+    }
+
+    // Voz de Anunciador Arcade y Alerta Visual al completar cada +5% de descuento
+    if (currentTier > this.lastDiscountThreshold && currentTier <= 5) {
+      this.lastDiscountThreshold = currentTier;
+      const phrases = ['AMAZING!', 'UNSTOPPABLE!', 'SUPER COMBO!', 'EXCELLENT!', 'POWER UP!'];
+      const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+
+      // Voz arcade entusiasta motivadora
+      this.speak(`${randomPhrase}! ${currentDiscountPct} percent discount unlocked!`);
+
+      // Alerta con destello visual
+      this.showTemporaryAlert(
+        `🎉 ¡${randomPhrase}!`,
+        `¡Has desbloqueado un <span style="color:#00ffaa; font-weight:bold;">${currentDiscountPct}% DE DESCUENTO</span> acumulable!`,
+        3.5
+      );
+    }
+
     const timerText = document.getElementById('arcade-timer-text');
     if (timerText) {
       const remaining = Math.max(0, Math.ceil(180 - this.gameTimer));
@@ -1304,25 +1357,33 @@ class LisarArcade2D {
     this.ctx.stroke();
     this.ctx.restore();
 
-    const musicProgress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
-    if (musicProgress > 0.4) {
-      const intensity = (musicProgress - 0.4) / 0.6;
-      if (Math.random() < 0.02 * intensity) {
-        this.ctx.fillStyle = `rgba(162, 0, 255, ${0.1 + Math.random() * 0.2 * intensity})`;
-        this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + Math.random() * 0.5})`;
-        this.ctx.lineWidth = 2 + Math.random() * 4;
-        this.ctx.beginPath();
-        let lx = Math.random() * this.logicalWidth;
-        let ly = 0;
-        this.ctx.moveTo(lx, ly);
-        while (ly < this.logicalHeight) {
-          lx += (Math.random() - 0.5) * 150;
-          ly += 40 + Math.random() * 60;
-          this.ctx.lineTo(lx, ly);
-        }
-        this.ctx.stroke();
+    // Rayos dinámicos en el mapa al ritmo de la batería según intensidad del juego
+    const beatTime = performance.now() / 500; // 120 BPM drum beat
+    const beatPulse = Math.pow(Math.sin(beatTime * Math.PI), 4);
+    const gameIntensity = Math.min(1, this.gameTimer / 120);
+
+    if (gameIntensity > 0.10 && beatPulse > 0.65) {
+      this.ctx.save();
+      // Destello púrpura cibernético en el fondo al ritmo de la batería
+      this.ctx.fillStyle = `rgba(162, 0, 255, ${0.05 + beatPulse * 0.12 * gameIntensity})`;
+      this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+
+      // Rayo neón zig-zag cayendo al mapa
+      this.ctx.strokeStyle = Math.random() > 0.4 ? 'rgba(0, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.95)';
+      this.ctx.lineWidth = 2 + beatPulse * 3;
+      this.ctx.shadowBlur = 15;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.beginPath();
+      let lx = (Math.random() * 0.8 + 0.1) * this.logicalWidth;
+      let ly = 0;
+      this.ctx.moveTo(lx, ly);
+      while (ly < this.logicalHeight - 70) {
+        lx += (Math.random() - 0.5) * 120;
+        ly += 30 + Math.random() * 45;
+        this.ctx.lineTo(lx, ly);
       }
+      this.ctx.stroke();
+      this.ctx.restore();
     }
 
     this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.03)';
