@@ -206,7 +206,7 @@ class LisarArcade2D {
     this.hudRight = document.createElement('div');
     this.hudRight.style.textAlign = 'right';
     this.hudRight.innerHTML = `
-      <div style="font-size: 0.9rem;">Level 2</div>
+      <div style="font-size: 0.9rem;">Level 2 (v2.1)</div>
       <div style="width:100px; height:10px; background:rgba(255,255,255,0.2); border:1px solid #fff; border-radius:5px; overflow:hidden; margin-left:auto;">
         <div id="arcade-progress-bar" style="width:0%; height:100%; background:#00ffff;"></div>
       </div>
