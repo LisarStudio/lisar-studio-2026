@@ -274,7 +274,7 @@ class LisarArcade2D {
     this.instructionCardEl = document.createElement('div');
     Object.assign(this.instructionCardEl.style, {
       position: 'absolute',
-      top: '155px',
+      top: '185px',
       left: '50%',
       transform: 'translateX(-50%)',
       width: '88%',
@@ -688,7 +688,7 @@ class LisarArcade2D {
     Object.assign(this.msgOverlay.style, {
       position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-      paddingTop: '160px', boxSizing: 'border-box',
+      paddingTop: '185px', boxSizing: 'border-box',
       background: 'rgba(5,6,15,0.92)', color: '#fff', zIndex: '40', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
@@ -801,9 +801,9 @@ class LisarArcade2D {
   showTemporaryAlert(title, subtitle, seconds) {
     const alertEl = document.createElement('div');
     Object.assign(alertEl.style, {
-      position: 'absolute', top: '70px', left: '50%',
+      position: 'absolute', top: '185px', left: '50%',
       transform: 'translateX(-50%)',
-      background: 'rgba(0,0,0,0.92)',
+      background: 'rgba(0,0,0,0.95)',
       border: '2.5px solid #00f3ff',
       boxShadow: '0 0 15px #00f3ff',
       color: '#fff',
@@ -822,7 +822,7 @@ class LisarArcade2D {
     this.container.appendChild(alertEl);
     setTimeout(() => {
       alertEl.style.opacity = '0';
-      alertEl.style.top = '50px';
+      alertEl.style.top = '170px';
       setTimeout(() => alertEl.remove(), 400);
     }, seconds * 1000);
   }
@@ -1037,7 +1037,7 @@ class LisarArcade2D {
       letterSchedule.forEach(item => {
         if (this.gameTimer >= item.time && !this.spawnedLetters[item.letter]) {
           this.spawnedLetters[item.letter] = true;
-          const randomY = 130 + Math.random() * 160;
+          const randomY = 210 + Math.random() * 70; // Franja segura del rectángulo verde (210px - 280px)
           this.letterItems.push({
             letter: item.letter,
             x: this.logicalWidth + 80,
@@ -1169,8 +1169,8 @@ class LisarArcade2D {
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    const minY = 160;
-    const maxY = 260;
+    const minY = 200;
+    const maxY = 270;
     const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
       type: 1,
