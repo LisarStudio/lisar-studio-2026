@@ -162,6 +162,25 @@ class LisarArcade2D {
       this.flyAttackFrames.push(img);
     }
 
+    // Sprites Oficiales de Lu (lu1.png a lu10.png) y Peter (peter1.png a peter10.png)
+    this.luFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const img = new Image();
+      img.loaded = false;
+      img.src = `assets/img/lu${i}.png`;
+      img.onload = function() { this.loaded = true; };
+      this.luFrames.push(img);
+    }
+
+    this.peterFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const img = new Image();
+      img.loaded = false;
+      img.src = `assets/img/peter${i}.png`;
+      img.onload = function() { this.loaded = true; };
+      this.peterFrames.push(img);
+    }
+
     this.sprites = {
       floor:    { src: 'images/sprites_arcade/tiling_floor.png',    img: new Image(), loaded: false, cols: 1, rows: 1, totalFrames: 1 }
     };
@@ -226,7 +245,27 @@ class LisarArcade2D {
     this.loadSheetSprites();
     this.setupControls();
     this.createHUD();
-    setTimeout(() => this.resize(), 0);
+    setTimeout(() => {
+      this.resize();
+      this.showInstructions();
+    }, 50);
+  }
+
+  showInstructions() {
+    this.showMessage(
+      '🎮 LISAR JET RUSH',
+      `<div style="text-align:center; max-width:94%; color:#ffffff; font-family:'Orbitron', sans-serif;">` +
+      `<p style="margin:4px 0 12px 0; font-size:1.05rem; color:#ffd700; font-weight:bold;">¡Guía de Controles & Instrucciones de Vuelo!</p>` +
+      `<div style="background:rgba(15,15,35,0.88); border:2px solid #00f3ff; border-radius:10px; padding:14px 20px; margin-bottom:14px; box-shadow:0 0 15px #00f3ff; text-align:left;">` +
+      `<p style="margin:6px 0; font-size:1rem; color:#ffffff;"><span style="color:#ffd700; font-weight:bold;">🚀 VUELO / JETPACK:</span> Tecla <b style="color:#00ffff;">Espacio</b> / <b style="color:#00ffff;">Flecha Arriba</b> / <b style="color:#00ffff;">Touch Pantalla</b></p>` +
+      `<p style="margin:6px 0; font-size:1rem; color:#ffffff;"><span style="color:#ff00ff; font-weight:bold;">⚔️ ATAQUE CON BÁCULO:</span> Tecla <b style="color:#00ffff;">X</b> / <b style="color:#00ffff;">J</b> / <b style="color:#00ffff;">Z</b> / <b style="color:#00ffff;">Botón Atacar</b></p>` +
+      `<p style="margin:6px 0; font-size:1rem; color:#ffffff;"><span style="color:#00ffaa; font-weight:bold;">⏸️ PAUSA:</span> Tecla <b style="color:#00ffff;">ESC</b> / <b style="color:#00ffff;">P</b></p>` +
+      `</div>` +
+      `<p style="font-size:0.92rem; color:#ffffff; line-height:1.4;">Sobrevive los <b style="color:#00ffff;">3:00 minutos</b>, destruye enemigos con tu báculo y acumula hasta un <b style="color:#00ffaa;">25% de descuento</b> acumulable para servicios.</p>` +
+      `</div>`,
+      '¡INICIAR JUEGO!',
+      () => this.startGame()
+    );
   }
 
   initReadyCSS() {
@@ -1005,16 +1044,21 @@ class LisarArcade2D {
   }
 
   spawnEnemy1(progress, offsetX = 0) {
+    const minY = 35;
+    const maxY = 210;
+    const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
       type: 1,
       x: this.logicalWidth + 30 + offsetX,
-      y: 20 + Math.random() * 130,
-      width: 260, height: 260,
+      y: spawnY,
+      baseY: spawnY,
+      width: 240, height: 240,
       vx: -(this.floorSpeed + 60 + progress * 90),
       hp: 1, shootTimer: Math.random() * 1.5,
       frame: 0, frameTimer: 0,
       isShooting: 0,
-      isHit: 0
+      isHit: 0,
+      sineOffset: Math.random() * Math.PI * 2
     });
   }
 
@@ -1336,9 +1380,9 @@ class LisarArcade2D {
       }
     }
 
-    // Generator de Montañitas con Lu y Peter Bailando de forma Aleatoria en el Fondo
+    // Generator de Montañitas Dinámicas con los Sprites Oficiales de Lu y Peter (lu1..lu10, peter1..peter10)
     this.hillTimer = (this.hillTimer || 0) + dt;
-    if (this.hillTimer > 10.0) {
+    if (this.hillTimer > 7.0 + Math.random() * 5.0) {
       this.hillTimer = 0;
       this.bgHills = this.bgHills || [];
       const quotes = [
@@ -1346,18 +1390,40 @@ class LisarArcade2D {
         "¡SUPER COMBO!", "¡EXCELENTE VUELO!", "¡CASI LLEGAS!", "¡SIGUE ASÍ!", "¡AMAZING!"
       ];
       const txt = quotes[Math.floor(Math.random() * quotes.length)];
+      
+      // Tamaños de montaña: 0: Chica, 1: Mediana, 2: Grande
+      const sizeType = Math.floor(Math.random() * 3);
+      const heights = [75, 120, 175];
+      const widths = [120, 185, 250];
+      const colors = ['#a200ff', '#00f3ff', '#ff00aa'];
+
+      // Personajes: 0: Solo Lu, 1: Solo Peter, 2: Lu y Peter juntos
+      const charType = Math.floor(Math.random() * 3);
+
       this.bgHills.push({
-        x: this.logicalWidth + 60,
-        y: this.logicalHeight - 165 - Math.random() * 45,
+        x: this.logicalWidth + 80,
+        y: this.logicalHeight - 70 - heights[sizeType],
+        height: heights[sizeType],
+        width: widths[sizeType],
+        color: colors[sizeType],
+        charType: charType,
         quote: txt,
-        vx: -this.floorSpeed * 0.40
+        vx: -this.floorSpeed * 0.40,
+        animFrame: 0,
+        frameTimer: 0
       });
     }
+
     if (this.bgHills) {
       for (let i = this.bgHills.length - 1; i >= 0; i--) {
         const h = this.bgHills[i];
         h.x += h.vx * dt;
-        if (h.x < -240) this.bgHills.splice(i, 1);
+        h.frameTimer += dt;
+        if (h.frameTimer > 0.09) {
+          h.animFrame = (h.animFrame + 1) % 10;
+          h.frameTimer = 0;
+        }
+        if (h.x < -300) this.bgHills.splice(i, 1);
       }
     }
 
@@ -1399,6 +1465,12 @@ class LisarArcade2D {
         const maxY = this.logicalHeight - e.height - 70;
         if (e.y < minY) { e.y = minY; e.vy *= -1; }
         if (e.y > maxY) { e.y = maxY; e.vy *= -1; }
+      }
+
+      if (e.type === 1) {
+        if (e.baseY) {
+          e.y = e.baseY + Math.sin(performance.now() / 400 + (e.sineOffset || 0)) * 30;
+        }
       }
 
       if (e.type !== 0) {
@@ -1508,70 +1580,80 @@ class LisarArcade2D {
       });
     }
 
-    // Montañitas Dinámicas en el Fondo con Lu y Peter Bailando y Motivando al Jugador
+    // Montañitas Dinámicas en el Fondo con los Sprites Oficiales de Lu y Peter (lu1..lu10, peter1..peter10)
     if (this.bgHills) {
       this.bgHills.forEach(h => {
         this.ctx.save();
         
-        // Cúspide de la montañita cibernética neón
-        this.ctx.fillStyle = 'rgba(22, 18, 42, 0.88)';
-        this.ctx.strokeStyle = '#a200ff';
-        this.ctx.lineWidth = 2;
-        this.ctx.shadowBlur = 12;
-        this.ctx.shadowColor = '#a200ff';
+        const hw = h.width || 160;
+        const hh = h.height || 110;
+        const peakX = h.x + hw / 2;
+        const peakY = h.y;
+
+        // Montaña neón cibernética
+        this.ctx.fillStyle = 'rgba(18, 15, 38, 0.90)';
+        this.ctx.strokeStyle = h.color || '#a200ff';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowBlur = 14;
+        this.ctx.shadowColor = h.color || '#a200ff';
         this.ctx.beginPath();
-        this.ctx.moveTo(h.x - 55, this.logicalHeight - 70);
-        this.ctx.lineTo(h.x + 65, h.y + 45);
-        this.ctx.lineTo(h.x + 185, this.logicalHeight - 70);
+        this.ctx.moveTo(h.x, this.logicalHeight - 70);
+        this.ctx.lineTo(peakX, peakY);
+        this.ctx.lineTo(h.x + hw, this.logicalHeight - 70);
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Personajes Lu y Peter Bailando en la cúspide
-        const dance1 = Math.sin(performance.now() / 110) * 6;
-        const dance2 = Math.sin(performance.now() / 110 + Math.PI) * 6;
+        // Renderizado de Sprites Oficiales (Lu y/o Peter)
+        const frameIdx = h.animFrame % 10;
+        const luImg = this.luFrames[frameIdx];
+        const peterImg = this.peterFrames[frameIdx];
 
-        // Lu (Avatar 1)
-        const luX = h.x + 40;
-        const luY = h.y + 10 + dance1;
-        this.ctx.shadowBlur = 8; this.ctx.shadowColor = '#00ffaa';
-        this.ctx.fillStyle = '#00ffaa';
-        this.ctx.beginPath();
-        this.ctx.arc(luX + 10, luY + 8, 8, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(luX + 4, luY + 16, 12, 20);
+        const charH = 75; // Altura visible clara de los personajes
 
-        // Peter (Avatar 2)
-        const peterX = h.x + 80;
-        const peterY = h.y + 10 + dance2;
-        this.ctx.shadowBlur = 8; this.ctx.shadowColor = '#ff9900';
-        this.ctx.fillStyle = '#ff9900';
-        this.ctx.beginPath();
-        this.ctx.arc(peterX + 10, peterY + 8, 8, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(peterX + 4, peterY + 16, 12, 20);
+        if (h.charType === 0 && luImg && luImg.loaded) {
+          // Solo Lu bailando/animándose en la cumbre
+          const luW = luImg.width * (charH / luImg.height);
+          this.ctx.drawImage(luImg, peakX - luW / 2, peakY - charH + 10, luW, charH);
+        } else if (h.charType === 1 && peterImg && peterImg.loaded) {
+          // Solo Peter bailando/animándose en la cumbre
+          const peterW = peterImg.width * (charH / peterImg.height);
+          this.ctx.drawImage(peterImg, peakX - peterW / 2, peakY - charH + 10, peterW, charH);
+        } else if (h.charType === 2) {
+          // Lu y Peter Juntos en la cumbre
+          if (luImg && luImg.loaded) {
+            const luW = luImg.width * (charH / luImg.height);
+            this.ctx.drawImage(luImg, peakX - luW - 5, peakY - charH + 10, luW, charH);
+          }
+          if (peterImg && peterImg.loaded) {
+            const peterW = peterImg.width * (charH / peterImg.height);
+            this.ctx.drawImage(peterImg, peakX + 5, peakY - charH + 10, peterW, charH);
+          }
+        }
 
         // Globo de diálogo motivador
         this.ctx.fillStyle = '#ffffff';
         this.ctx.strokeStyle = '#000000';
-        this.ctx.lineWidth = 2;
-        this.ctx.shadowBlur = 10;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowBlur = 12;
         this.ctx.shadowColor = '#00ffff';
         this.ctx.beginPath();
+        const bubbleW = 125;
+        const bubbleH = 26;
+        const bubbleX = peakX - bubbleW / 2;
+        const bubbleY = peakY - charH - 25;
         if (this.ctx.roundRect) {
-          this.ctx.roundRect(h.x + 12, h.y - 28, 110, 24, 6);
+          this.ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6);
         } else {
-          this.ctx.rect(h.x + 12, h.y - 28, 110, 24);
+          this.ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
         }
         this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.font = 'bold 9px "Orbitron", monospace';
-        this.ctx.fillStyle = '#000000';
+        this.ctx.font = 'bold 9.5px "Orbitron", monospace';
+        this.ctx.fillStyle = '#0a0a0c';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(h.quote, h.x + 67, h.y - 12);
+        this.ctx.fillText(h.quote, peakX, bubbleY + 16);
 
         this.ctx.restore();
       });
