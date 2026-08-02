@@ -181,6 +181,17 @@ class LisarArcade2D {
       this.peterFrames.push(img);
     }
 
+    // Sprites Oficiales de Lu Lanzando Boost de Energía (boost1.png a Boost10.png)
+    this.boostFrames = [];
+    for (let i = 1; i <= 10; i++) {
+      const img = new Image();
+      img.loaded = false;
+      const fileName = (i >= 7) ? `Boost${i}.png` : `boost${i}.png`;
+      img.src = `assets/img/${fileName}`;
+      img.onload = function() { this.loaded = true; };
+      this.boostFrames.push(img);
+    }
+
     this.sprites = {
       floor:    { src: 'images/sprites_arcade/tiling_floor.png',    img: new Image(), loaded: false, cols: 1, rows: 1, totalFrames: 1 }
     };
@@ -1101,9 +1112,14 @@ class LisarArcade2D {
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (px < p.x + p.width && px + pw > p.x && py < p.y + p.height && py + ph > p.y) {
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + 25);
-        this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 10);
+        const healAmt = p.isBoot ? 35 : 25;
+        this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+        this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
         this.playCoinSound();
+        if (p.isBoot) {
+          this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
+          this.speak("Energy Restored!");
+        }
         this.powerups.splice(i, 1);
       }
     }
@@ -1427,6 +1443,51 @@ class LisarArcade2D {
       }
     }
 
+    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU (boost1.png a Boost10.png)
+    if (this.player.hp <= 30 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
+      this.luBoostActive = true;
+      this.luBoostCooldown = 18;
+      this.luBoostX = this.logicalWidth + 60;
+      this.luBoostY = 30;
+      this.luBoostFrame = 0;
+      this.luBoostTimer = 0;
+      this.luBoostDropped = false;
+      this.speak("Emergency Energy Boost!");
+      this.showTemporaryAlert(
+        "⚡ ¡LU AL RESCATE!",
+        "Lu ha volado al mapa para lanzarte una Bota de Energía",
+        3.5
+      );
+    }
+
+    if (this.luBoostCooldown > 0) this.luBoostCooldown -= dt;
+
+    if (this.luBoostActive) {
+      this.luBoostX -= 220 * dt;
+      this.luBoostTimer += dt;
+      if (this.luBoostTimer > 0.08) {
+        this.luBoostFrame = (this.luBoostFrame + 1) % 10;
+        this.luBoostTimer = 0;
+      }
+
+      if (this.luBoostX <= this.logicalWidth * 0.50 && !this.luBoostDropped) {
+        this.luBoostDropped = true;
+        this.powerups.push({
+          x: this.luBoostX,
+          y: this.luBoostY + 40,
+          width: 60, height: 60,
+          vx: -this.floorSpeed * 0.70,
+          vy: 90,
+          isBoot: true,
+          frameTimer: 0
+        });
+      }
+
+      if (this.luBoostX < -200) {
+        this.luBoostActive = false;
+      }
+    }
+
     // Suelo scrolling
     this.floorOffset -= this.floorSpeed * dt;
     if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
@@ -1657,6 +1718,42 @@ class LisarArcade2D {
 
         this.ctx.restore();
       });
+    }
+
+    // Renderizado de Lu Volando Lanzando la Bota de Energía (boost1..boost10)
+    if (this.luBoostActive) {
+      const bImg = this.boostFrames[this.luBoostFrame % 10];
+      if (bImg && bImg.loaded) {
+        this.ctx.save();
+        const bHeight = 85;
+        const bWidth = bImg.width * (bHeight / bImg.height);
+        
+        this.ctx.shadowBlur = 18;
+        this.ctx.shadowColor = '#00ffaa';
+        this.ctx.drawImage(bImg, this.luBoostX, this.luBoostY, bWidth, bHeight);
+
+        // Globo de diálogo flotante de Lu
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#00ffaa';
+        this.ctx.beginPath();
+        if (this.ctx.roundRect) {
+          this.ctx.roundRect(this.luBoostX - 25, this.luBoostY - 30, 165, 26, 6);
+        } else {
+          this.ctx.rect(this.luBoostX - 25, this.luBoostY - 30, 165, 26);
+        }
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.font = 'bold 9px "Orbitron", monospace';
+        this.ctx.fillStyle = '#0a0a0c';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText("⚡ ¡AQUÍ TIENES ENERGÍA!", this.luBoostX + 58, this.luBoostY - 14);
+
+        this.ctx.restore();
+      }
     }
 
     // Rieles de ondas curvas de nivel estilo Gravity Dash
