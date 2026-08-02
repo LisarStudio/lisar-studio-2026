@@ -1782,21 +1782,28 @@ class LisarArcade2D {
       const img = this.activeAnim[this.player.frame % this.activeAnim.length];
       if (img && img.loaded) {
         const baseHeightRef = 200; 
-        const drawW = img.width * (this.player.height / baseHeightRef);
-        const drawH = img.height * (this.player.height / baseHeightRef);
+        let drawW = img.width * (this.player.height / baseHeightRef);
+        let drawH = img.height * (this.player.height / baseHeightRef);
         
-        const drawX = this.player.x + (this.player.width - drawW) / 2;
+        let drawX = this.player.x + (this.player.width - drawW) / 2;
         let drawY;
         if (this.isFlying) {
           drawY = this.player.y + (this.player.height - drawH) / 2;
         } else {
           drawY = this.player.y + (this.player.height - drawH);
         }
+
+        // Si está atacando, desplazar ligeramente al frente para marcar el impacto del golpe
+        if (this.player.isAttacking) {
+          drawX += 28;
+          drawW *= 1.10;
+          drawH *= 1.10;
+        }
         
         this.ctx.save();
         const progress = Math.min(1, this.gameTimer / 60);
         const onGround = this.player.y >= (this.logicalHeight - this.player.height - 42);
-        if (progress > 0.15 && onGround) {
+        if (progress > 0.15 && onGround && !this.player.isAttacking) {
           this.ctx.filter = `drop-shadow(0 0 ${progress * 25}px #a200ff) drop-shadow(0 0 ${progress * 10}px #ff00ff)`;
         }
         
@@ -1809,6 +1816,24 @@ class LisarArcade2D {
         this.ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
         this.ctx.filter = 'none';
         this.ctx.restore();
+
+        // Efecto visual de Estela / Arco de Espada Neón durante el ataque
+        if (this.player.isAttacking) {
+          const atkProgress = 1 - (this.player.attackTimer / 0.28);
+          this.ctx.save();
+          this.ctx.shadowBlur = 20;
+          this.ctx.shadowColor = atkProgress > 0.5 ? '#00ffff' : '#ff00ff';
+          this.ctx.strokeStyle = atkProgress > 0.5 ? '#ffffff' : '#00ffff';
+          this.ctx.lineWidth = 6;
+          this.ctx.beginPath();
+          const slashCenterX = drawX + drawW * 0.70;
+          const slashCenterY = drawY + drawH * 0.45;
+          const startAngle = -Math.PI * 0.45 + atkProgress * 0.4;
+          const endAngle   = Math.PI * 0.45 + atkProgress * 0.4;
+          this.ctx.arc(slashCenterX, slashCenterY, 70, startAngle, endAngle);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
       }
       // No fallback: no more blue square
 
