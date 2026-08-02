@@ -10,7 +10,7 @@ class LisarArcade2D {
     this.canvas.style.imageRendering = 'pixelated';
     this.canvas.style.display = 'block';
     
-    // Wrapper for responsive scaling and safe-areas
+    // Wrapper for safe-areas within the container
     this.wrapper = document.createElement('div');
     this.wrapper.style.width = '100%';
     this.wrapper.style.height = '100%';
@@ -18,11 +18,8 @@ class LisarArcade2D {
     this.wrapper.style.alignItems = 'center';
     this.wrapper.style.justifyContent = 'center';
     this.wrapper.style.background = '#000';
-    this.wrapper.style.position = 'relative';
-    this.wrapper.style.paddingTop = 'env(safe-area-inset-top)';
-    this.wrapper.style.paddingRight = 'env(safe-area-inset-right)';
-    this.wrapper.style.paddingBottom = 'env(safe-area-inset-bottom)';
-    this.wrapper.style.paddingLeft = 'env(safe-area-inset-left)';
+    this.wrapper.style.position = 'absolute';
+    this.wrapper.style.inset = '0';
     
     this.wrapper.appendChild(this.canvas);
     this.container.appendChild(this.wrapper);
@@ -35,6 +32,7 @@ class LisarArcade2D {
     this.coinSound = new Audio('assets/audio/coin.mp3');
     
     // Sprites reales de Github, definidos como hojas de sprites (sprite sheets)
+    // Usando una cuadrícula según su resolución para sacar cada frame individual
     this.sprites = {
       lisar: { src: 'images/sprites_arcade/Sprite_lisar_2d.png', img: new Image(), loaded: false, cols: 2, rows: 3, totalFrames: 6 },
       enemigo1: { src: 'images/sprites_arcade/Sprite_enemigo1.png', img: new Image(), loaded: false, cols: 2, rows: 3, totalFrames: 6 },
@@ -44,7 +42,7 @@ class LisarArcade2D {
     };
     
     // Estados del juego
-    this.state = 'loading'; // loading, ready, playing, paused, gameover, victory
+    this.state = 'loading';
     this.lastTime = 0;
     
     // Dimensiones lógicas base y escala
@@ -76,21 +74,23 @@ class LisarArcade2D {
     
     this.input = { up: false };
     
-    // Resize handler
-    window.addEventListener('resize', this.resizeHandler = this.resize.bind(this));
+    // Resize handler usando ResizeObserver para el contenedor
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(this.container);
     
     this.loadSprites();
     this.setupControls();
     this.createHUD();
     
-    // Force initial resize to set up logical dimensions correctly
     setTimeout(() => this.resize(), 0);
   }
   
   resize() {
     const rect = this.wrapper.getBoundingClientRect();
-    const viewportWidth = rect.width || window.innerWidth;
-    const viewportHeight = rect.height || window.innerHeight;
+    const viewportWidth = rect.width;
+    const viewportHeight = rect.height;
+    
+    if (viewportWidth === 0 || viewportHeight === 0) return;
     
     const baseWidth = 800;
     const baseHeight = 450;
@@ -98,15 +98,14 @@ class LisarArcade2D {
     // Escala proporcional sin deformar
     this.scale = Math.min(viewportWidth / baseWidth, viewportHeight / baseHeight);
     
-    // Canvas dimensions are the actual pixels of the wrapper
+    // Canvas dimensions exactly match the wrapper
     this.canvas.width = viewportWidth;
     this.canvas.height = viewportHeight;
     
-    // El área lógica disponible expandida según la proporción
+    // Expandimos el área lógica
     this.logicalWidth = viewportWidth / this.scale;
     this.logicalHeight = viewportHeight / this.scale;
     
-    // Mantener a Lisar sobre el piso si cambia la pantalla
     if (this.player.y > this.logicalHeight - this.player.height - 40) {
         this.player.y = this.logicalHeight - this.player.height - 40;
     }
@@ -134,12 +133,13 @@ class LisarArcade2D {
               this.drawReadyScreen();
           }
       };
-      this.sprites[k].img.src = this.sprites[k].src;
+      // Para evitar cache en desarrollo local
+      this.sprites[k].img.src = this.sprites[k].src; 
     });
   }
   
   setupControls() {
-    // Eventos de Teclado
+    // Teclado
     window.addEventListener('keydown', e => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         this.input.up = true;
@@ -155,10 +155,10 @@ class LisarArcade2D {
       }
     });
     
-    // Eventos Táctiles y Mouse (área del juego únicamente)
+    // Táctiles y Mouse en el wrapper del juego
     this.wrapper.addEventListener('touchstart', e => {
       this.input.up = true;
-      if (e.cancelable) e.preventDefault(); // Evita scroll
+      if (e.cancelable) e.preventDefault();
     }, {passive: false});
     this.wrapper.addEventListener('touchend', e => {
       this.input.up = false;
@@ -181,9 +181,9 @@ class LisarArcade2D {
   createHUD() {
     this.hud = document.createElement('div');
     this.hud.style.position = 'absolute';
-    this.hud.style.top = '20px'; // Un poco más de margen para safearia
-    this.hud.style.left = '20px';
-    this.hud.style.right = '70px'; // Espacio para el botón cerrar
+    this.hud.style.top = '10px';
+    this.hud.style.left = '10px';
+    this.hud.style.right = '10px';
     this.hud.style.display = 'none';
     this.hud.style.justifyContent = 'space-between';
     this.hud.style.alignItems = 'flex-start';
@@ -194,7 +194,6 @@ class LisarArcade2D {
     
     this.hudLeft = document.createElement('div');
     this.hudLeft.innerHTML = `
-      <div style="font-size: 1.2rem; font-weight: bold; color: #ff9900;">LISAR JET RUSH</div>
       <div style="display:flex; align-items:center; gap:5px; margin-top:5px;">
         <div style="width:100px; height:15px; background:rgba(255,255,255,0.2); border:1px solid #fff; border-radius:10px; overflow:hidden;">
           <div id="arcade-hp-bar" style="width:100%; height:100%; background:linear-gradient(90deg, #ff0000, #ff9900);"></div>
@@ -207,7 +206,7 @@ class LisarArcade2D {
     this.hudRight = document.createElement('div');
     this.hudRight.style.textAlign = 'right';
     this.hudRight.innerHTML = `
-      <div style="font-size: 1rem;">Progreso Nivel 2</div>
+      <div style="font-size: 0.9rem;">Level 2</div>
       <div style="width:100px; height:10px; background:rgba(255,255,255,0.2); border:1px solid #fff; border-radius:5px; overflow:hidden; margin-left:auto;">
         <div id="arcade-progress-bar" style="width:0%; height:100%; background:#00ffff;"></div>
       </div>
@@ -217,7 +216,6 @@ class LisarArcade2D {
     this.hud.appendChild(this.hudRight);
     this.wrapper.appendChild(this.hud);
     
-    // Mensajes Overlay final (Victoria/Derrota)
     this.msgOverlay = document.createElement('div');
     this.msgOverlay.style.position = 'absolute';
     this.msgOverlay.style.top = '0';
@@ -252,17 +250,17 @@ class LisarArcade2D {
   
   showMessage(title, subtitle, btnText, btnAction) {
     this.msgOverlay.style.display = 'flex';
-    this.msgOverlay.style.pointerEvents = 'auto'; // Re-activar clicabilidad
+    this.msgOverlay.style.pointerEvents = 'auto';
     this.msgOverlay.innerHTML = `
-      <h2 style="font-size: 2.5rem; color: #ff9900; margin: 0 0 10px 0; text-shadow: 0 0 10px #ff0000; text-align:center; max-width: 90vw;">${title}</h2>
-      <p style="font-size: 1.2rem; margin: 0 0 20px 0; text-align:center; max-width: 90vw;">${subtitle}</p>
+      <h2 style="font-size: 2rem; color: #ff9900; margin: 0 0 10px 0; text-shadow: 0 0 10px #ff0000; text-align:center; max-width: 90%;">${title}</h2>
+      <p style="font-size: 1rem; margin: 0 0 20px 0; text-align:center; max-width: 90%;">${subtitle}</p>
     `;
     
     if (btnText) {
       const btn = document.createElement('button');
       btn.innerText = btnText;
-      btn.style.padding = '10px 20px';
-      btn.style.fontSize = '1.2rem';
+      btn.style.padding = '8px 16px';
+      btn.style.fontSize = '1.1rem';
       btn.style.background = 'linear-gradient(90deg, #ff9900, #ff0000)';
       btn.style.color = '#fff';
       btn.style.border = '2px solid #fff';
@@ -284,8 +282,8 @@ class LisarArcade2D {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     this.showMessage(
         "LISAR JET RUSH", 
-        "Misión: Sobrevive toda la canción (Level 2) y recolecta 20 monedas.<br><br><b>Controles:</b><br>PC: Espacio / Flecha Arriba / Clic<br>Móvil: Mantén tocada la pantalla", 
-        "INICIAR ARCADE", 
+        "¡Sobrevive la canción y junta 20 Lisar Coins!", 
+        "INICIAR", 
         () => this.startGame()
     );
   }
@@ -295,7 +293,6 @@ class LisarArcade2D {
     this.hud.style.display = 'flex';
     this.state = 'playing';
     
-    // Reiniciar jugador y variables
     this.player.hp = this.player.maxHp;
     this.player.y = 200;
     this.player.vy = 0;
@@ -308,7 +305,6 @@ class LisarArcade2D {
     this.particles = [];
     this.spawnTimer = 0;
     
-    // Sincronización del Reloj Maestro
     this.audio.currentTime = 0;
     this.audio.play().catch(e => console.error("Error reproduciendo audio:", e));
     
@@ -336,23 +332,24 @@ class LisarArcade2D {
     this.hud.style.display = 'none';
     
     if (victory) {
-      // Registrar misión para Chatbot IA
       localStorage.setItem('lisar_discount_game2', 'true');
       this.showMessage(
         "¡MISIÓN COMPLETADA!", 
-        `Sobreviviste toda la canción y recolectaste ${this.coinsCollected} monedas.<br><br>¡Has desbloqueado tu Descuento de Lisar Jet Rush!`, 
-        "Reclamar Premio Ahora", 
+        `Sobreviviste toda la canción y recolectaste ${this.coinsCollected} monedas.<br><br>¡Descuento desbloqueado!`, 
+        "Reclamar Premio", 
         () => {
-          this.destroy(); // Destruye y regresa a la web
+          this.destroy();
+          const overlay = document.getElementById('arcade-overlay');
+          if (overlay) overlay.style.display = 'flex';
           if (window.triggerPromoChatbot) window.triggerPromoChatbot();
         }
       );
     } else {
-      let motivo = (this.player.hp <= 0) ? "Tu nave fue destruida." : `No lograste recolectar las ${this.coinsRequired} Lisar Coins requeridas.`;
+      let motivo = (this.player.hp <= 0) ? "Nave destruida." : `Solo juntaste ${this.coinsCollected} / ${this.coinsRequired} monedas.`;
       this.showMessage(
         "MISIÓN FALLIDA", 
         motivo, 
-        "INTENTAR DE NUEVO", 
+        "REINTENTAR", 
         () => this.startGame()
       );
     }
@@ -360,10 +357,7 @@ class LisarArcade2D {
   
   spawnEntity(dt) {
     this.spawnTimer += dt;
-    // Progreso de 0.0 a 1.0 según la duración de la canción
     const progress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
-    
-    // Aumentar la dificultad de spawneo gradualmente
     const spawnRate = Math.max(0.6, 2.0 - progress * 1.5);
     
     if (this.spawnTimer > spawnRate) {
@@ -371,7 +365,6 @@ class LisarArcade2D {
       
       const r = Math.random();
       if (r < 0.45) {
-        // Generar Moneda
         this.coins.push({
           x: this.logicalWidth + 50,
           y: 50 + Math.random() * (this.logicalHeight - 150),
@@ -380,7 +373,6 @@ class LisarArcade2D {
           frame: 0, frameTimer: 0
         });
       } else if (r < 0.70) {
-        // Generar Enemigo 1
         this.enemies.push({
           type: 1,
           x: this.logicalWidth + 50,
@@ -391,7 +383,6 @@ class LisarArcade2D {
           frame: 0, frameTimer: 0
         });
       } else if (progress > 0.25 && r < 0.85) {
-        // Generar Enemigo 2
         this.enemies.push({
           type: 2,
           x: this.logicalWidth + 50,
@@ -403,7 +394,6 @@ class LisarArcade2D {
           frame: 0, frameTimer: 0
         });
       } else {
-        // Generar Obstáculo
         let isTop = Math.random() > 0.5;
         this.enemies.push({
           type: 0, 
@@ -454,9 +444,7 @@ class LisarArcade2D {
             
             this.player.hp -= (e.type === 0 ? 15 : 20);
             this.player.invulnerable = 1.5; 
-            
             this.createExplosion(pBox.x + pBox.w/2, pBox.y + pBox.h/2, '#ff0000', 15);
-            
             if (e.type !== 0) this.enemies.splice(i, 1); 
         }
       }
@@ -505,9 +493,8 @@ class LisarArcade2D {
       return;
     }
     
-    // Animar a Lisar (Sprite sheet animation)
     this.player.frameTimer += dt;
-    if (this.player.frameTimer > 0.08) { // ~12 fps
+    if (this.player.frameTimer > 0.08) {
       this.player.frame = (this.player.frame + 1) % this.sprites.lisar.totalFrames;
       this.player.frameTimer = 0;
     }
@@ -615,14 +602,26 @@ class LisarArcade2D {
     this.updateHUD();
   }
   
-  // Función helper para dibujar un frame de un sprite sheet
+  // ==============================================================
+  // CÓDIGO CLAVE PARA DIBUJAR UN FRAME INDIVIDUAL DEL SPRITE SHEET
+  // ==============================================================
   drawSprite(spriteInfo, frameIndex, x, y, w, h) {
       if (!spriteInfo.loaded) return;
+      
+      // Calculamos el ancho y alto real del recorte en la imagen original
       const fw = spriteInfo.img.width / spriteInfo.cols;
       const fh = spriteInfo.img.height / spriteInfo.rows;
+      
+      // Determinamos en qué columna y fila de la cuadrícula está el frame activo
       const col = frameIndex % spriteInfo.cols;
       const row = Math.floor(frameIndex / spriteInfo.cols);
-      this.ctx.drawImage(spriteInfo.img, col * fw, row * fh, fw, fh, x, y, w, h);
+      
+      // sourceX y sourceY
+      const sx = col * fw;
+      const sy = row * fh;
+      
+      // Finalmente, usamos los 9 argumentos de drawImage para renderizar solo el fotograma (sx, sy, fw, fh) en lugar de la imagen entera
+      this.ctx.drawImage(spriteInfo.img, sx, sy, fw, fh, x, y, w, h);
   }
   
   draw() {
@@ -631,7 +630,6 @@ class LisarArcade2D {
     this.ctx.save();
     this.ctx.scale(this.scale, this.scale);
     
-    // Fondo Arcade Futurista (ajustado a logicalHeight y width)
     const grad = this.ctx.createLinearGradient(0,0,0,this.logicalHeight);
     grad.addColorStop(0, '#020024');
     grad.addColorStop(0.5, '#090979');
@@ -639,7 +637,6 @@ class LisarArcade2D {
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(0,0,this.logicalWidth, this.logicalHeight);
     
-    // Efecto grilla futurista de fondo
     this.ctx.strokeStyle = 'rgba(255,255,255,0.05)';
     this.ctx.lineWidth = 1;
     for (let i = 0; i < this.logicalWidth; i+=40) {
@@ -649,9 +646,8 @@ class LisarArcade2D {
       this.ctx.beginPath(); this.ctx.moveTo(0, i); this.ctx.lineTo(this.logicalWidth, i); this.ctx.stroke();
     }
     
-    // Dibujar Piso repetible (tiling) cubriendo el logicalWidth expansivo
     if (this.sprites.floor.loaded) {
-      let tiles = Math.ceil(this.logicalWidth / 800) + 1; // 800 es un ancho seguro por repetición
+      let tiles = Math.ceil(this.logicalWidth / 800) + 1;
       for (let i=0; i<tiles; i++) {
           this.ctx.drawImage(this.sprites.floor.img, this.floorOffset + (i*800), this.logicalHeight - 40, 800, 40);
       }
@@ -660,7 +656,6 @@ class LisarArcade2D {
       this.ctx.fillRect(0, this.logicalHeight - 40, this.logicalWidth, 40);
     }
     
-    // Dibujar Monedas (Sprite frames individuales)
     this.coins.forEach(c => {
       if (this.sprites.coin.loaded) {
         this.drawSprite(this.sprites.coin, c.frame, c.x, c.y, c.width, c.height);
@@ -672,16 +667,13 @@ class LisarArcade2D {
       }
     });
     
-    // Dibujar Enemigos y Obstáculos
     this.enemies.forEach(e => {
       if (e.type === 0) {
         this.ctx.fillStyle = '#111';
         this.ctx.fillRect(e.x, e.y, e.width, e.height);
-        
         this.ctx.strokeStyle = Math.floor(performance.now()/200)%2 === 0 ? '#ff9900' : '#ff0000';
         this.ctx.lineWidth = 3;
         this.ctx.strokeRect(e.x, e.y, e.width, e.height);
-        
         this.ctx.beginPath();
         this.ctx.moveTo(e.x, e.y); this.ctx.lineTo(e.x+e.width, e.y+e.height);
         this.ctx.moveTo(e.x+e.width, e.y); this.ctx.lineTo(e.x, e.y+e.height);
@@ -696,7 +688,6 @@ class LisarArcade2D {
       }
     });
     
-    // Dibujar Proyectiles
     this.projectiles.forEach(p => {
       this.ctx.fillStyle = p.color;
       this.ctx.fillRect(p.x, p.y, p.width, p.height);
@@ -706,7 +697,6 @@ class LisarArcade2D {
       this.ctx.shadowBlur = 0;
     });
     
-    // Dibujar a Lisar
     if (this.player.invulnerable <= 0 || Math.floor(this.player.invulnerable * 15) % 2 === 0) {
       if (this.sprites.lisar.loaded) {
         this.drawSprite(this.sprites.lisar, this.player.frame, this.player.x, this.player.y, this.player.width, this.player.height);
@@ -725,7 +715,6 @@ class LisarArcade2D {
       }
     }
     
-    // Dibujar Partículas
     this.particles.forEach(p => {
       this.ctx.fillStyle = p.color;
       this.ctx.globalAlpha = p.life;
@@ -755,86 +744,28 @@ class LisarArcade2D {
     this.state = 'destroyed';
     if(this.audio) this.audio.pause();
     this.container.innerHTML = ''; 
-    window.removeEventListener('resize', this.resizeHandler);
-    
-    if (this.container.id === 'arcade-game-fullscreen') {
-        this.container.remove();
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(()=>{});
-        } else if (document.webkitFullscreenElement) {
-            document.webkitExitFullscreen().catch(()=>{});
-        }
-    }
+    if (this.resizeObserver) this.resizeObserver.disconnect();
   }
 }
 
 // Inicialización global segura y aislada
 document.addEventListener('DOMContentLoaded', () => {
     
-    async function enterGameFullscreen(container) {
-        try {
-            if (container.requestFullscreen) {
-                await container.requestFullscreen();
-            } else if (container.webkitRequestFullscreen) {
-                await container.webkitRequestFullscreen();
-            }
-        } catch (error) {
-            console.warn("No fue posible activar fullscreen nativo:", error);
-        }
-    }
-
     window.initArcadeGame = function() {
         if (window.arcadeGame) {
             window.arcadeGame.destroy();
         }
-        
-        let fs = document.getElementById('arcade-game-fullscreen');
-        if (!fs) {
-            fs = document.createElement('div');
-            fs.id = 'arcade-game-fullscreen';
-            fs.style.position = 'fixed';
-            fs.style.inset = '0';
-            fs.style.width = '100vw';
-            fs.style.height = '100dvh';
-            fs.style.zIndex = '9999';
-            fs.style.overflow = 'hidden';
-            fs.style.background = '#000';
-            document.body.appendChild(fs);
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.innerHTML = '&times;';
-            closeBtn.style.position = 'absolute';
-            closeBtn.style.top = '15px';
-            closeBtn.style.right = '20px';
-            closeBtn.style.zIndex = '10000';
-            closeBtn.style.background = 'transparent';
-            closeBtn.style.color = '#fff';
-            closeBtn.style.border = 'none';
-            closeBtn.style.fontSize = '3rem';
-            closeBtn.style.lineHeight = '1';
-            closeBtn.style.cursor = 'pointer';
-            closeBtn.style.textShadow = '0 0 10px #000';
-            closeBtn.onclick = () => {
-                if(window.arcadeGame) window.arcadeGame.destroy();
-                window.arcadeGame = null;
-            };
-            fs.appendChild(closeBtn);
-        }
-
-        window.arcadeGame = new LisarArcade2D('arcade-game-fullscreen');
+        window.arcadeGame = new LisarArcade2D('arcade-game-container');
     };
     
     const btn = document.getElementById('start-arcade-btn');
+    const overlay = document.getElementById('arcade-overlay');
     
-    if (btn) {
-        btn.addEventListener('click', async () => {
+    if (btn && overlay) {
+        btn.addEventListener('click', () => {
+            overlay.style.display = 'none';
             if (!window.arcadeGame) window.initArcadeGame();
             else if (window.arcadeGame.state === 'destroyed') window.initArcadeGame();
-            
-            const fs = document.getElementById('arcade-game-fullscreen');
-            if (fs) {
-                await enterGameFullscreen(fs);
-            }
             
             if(window.arcadeGame && window.arcadeGame.state === 'ready') {
                window.arcadeGame.startGame();
