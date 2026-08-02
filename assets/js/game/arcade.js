@@ -1014,11 +1014,11 @@ class LisarArcade2D {
         });
       }
     } else if (challengeIndex === 1) {
-      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico de Monedas por abajo
+      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Franja Verde (Y = 180-195px)
       this.spawnEnemy1(progress);
 
       for (let i = 0; i < 5; i++) {
-        const archY = (this.logicalHeight - 160) - Math.sin((i / 4) * Math.PI) * 70;
+        const archY = 190 - Math.sin((i / 4) * Math.PI) * 15;
         this.coins.push({
           x: startX + i * 48,
           y: archY,
@@ -1028,12 +1028,12 @@ class LisarArcade2D {
         });
       }
     } else if (challengeIndex === 2) {
-      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en el Cielo Alto
+      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Franja Verde (Y = 185px)
       this.spawnEnemy2(progress);
 
-      const highY = 165;
+      const highY = 185;
       const diamondOffsets = [
-        { dx: 0, dy: 0 }, { dx: 40, dy: -30 }, { dx: 40, dy: 30 }, { dx: 80, dy: 0 }
+        { dx: 0, dy: 0 }, { dx: 36, dy: -12 }, { dx: 36, dy: 12 }, { dx: 72, dy: 0 }
       ];
       diamondOffsets.forEach(off => {
         this.coins.push({
@@ -1045,11 +1045,11 @@ class LisarArcade2D {
         });
       });
     } else if (challengeIndex === 3) {
-      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Rayito Powerup + Onda S de Monedas
+      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Franja Verde
       if (this.player.hp < this.player.maxHp * 0.8) {
         this.powerups.push({
           x: startX + 40,
-          y: 110,
+          y: 185,
           width: 50, height: 50,
           vx: -(this.floorSpeed + 15),
           frameTimer: 0
@@ -1059,14 +1059,14 @@ class LisarArcade2D {
       for (let i = 0; i < 6; i++) {
         this.coins.push({
           x: startX + i * 50,
-          y: 130 + Math.sin(i * 0.9) * 55,
+          y: 185 + Math.sin(i * 0.9) * 14,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
         });
       }
     } else if (challengeIndex === 4) {
-      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Bajo de Monedas
+      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Medio de Monedas en Franja Verde
       this.enemies.push({
         type: 0,
         x: startX,
@@ -1079,7 +1079,7 @@ class LisarArcade2D {
       for (let i = 0; i < 5; i++) {
         this.coins.push({
           x: startX + i * 46,
-          y: this.logicalHeight - 150,
+          y: 190,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
@@ -1452,7 +1452,7 @@ class LisarArcade2D {
 
     // Generator de Montañitas Dinámicas con los Sprites Oficiales de Lu y Peter (lu1..lu10, peter1..peter10)
     this.hillTimer = (this.hillTimer || 0) + dt;
-    if (this.hillTimer > 7.0 + Math.random() * 5.0) {
+    if (this.hillTimer > 12.0 + Math.random() * 8.0) {
       this.hillTimer = 0;
       this.bgHills = this.bgHills || [];
       const quotes = [
@@ -1463,8 +1463,8 @@ class LisarArcade2D {
       
       // Tamaños de montaña: 0: Chica, 1: Mediana, 2: Grande
       const sizeType = Math.floor(Math.random() * 3);
-      const heights = [75, 120, 175];
-      const widths = [120, 185, 250];
+      const heights = [85, 130, 185];
+      const widths = [135, 195, 260];
       const colors = ['#a200ff', '#00f3ff', '#ff00aa'];
 
       // Personajes: 0: Solo Lu, 1: Solo Peter, 2: Lu y Peter juntos
@@ -1497,12 +1497,12 @@ class LisarArcade2D {
       }
     }
 
-    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU EN SU NUBE (boost1.png a Boost10.png)
-    if (this.player.hp <= 30 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
+    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU EN SU NUBE (Trigger a 3 barras de energía = hp <= 60)
+    if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
       this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
-      this.luBoostY = 175;  // Altura exacta marcada en la franja por el usuario
+      this.luBoostY = 185;  // Altura exacta marcada en la franja verde por el usuario
       this.luBoostFrame = 0;
       this.luBoostTimer = 0;
       this.luBoostDropped = false;
@@ -1750,25 +1750,25 @@ class LisarArcade2D {
         const luImg = this.luFrames[frameIdx];
         const peterImg = this.peterFrames[frameIdx];
 
-        const charH = 75; // Altura visible clara de los personajes
+        const charH = 145; // Personajes grandes y prominentes (10% menor al héroe principal)
 
         if (h.charType === 0 && luImg && luImg.loaded) {
           // Solo Lu bailando/animándose en la cumbre
           const luW = luImg.width * (charH / luImg.height);
-          this.ctx.drawImage(luImg, peakX - luW / 2, peakY - charH + 10, luW, charH);
+          this.ctx.drawImage(luImg, peakX - luW / 2, peakY - charH + 12, luW, charH);
         } else if (h.charType === 1 && peterImg && peterImg.loaded) {
           // Solo Peter bailando/animándose en la cumbre
           const peterW = peterImg.width * (charH / peterImg.height);
-          this.ctx.drawImage(peterImg, peakX - peterW / 2, peakY - charH + 10, peterW, charH);
+          this.ctx.drawImage(peterImg, peakX - peterW / 2, peakY - charH + 12, peterW, charH);
         } else if (h.charType === 2) {
           // Lu y Peter Juntos en la cumbre
           if (luImg && luImg.loaded) {
             const luW = luImg.width * (charH / luImg.height);
-            this.ctx.drawImage(luImg, peakX - luW - 5, peakY - charH + 10, luW, charH);
+            this.ctx.drawImage(luImg, peakX - luW - 5, peakY - charH + 12, luW, charH);
           }
           if (peterImg && peterImg.loaded) {
             const peterW = peterImg.width * (charH / peterImg.height);
-            this.ctx.drawImage(peterImg, peakX + 5, peakY - charH + 10, peterW, charH);
+            this.ctx.drawImage(peterImg, peakX + 5, peakY - charH + 12, peterW, charH);
           }
         }
 
@@ -1779,10 +1779,10 @@ class LisarArcade2D {
         this.ctx.shadowBlur = 12;
         this.ctx.shadowColor = '#00ffff';
         this.ctx.beginPath();
-        const bubbleW = 125;
+        const bubbleW = 135;
         const bubbleH = 26;
         const bubbleX = peakX - bubbleW / 2;
-        const bubbleY = peakY - charH - 25;
+        const bubbleY = peakY - charH - 22;
         if (this.ctx.roundRect) {
           this.ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 6);
         } else {
