@@ -369,13 +369,20 @@ document.addEventListener('DOMContentLoaded', () => {
     showTyping();
     setTimeout(() => {
         hideTyping();
-        addBotMsg("🎉 ¡Felicidades por conseguir las 100 Lisar Coins! ¿Qué esperas para utilizar ese 30% de descuento en tu primer servicio? 🤩");
+        
+        let msg = "¡Felicidades por conseguir las 100 Lisar Coins! ¿Qué esperas para utilizar ese 30% de descuento en tu primer servicio? 🚀";
+        
+        if (localStorage.getItem('lisar_discount_game2')) {
+            msg = "Veo que ya tienes varios descuentos acumulados por completar nuestras misiones. ¿No te gustaría gastar los descuentos acumulados en alguno de nuestros servicios?";
+        }
+        
+        addBotMsg("🤖 " + msg);
         
         const btnSi = document.createElement('button');
         btnSi.className = 'chat-option-btn';
-        btnSi.innerText = '¡Quiero cotizar ahora! 🚀';
+        btnSi.innerText = '¡Quiero cotizar ahora! 💬';
         btnSi.onclick = () => {
-            addUserMsg('¡Quiero cotizar ahora! 🚀');
+            addUserMsg('¡Quiero cotizar ahora! 💬');
             loadState('start');
         };
         
@@ -388,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showTyping();
             setTimeout(() => {
                 hideTyping();
-                addBotMsg("¡No hay problema! Cuando estés listo, aquí estaré. Recuerda guardar tu captura de pantalla. 😉");
+                addBotMsg("🤖 ¡No hay problema! Cuando estés listo, aquí estaré. Recuerda guardar tu captura de pantalla. 😉");
             }, 800);
         };
         

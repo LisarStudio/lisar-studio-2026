@@ -476,14 +476,19 @@
           </div>
           
           <div class="col-lg-4 col-md-6 mb-4">
-             <div class="glass-card text-center p-4 h-100 d-flex flex-column justify-content-center align-items-center opacity-75">
-               <i class="bi bi-joystick text-warning mb-3" style="font-size: 3rem;"></i>
-               <h4 class="h6 font-weight-bold mb-2">Juegos Retro & Arcade</h4>
-               <p class="text-muted small">Desarrollo de niveles y mecánicas personalizadas en 2D/3D al estilo clásico.</p>
-               <span class="badge badge-outline-warning mt-2">Próximamente</span>
-             </div>
-          </div>
-
+              <div class="glass-card text-center p-0 overflow-hidden game-card-featured" style="border: 2px solid var(--lisar-gold); box-shadow: 0 0 15px rgba(255, 183, 3, 0.15);">
+                <div class="game-container" id="arcade-game-container" style="position: relative; width: 100%; aspect-ratio: 941/1672; background: #000;">
+                  <!-- Overlay Start -->
+                  <div id="arcade-overlay" style="position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                    <button id="start-arcade-btn" class="game-cover-btn" aria-label="Jugar Lisar Jet Rush">
+                      <img src="assets/img/portada_juego2.png" alt="Portada de Lisar Jet Rush" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;" loading="lazy">
+                    </button>
+                  </div>
+                  <!-- Canvas will be injected here -->
+                </div>
+              </div>
+            </div>
+          
           <div class="col-lg-4 col-md-6 mb-4">
              <div class="glass-card text-center p-4 h-100 d-flex flex-column justify-content-center align-items-center opacity-75">
                <i class="bi bi-mortarboard text-warning mb-3" style="font-size: 3rem;"></i>
@@ -690,6 +695,7 @@
     <!-- App Custom Scripts -->
     <script src="assets/js/3d-bg.js?v=2"></script>
     <script src="assets/js/game/runner.js?v=65"></script>
+    <script src="assets/js/game/arcade.js"></script>
     <script src="assets/js/chatbot.js?v=7"></script>
     <script src="assets/js/app.js?v=51"></script>
    
