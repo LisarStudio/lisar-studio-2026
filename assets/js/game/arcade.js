@@ -411,7 +411,7 @@ class LisarArcade2D {
     if (this.player.isAttacking) return;
     
     this.player.isAttacking = true;
-    this.player.attackTimer = 0.28;
+    this.player.attackTimer = 0.45;
     this.player.attackFrame = 0;
     this.playAttackSound();
 
@@ -1180,12 +1180,12 @@ class LisarArcade2D {
         this.activeAnim = this.attackFrames;
         this.loopAnim   = false;
         const total = this.attackFrames.length || 8;
-        this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.28) * total));
+        this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.45) * total));
       } else {
         this.activeAnim = this.flyAttackFrames;
         this.loopAnim   = false;
         const total = this.flyAttackFrames.length || 9;
-        this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.28) * total));
+        this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.45) * total));
       }
     } else if (onGround) {
       this.player.angle = 0;
@@ -1816,24 +1816,6 @@ class LisarArcade2D {
         this.ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
         this.ctx.filter = 'none';
         this.ctx.restore();
-
-        // Efecto visual de Estela / Arco de Espada Neón durante el ataque
-        if (this.player.isAttacking) {
-          const atkProgress = 1 - (this.player.attackTimer / 0.28);
-          this.ctx.save();
-          this.ctx.shadowBlur = 20;
-          this.ctx.shadowColor = atkProgress > 0.5 ? '#00ffff' : '#ff00ff';
-          this.ctx.strokeStyle = atkProgress > 0.5 ? '#ffffff' : '#00ffff';
-          this.ctx.lineWidth = 6;
-          this.ctx.beginPath();
-          const slashCenterX = drawX + drawW * 0.70;
-          const slashCenterY = drawY + drawH * 0.45;
-          const startAngle = -Math.PI * 0.45 + atkProgress * 0.4;
-          const endAngle   = Math.PI * 0.45 + atkProgress * 0.4;
-          this.ctx.arc(slashCenterX, slashCenterY, 70, startAngle, endAngle);
-          this.ctx.stroke();
-          this.ctx.restore();
-        }
       }
       // No fallback: no more blue square
 
