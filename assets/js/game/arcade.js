@@ -1443,19 +1443,19 @@ class LisarArcade2D {
       }
     }
 
-    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU (boost1.png a Boost10.png)
+    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU EN SU NUBE (boost1.png a Boost10.png)
     if (this.player.hp <= 30 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
-      this.luBoostX = this.logicalWidth + 60;
-      this.luBoostY = 30;
+      this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
+      this.luBoostY = 210;  // Altura exacta marcada en la captura por el usuario
       this.luBoostFrame = 0;
       this.luBoostTimer = 0;
       this.luBoostDropped = false;
       this.speak("Emergency Energy Boost!");
       this.showTemporaryAlert(
         "⚡ ¡LU AL RESCATE!",
-        "Lu ha volado al mapa para lanzarte una Bota de Energía",
+        "Lu vuela en su nube de izquierda a derecha lanzándote energía",
         3.5
       );
     }
@@ -1463,27 +1463,28 @@ class LisarArcade2D {
     if (this.luBoostCooldown > 0) this.luBoostCooldown -= dt;
 
     if (this.luBoostActive) {
-      this.luBoostX -= 220 * dt;
+      this.luBoostX += 115 * dt; // Vuelo LENTO y fluido de izquierda a derecha
       this.luBoostTimer += dt;
       if (this.luBoostTimer > 0.08) {
         this.luBoostFrame = (this.luBoostFrame + 1) % 10;
         this.luBoostTimer = 0;
       }
 
-      if (this.luBoostX <= this.logicalWidth * 0.50 && !this.luBoostDropped) {
+      // Al aproximarse sobre el jugador, Lu le lanza la Bota de Energía hacia abajo
+      if (this.luBoostX >= (this.player.x + 40) && !this.luBoostDropped) {
         this.luBoostDropped = true;
         this.powerups.push({
-          x: this.luBoostX,
+          x: this.luBoostX + 20,
           y: this.luBoostY + 40,
           width: 60, height: 60,
-          vx: -this.floorSpeed * 0.70,
-          vy: 90,
+          vx: 50,
+          vy: 140,
           isBoot: true,
           frameTimer: 0
         });
       }
 
-      if (this.luBoostX < -200) {
+      if (this.luBoostX > this.logicalWidth + 180) {
         this.luBoostActive = false;
       }
     }
@@ -1720,37 +1721,74 @@ class LisarArcade2D {
       });
     }
 
-    // Renderizado de Lu Volando Lanzando la Bota de Energía (boost1..boost10)
+    // Renderizado de Lu Volando en la Nube de Izquierda a Derecha a la altura marcada (Y = 210px)
     if (this.luBoostActive) {
       const bImg = this.boostFrames[this.luBoostFrame % 10];
       if (bImg && bImg.loaded) {
         this.ctx.save();
         const bHeight = 85;
         const bWidth = bImg.width * (bHeight / bImg.height);
-        
-        this.ctx.shadowBlur = 18;
+        const floatY = this.luBoostY + Math.sin(performance.now() / 200) * 4;
+
+        // NUBE MÁGICA DE NIMBO / NIMBUS BAJO LOS PIES DE LU
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.lineWidth = 2.5;
+
+        const cloudX = this.luBoostX + bWidth / 2;
+        const cloudY = floatY + bHeight - 12;
+
+        this.ctx.beginPath();
+        this.ctx.arc(cloudX - 35, cloudY, 18, 0, Math.PI * 2);
+        this.ctx.arc(cloudX - 15, cloudY - 12, 24, 0, Math.PI * 2);
+        this.ctx.arc(cloudX + 15, cloudY - 10, 22, 0, Math.PI * 2);
+        this.ctx.arc(cloudX + 35, cloudY, 18, 0, Math.PI * 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Estela de destellos dorados y cyan de la nube voladora
+        for (let i = 0; i < 3; i++) {
+          this.particles.push({
+            x: cloudX - 40 - Math.random() * 20,
+            y: cloudY + (Math.random() - 0.5) * 15,
+            vx: -80 - Math.random() * 40,
+            vy: (Math.random() - 0.5) * 30,
+            life: 0.3,
+            maxLife: 0.3,
+            color: Math.random() > 0.5 ? '#00ffff' : '#ffd700',
+            size: 3 + Math.random() * 4
+          });
+        }
+
+        // Renderizado del sprite de Lu volando sobre la nube
+        this.ctx.shadowBlur = 16;
         this.ctx.shadowColor = '#00ffaa';
-        this.ctx.drawImage(bImg, this.luBoostX, this.luBoostY, bWidth, bHeight);
+        this.ctx.drawImage(bImg, this.luBoostX, floatY, bWidth, bHeight);
 
         // Globo de diálogo flotante de Lu
         this.ctx.fillStyle = '#ffffff';
         this.ctx.strokeStyle = '#000000';
         this.ctx.lineWidth = 2.5;
-        this.ctx.shadowBlur = 12;
+        this.ctx.shadowBlur = 14;
         this.ctx.shadowColor = '#00ffaa';
         this.ctx.beginPath();
+        const bubbleX = this.luBoostX - 10;
+        const bubbleY = floatY - 32;
         if (this.ctx.roundRect) {
-          this.ctx.roundRect(this.luBoostX - 25, this.luBoostY - 30, 165, 26, 6);
+          this.ctx.roundRect(bubbleX, bubbleY, 165, 26, 6);
         } else {
-          this.ctx.rect(this.luBoostX - 25, this.luBoostY - 30, 165, 26);
+          this.ctx.rect(bubbleX, bubbleY, 165, 26);
         }
         this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.font = 'bold 9px "Orbitron", monospace';
+        this.ctx.font = 'bold 9.5px "Orbitron", monospace';
         this.ctx.fillStyle = '#0a0a0c';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText("⚡ ¡AQUÍ TIENES ENERGÍA!", this.luBoostX + 58, this.luBoostY - 14);
+        this.ctx.fillText("⚡ ¡AQUÍ TIENES ENERGÍA!", bubbleX + 82, bubbleY + 17);
 
         this.ctx.restore();
       }
