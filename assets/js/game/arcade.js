@@ -137,6 +137,11 @@ class LisarArcade2D {
       this.enemy2BallFrames.push(img);
     }
 
+    this.logoImg = new Image();
+    this.logoImg.loaded = false;
+    this.logoImg.src = 'assets/img/logo-lisar-studio.png';
+    this.logoImg.onload = () => { this.logoImg.loaded = true; };
+
     this.sprites = {
       floor:    { src: 'images/sprites_arcade/tiling_floor.png',    img: new Image(), loaded: false, cols: 1, rows: 1, totalFrames: 1 }
     };
@@ -173,8 +178,8 @@ class LisarArcade2D {
     this.floorOffset    = 0;
     this.floorSpeed     = 200;
     this.coinsCollected = 0;
-    this.coinsRequired  = 100; // Meta aumentada a 100
-    this.lastDiscountThreshold = 0; // Control de mensajes de descuento
+    this.coinsRequired  = 100;
+    this.lastDiscountThreshold = 0;
     this.spawnTimer     = 0;
     this.isFlying       = false;
 
@@ -190,22 +195,18 @@ class LisarArcade2D {
   }
 
   loadSheetSprites() {
+    // Simplified: just set up sprites, then draw ready screen after a short delay
     const keys = Object.keys(this.sprites);
-    let loaded = 0;
     keys.forEach(k => {
-      this.sprites[k].img.onload = () => {
-        this.sprites[k].loaded = true;
-        loaded++;
-        if (loaded === keys.length) {
-          this.drawReadyScreen();
-        }
-      };
-      this.sprites[k].img.onerror = () => {
-        loaded++;
-        if (loaded === keys.length) this.drawReadyScreen();
-      };
+      this.sprites[k].img.onload = () => { this.sprites[k].loaded = true; };
+      this.sprites[k].img.onerror = () => { this.sprites[k].loaded = false; };
       this.sprites[k].img.src = this.sprites[k].src;
     });
+    // Draw ready screen once resize has run
+    setTimeout(() => {
+      this.resize();
+      if (this.state === 'ready') this.drawReadyScreen();
+    }, 100);
   }
 
   resize() {
@@ -224,6 +225,7 @@ class LisarArcade2D {
     const floor = this.logicalHeight - this.player.height - 40;
     if (this.player.y > floor) this.player.y = floor;
 
+    // Only draw ready screen from resize, never call resize from drawReadyScreen
     if (this.state === 'ready') this.drawReadyScreen();
   }
 
@@ -299,6 +301,7 @@ class LisarArcade2D {
   setupControls() {
     window.addEventListener('keydown', e => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
+        if (this.state === 'ready') this.startGame();
         this.input.up = true;
         e.preventDefault();
       }
@@ -308,11 +311,17 @@ class LisarArcade2D {
       if (e.code === 'Space' || e.code === 'ArrowUp') this.input.up = false;
     });
     this.container.addEventListener('touchstart', e => {
+      if (this.state !== 'playing' && this.state !== 'ready') return;
+      if (this.state === 'ready') this.startGame();
       this.input.up = true;
       if (e.cancelable) e.preventDefault();
     }, { passive: false });
     this.container.addEventListener('touchend',  () => { this.input.up = false; });
-    this.container.addEventListener('mousedown', () => { this.input.up = true;  });
+    this.container.addEventListener('mousedown', e => { 
+      if (this.state !== 'playing' && this.state !== 'ready') return;
+      if (this.state === 'ready') this.startGame();
+      this.input.up = true;  
+    });
     this.container.addEventListener('mouseup',   () => { this.input.up = false; });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing') this.togglePause();
@@ -320,24 +329,30 @@ class LisarArcade2D {
   }
 
   createHUD() {
+    // HUD top bar: coins LEFT | empty CENTER | timer RIGHT (matching user red/cyan box)
     this.hud = document.createElement('div');
     Object.assign(this.hud.style, {
-      position: 'absolute', top: '16px', left: '16px', right: '16px',
-      display: 'none', gridTemplateColumns: '1fr auto 1fr', alignItems: 'flex-start',
+      position: 'absolute', top: '12px', left: '12px', right: '12px',
+      display: 'none',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
       pointerEvents: 'none', color: '#fff',
       fontFamily: "'Orbitron', 'monospace'",
-      zIndex: '5'
+      zIndex: '15'
     });
 
+    // LEFT: energy bars + coins
     const leftBar = document.createElement('div');
     leftBar.style.display = 'flex';
     leftBar.style.flexDirection = 'column';
     leftBar.style.alignItems = 'flex-start';
-    leftBar.style.gap = '8px';
+    leftBar.style.gap = '6px';
+    leftBar.style.minWidth = '120px';
 
     this.energyContainer = document.createElement('div');
     this.energyContainer.style.display = 'flex';
-    this.energyContainer.style.gap = '5px';
+    this.energyContainer.style.gap = '4px';
     this.energyContainer.style.alignItems = 'center';
 
     const coinRow = document.createElement('div');
@@ -355,22 +370,18 @@ class LisarArcade2D {
     leftBar.appendChild(this.energyContainer);
     leftBar.appendChild(coinRow);
 
+    // CENTER: Spacer
     const centerBar = document.createElement('div');
-    centerBar.style.display = 'flex';
-    centerBar.style.flexDirection = 'column';
-    centerBar.style.alignItems = 'center';
-    centerBar.innerHTML = `
-      <div style="font-size:0.7rem; color:#00ffff; text-shadow:0 0 5px #00ffff; letter-spacing:2px; margin-bottom:2px;">TIME LEFT</div>
-      <div id="arcade-timer-text" style="font-size:1.8rem; font-weight:bold; color:#fff; text-shadow:0 0 10px #a200ff, 0 0 20px #a200ff;">1:00</div>
-    `;
 
+    // RIGHT: TIMER — big, bold, glowing at TOP RIGHT
     const rightBar = document.createElement('div');
     rightBar.style.display = 'flex';
     rightBar.style.flexDirection = 'column';
     rightBar.style.alignItems = 'flex-end';
-    rightBar.style.gap = '6px';
+    rightBar.style.minWidth = '130px';
     rightBar.innerHTML = `
-      <div style="font-size:0.75rem;opacity:0.8;text-shadow:0 0 6px #00ffff;">LEVEL 2</div>
+      <div style="font-size:0.65rem; color:#00ffff; text-shadow:0 0 5px #00ffff; letter-spacing:2px; margin-bottom:2px; font-weight:bold;">TIEMPO RESTANTE</div>
+      <div id="arcade-timer-text" style="font-size:2.2rem; font-weight:900; color:#ffffff; text-shadow:0 0 12px #a200ff, 0 0 24px #a200ff; line-height:1; font-family:'Orbitron',monospace;">3:00</div>
     `;
 
     this.hud.appendChild(leftBar);
@@ -384,7 +395,7 @@ class LisarArcade2D {
     Object.assign(this.msgOverlay.style, {
       position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.88)', color: '#fff', zIndex: '10', pointerEvents: 'none'
+      background: 'rgba(0,0,0,0.88)', color: '#fff', zIndex: '20', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
   }
@@ -415,13 +426,16 @@ class LisarArcade2D {
     if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
     const timerText = document.getElementById('arcade-timer-text');
     if (timerText) {
-      const remaining = Math.max(0, Math.ceil(60 - this.gameTimer));
+      const remaining = Math.max(0, Math.ceil(180 - this.gameTimer));
       const m = Math.floor(remaining / 60);
       const s = (remaining % 60).toString().padStart(2, '0');
       timerText.innerText = `${m}:${s}`;
-      if (remaining <= 10) {
+      if (remaining <= 15) {
         timerText.style.color = '#ff0055';
         timerText.style.textShadow = '0 0 15px #ff0055, 0 0 30px #ff0055';
+      } else {
+        timerText.style.color = '#ffffff';
+        timerText.style.textShadow = '0 0 12px #a200ff, 0 0 24px #a200ff';
       }
     }
   }
@@ -459,19 +473,34 @@ class LisarArcade2D {
     this.msgOverlay.style.display    = 'flex';
     this.msgOverlay.style.pointerEvents = 'auto';
     this.msgOverlay.innerHTML = `
-      <h2 style="font-size:1.8rem;color:#ff9900;margin:0 0 8px 0;text-shadow:0 0 12px #ff0000;text-align:center;max-width:90%;">${title}</h2>
-      <p  style="font-size:0.95rem;margin:0 0 18px 0;text-align:center;max-width:90%;line-height:1.5;">${subtitle}</p>
+      <h2 style="font-size:1.8rem;color:#ff9900;margin:0 0 8px 0;text-shadow:0 0 12px #ff0000;text-align:center;max-width:90%;font-family:'Orbitron',sans-serif;">${title}</h2>
+      <p  style="font-size:0.95rem;margin:0 0 18px 0;text-align:center;max-width:90%;line-height:1.5;font-family:'Orbitron',sans-serif;">${subtitle}</p>
     `;
     if (btnText) {
       const btn = document.createElement('button');
       btn.innerText = btnText;
       Object.assign(btn.style, {
-        padding: '10px 24px', fontSize: '1.05rem',
+        padding: '12px 30px', fontSize: '1.1rem',
         background: 'linear-gradient(90deg,#ff9900,#ff2200)',
-        color: '#fff', border: '2px solid #fff', borderRadius: '6px',
-        cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 12px #ff6600'
+        color: '#fff', border: '2px solid #fff', borderRadius: '8px',
+        cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 15px #ff6600',
+        fontFamily: "'Orbitron', sans-serif",
+        letterSpacing: '1px',
+        marginTop: '10px',
+        pointerEvents: 'auto',
+        userSelect: 'none'
       });
-      btn.onclick = btnAction;
+
+      const handleBtnClick = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        btnAction();
+      };
+
+      btn.addEventListener('click', handleBtnClick);
+      btn.addEventListener('touchstart', handleBtnClick, { passive: false });
       this.msgOverlay.appendChild(btn);
     }
   }
@@ -482,18 +511,28 @@ class LisarArcade2D {
   }
 
   drawReadyScreen() {
-    this.ctx.fillStyle = '#000';
+    // Ensure canvas is sized (do NOT call resize here to avoid infinite loop)
+    if (this.canvas.width === 0 || this.canvas.height === 0) return;
+    this.ctx.fillStyle = '#0a0a0c';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   startGame() {
     this.hideMessage();
-    this.hud.style.display = 'flex';
+    // Set state FIRST so resize() won't call drawReadyScreen()
     this.state = 'playing';
+    this.resize();
+    this.hud.style.display = 'flex';
 
     this.player.hp             = this.player.maxHp;
+    this.player.x              = -250; // Animación de entrada
     this.player.y              = 200;
     this.player.vy             = 0;
+    this.player.angle          = 0;
+    this.introActive           = true;
+    this.introAlpha            = 0;
+    this.countdown             = 3;
+    this.countdownTimer        = 0;
     this.player.invulnerable   = 0;
     this.player.frame          = 0;
     this.player.wasFlying      = false;
@@ -507,6 +546,7 @@ class LisarArcade2D {
     this.coins       = [];
     this.particles   = [];
     this.powerups    = [];
+    this.billboards  = [];
     this.spawnTimer  = 0;
     this.gameTimer   = 0;
 
@@ -543,7 +583,7 @@ class LisarArcade2D {
     if (victory) {
       this.showMessage(
         '¡MISIÓN COMPLETADA!',
-        `Sobreviviste el tiempo límite y recolectaste ${this.coinsCollected} monedas.<br><br>` +
+        `Sobreviviste los 3 minutos de vuelo y recolectaste ${this.coinsCollected} monedas.<br><br>` +
         `<div style="font-size:1.35rem; color:#00ff00; font-weight:bold; text-shadow:0 0 10px #00ff00;">¡DESCUENTO TOTAL ACUMULADO: ${discount}%!</div><br>` +
         `Puntaje Final: ${this.coinsCollected * 120} pts`,
         'Reclamar Premio',
@@ -556,7 +596,7 @@ class LisarArcade2D {
       );
     } else {
       let motivo = this.player.hp <= 0
-        ? 'Nave destruida.'
+        ? 'Personaje derivado (Fuera de combate).'
         : 'Solo juntaste ' + this.coinsCollected + ' / ' + this.coinsRequired + ' monedas.';
       
       this.showMessage(
@@ -677,10 +717,11 @@ class LisarArcade2D {
   }
 
   checkCollisions() {
-    const px = this.player.x + 15;
-    const py = this.player.y + 15;
-    const pw = this.player.width  - 30;
-    const ph = this.player.height - 30;
+    // Tighter, accurate hitbox centered on character (pw: 80, ph: 110)
+    const px = this.player.x + 80;
+    const py = this.player.y + 65;
+    const pw = 80;
+    const ph = 110;
 
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const c = this.coins[i];
@@ -690,7 +731,6 @@ class LisarArcade2D {
         this.coins.splice(i, 1);
         this.playCoinSound();
 
-        // Control de alertas de descuento acumulables (cada 20 monedas, hasta 25% descuento)
         const currentThreshold = Math.floor(this.coinsCollected / 20);
         if (currentThreshold > this.lastDiscountThreshold && currentThreshold <= 5) {
           this.lastDiscountThreshold = currentThreshold;
@@ -710,26 +750,41 @@ class LisarArcade2D {
       }
     }
 
-    if (this.player.invulnerable > 0) return;
-
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const e  = this.enemies[i];
-      const ex = e.type === 0 ? e.x     : e.x + 8;
-      const ey = e.type === 0 ? e.y     : e.y + 8;
-      const ew = e.type === 0 ? e.width : e.width  - 16;
-      const eh = e.type === 0 ? e.height: e.height - 16;
-      if (px < ex + ew && px + pw > ex && py < ey + eh && py + ph > ey) {
-        if (e.type === 0) {
-          // Obstáculos tipo 0 (cubos) empujan al jugador y hacen un poco de daño constante si está aplastado
-          this.player.x = ex - this.player.width + 15;
+      const ex = e.x;
+      const ey = e.y;
+      const ew = e.width;
+      const eh = e.height;
+
+      if (e.type === 0) {
+        // CUBE PLATFORMING PHYSICS:
+        const prevBottom = (this.player.prevY !== undefined ? this.player.prevY : this.player.y) + this.player.height;
+        const cubeTop = ey;
+
+        // Is player landing on top of the cube from above?
+        if (prevBottom <= cubeTop + 30 && this.player.vy >= 0 && px + pw > ex + 15 && px < ex + ew - 15) {
+          // LAND ON TOP SAFELY AS A SOLID PLATFORM! (NO DAMAGE)
+          this.player.y = cubeTop - this.player.height;
+          this.player.vy = 0;
+          this.player.angle = 0;
+          this.player.wasFlying = false;
+          this.player.landTimer = 0;
+          this.player.onCube = true;
+        } else if (px < ex + ew && px + pw > ex && py < ey + eh && py + ph > ey) {
+          // SIDE HIT: Push back slightly inside screen bounds (never force off-screen!)
+          this.player.x = Math.max(15, this.player.x - 25);
           if (this.player.invulnerable <= 0) {
-            this.player.hp -= 2;
-            this.player.invulnerable = 0.2;
-            this.createExplosion(px + pw, py + ph / 2, '#ff2200', 3);
+            this.player.hp -= 12;
+            this.player.invulnerable = 0.6;
+            this.createExplosion(px + pw, py + ph / 2, '#ff2200', 8);
           }
-        } else {
+        }
+      } else {
+        if (this.player.invulnerable > 0) continue;
+        if (px < ex + ew - 20 && px + pw > ex + 10 && py < ey + eh - 20 && py + ph > ey + 10) {
           this.player.hp -= 20;
-          this.player.invulnerable = 1.5;
+          this.player.invulnerable = 1.2;
           if (e.type === 1) {
             this.createExplosion(ex + ew / 2, ey + eh / 2, 'enemy_explode', 1, ew);
             this.playExplosionSound();
@@ -745,7 +800,7 @@ class LisarArcade2D {
       const p = this.projectiles[i];
       if (px < p.x + p.width && px + pw > p.x && py < p.y + p.height && py + ph > p.y) {
         this.player.hp -= p.damage;
-        this.player.invulnerable = 1.0;
+        this.player.invulnerable = 0.8;
         this.createExplosion(px + pw / 2, py + ph / 2, '#ff9900', 10);
         this.projectiles.splice(i, 1);
       }
@@ -779,47 +834,83 @@ class LisarArcade2D {
   update(dt) {
     if (this.state !== 'playing') return;
 
+    if (this.introActive) {
+      this.player.x += dt * 110;
+      this.activeAnim = this.runFrames;
+      this.loopAnim = true;
+      this.animSpeed = 0.11;
+      
+      // Fade in del mensaje
+      this.introAlpha = Math.min(1, (this.introAlpha || 0) + dt * 1.5);
+      
+      this.player.frameTimer += dt;
+      if (this.player.frameTimer > this.animSpeed && this.activeAnim && this.activeAnim.length > 0) {
+        this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
+        this.player.frameTimer = 0;
+      }
+      
+      const floorY = this.logicalHeight - this.player.height - 70;
+      this.player.y = floorY;
+      
+      if (this.player.x >= 80) {
+        this.player.x = 80;
+        this.introActive = false;
+        this.gameTimer = 0;
+      }
+      
+      // Suelo scrolling
+      this.floorOffset -= this.floorSpeed * dt;
+      if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
+      
+      this.updateHUD();
+      return; 
+    }
+
     this.gameTimer += dt;
-    const remaining = Math.max(0, 60 - this.gameTimer);
+    const remaining = Math.max(0, 180 - this.gameTimer);
     
-    // Aumento progresivo de velocidad mucho más notable
-    const progress = Math.min(1, this.gameTimer / 60);
+    // Aumento progresivo de velocidad a lo largo de los 3 minutos
+    const progress = Math.min(1, this.gameTimer / 180);
     const speedBoost = 1.0 + progress * 0.90; // Hasta 90% más rápido al final
     dt *= 1.30 * speedBoost; // 30% base extra siempre
 
     // Físicas del jugador
     if (this.player.x < 80) {
-      this.player.x += dt * 100; // Fuerza para regresar a la posición original
+      this.player.x += dt * 100;
       if (this.player.x > 80) this.player.x = 80;
     }
+
+    this.player.prevY = this.player.y;
+    this.player.onCube = false;
 
     if (this.input.up) {
       this.player.vy += this.player.jumpForce * dt * 5;
       if (this.player.vy < -340) this.player.vy = -340;
     } else {
-      // Caída progresiva más rápida (a medida que cae, aumenta la gravedad)
       let fallMult = this.player.vy > 0 ? 1.6 : 1.0;
       this.player.vy += this.player.gravity * dt * fallMult;
     }
     this.player.y += this.player.vy * dt;
 
-    const floorY = this.logicalHeight - this.player.height - 40;
+    const floorY = this.logicalHeight - this.player.height - 70;
     if (this.player.y < 0)        { this.player.y = 0;      this.player.vy = 0; }
     if (this.player.y > floorY)   { this.player.y = floorY; this.player.vy = 0; }
 
     if (this.player.invulnerable > 0) this.player.invulnerable -= dt;
 
+    this.checkCollisions();
+
     // ================================================================
-    // ANIMACIÓN DEL JUGADOR - MÁQUINA DE ESTADOS
+    // ANIMACIÓN DEL JUGADOR - VUELO ESTABLE & FLUIDO
     // ================================================================
     this.player.frameTimer += dt;
-    const onGround = this.player.y >= floorY - 2;
+    const onGround = this.player.y >= floorY - 2 || this.player.onCube;
 
     this.activeAnim = [];
-    this.loopAnim   = true;
-    this.animSpeed  = 0.08;
+    this.loopAnim   = false;
 
     if (onGround) {
+      this.player.angle = 0;
       if (this.player.wasFlying) {
         this.player.landTimer = 0.15;
         this.player.wasFlying = false;
@@ -832,8 +923,10 @@ class LisarArcade2D {
         this.loopAnim   = false;
       } else {
         this.activeAnim = this.runFrames;
+        this.loopAnim   = true;
+        this.animSpeed  = 0.08;
 
-        // Partículas de humo en los pies mientras corre en tierra (limitadas y solo a altas velocidades)
+        // Partículas de humo en los pies mientras corre en tierra
         if (speedBoost > 1.3 && this.particles.length < 40 && Math.random() > 0.45) {
           this.particles.push({
             x: this.player.x + this.player.width / 2 - 20 + Math.random() * 40,
@@ -852,32 +945,65 @@ class LisarArcade2D {
       this.player.landTimer = 0;
 
       if (this.player.vy > 80) {
+        // Caída libre / descenso
         this.activeAnim = [this.flyFallImg];
         this.loopAnim   = false;
-        this.player.flyAscendIndex = 0;
+        this.player.angle = (this.player.angle || 0) + (0.12 - (this.player.angle || 0)) * dt * 6;
       } else {
-        if (this.player.flyAscendIndex < this.flyAscendFrames.length) {
-          this.activeAnim = [this.flyAscendFrames[this.player.flyAscendIndex]];
-          this.loopAnim   = false;
-          this.animSpeed  = 0.07;
-          if (this.player.frameTimer > this.animSpeed) {
-            this.player.flyAscendIndex++;
-            this.player.frameTimer = 0;
-          }
-        } else {
-          this.activeAnim = this.flyLoopFrames;
-          this.animSpeed  = 0.08;
+        // Postura de vuelo estable y elegante sin parpadeo (lisarfly5)
+        this.activeAnim = [this.flyLoopFrames[0]];
+        this.loopAnim   = false;
+
+        // Inclinación de vuelo suave según velocidad vertical
+        const targetAngle = this.player.vy < -100 ? -0.14 : -0.05;
+        this.player.angle = (this.player.angle || 0) + (targetAngle - (this.player.angle || 0)) * dt * 6;
+
+        // Partículas de propulsión de jetpack
+        if (this.input.up && Math.random() > 0.35) {
+          this.particles.push({
+            x: this.player.x + 30 + Math.random() * 15,
+            y: this.player.y + this.player.height / 2 + 35,
+            vx: -220 - Math.random() * 80,
+            vy: 60 + (Math.random() - 0.5) * 50,
+            life: 0.2 + Math.random() * 0.15,
+            maxLife: 0.35,
+            color: Math.random() > 0.5 ? '#ff9900' : '#00ffff',
+            size: 3 + Math.random() * 6
+          });
         }
       }
     }
 
-    if (this.loopAnim && this.activeAnim.length > 0) {
+    if (this.loopAnim && this.activeAnim && this.activeAnim.length > 0) {
       if (this.player.frameTimer > this.animSpeed) {
         this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
         this.player.frameTimer = 0;
       }
     } else {
       this.player.frame = 0;
+    }
+
+    // Generator de letreros pixel en el fondo (Lisar Studio billboards)
+    this.billboardTimer = (this.billboardTimer || 0) + dt;
+    if (this.billboardTimer > 6.5) {
+      this.billboardTimer = 0;
+      this.billboards = this.billboards || [];
+      const texts = ['LISAR 3D', 'LISAR STUDIO', 'VFX REELS', 'JET RUSH', '3D MOTION'];
+      const txt = texts[Math.floor(Math.random() * texts.length)];
+      this.billboards.push({
+        x: this.logicalWidth + 40,
+        y: 35 + Math.random() * 110,
+        text: txt,
+        vx: -this.floorSpeed * 0.45,
+        hue: Math.floor(Math.random() * 360)
+      });
+    }
+    if (this.billboards) {
+      for (let i = this.billboards.length - 1; i >= 0; i--) {
+        const b = this.billboards[i];
+        b.x += b.vx * dt;
+        if (b.x < -180) this.billboards.splice(i, 1);
+      }
     }
 
     // Suelo scrolling
@@ -898,12 +1024,12 @@ class LisarArcade2D {
       if (c.x < -c.width * 2) this.coins.splice(i, 1);
     }
 
-    // Powerups
+    // Powerups (Rayitos de Energía)
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       p.x += p.vx * dt;
       p.frameTimer += dt * 5;
-      p.y += Math.sin(p.frameTimer) * 1.5; // Flotación suave
+      p.y += Math.sin(p.frameTimer) * 1.8;
       if (p.x < -p.width * 2) this.powerups.splice(i, 1);
     }
 
@@ -915,7 +1041,7 @@ class LisarArcade2D {
       if (e.vy) {
         e.y += e.vy * dt;
         const minY = 0;
-        const maxY = this.logicalHeight - e.height - 40;
+        const maxY = this.logicalHeight - e.height - 70;
         if (e.y < minY) { e.y = minY; e.vy *= -1; }
         if (e.y > maxY) { e.y = maxY; e.vy *= -1; }
       }
@@ -972,15 +1098,11 @@ class LisarArcade2D {
       if (p.life <= 0) this.particles.splice(i, 1);
     }
 
-    this.checkCollisions();
     this.updateHUD();
 
-    if (this.player.x + this.player.width < 0 && this.state === 'playing') {
-      this.player.hp = 0;
-      this.endGame(false); // Arrastrado por un cubo
-    } else if (this.player.hp <= 0 && this.state === 'playing') {
+    if (this.player.hp <= 0 && this.state === 'playing') {
       this.endGame(false);
-    } else if (this.gameTimer >= 60 && this.state === 'playing') {
+    } else if (this.gameTimer >= 180 && this.state === 'playing') {
       this.endGame(true);
     }
   }
@@ -1012,13 +1134,57 @@ class LisarArcade2D {
       this.ctx.fillRect(s.x, s.y, s.size, s.size);
     });
 
+    // Letreros Pixel en el Fondo (Lisar Studio Billboards)
+    if (this.billboards) {
+      this.billboards.forEach(b => {
+        this.ctx.save();
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.fillStyle = 'rgba(15, 15, 30, 0.75)';
+        this.ctx.strokeStyle = '#00ffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(b.x, b.y, 140, 36);
+        this.ctx.strokeRect(b.x, b.y, 140, 36);
+        this.ctx.font = 'bold 12px "Orbitron", monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(b.text, b.x + 70, b.y + 22);
+        this.ctx.restore();
+      });
+    }
+
+    // Rieles de ondas curvas de nivel estilo Gravity Dash
+    const waveOffset = (performance.now() / 1000) * 1.5;
+    this.ctx.save();
+    this.ctx.strokeStyle = 'rgba(0, 255, 200, 0.25)';
+    this.ctx.lineWidth = 2;
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowColor = '#00ffc8';
+    this.ctx.beginPath();
+    for (let x = 0; x < this.logicalWidth; x += 15) {
+      const wy = 30 + Math.sin(x * 0.008 + waveOffset) * 18 + Math.cos(x * 0.015 - waveOffset * 0.5) * 10;
+      if (x === 0) this.ctx.moveTo(x, wy);
+      else this.ctx.lineTo(x, wy);
+    }
+    this.ctx.stroke();
+
+    this.ctx.strokeStyle = 'rgba(255, 0, 150, 0.25)';
+    this.ctx.shadowColor = '#ff0096';
+    this.ctx.beginPath();
+    for (let x = 0; x < this.logicalWidth; x += 15) {
+      const wy = (this.logicalHeight - 95) + Math.sin(x * 0.01 + waveOffset * 1.2) * 16;
+      if (x === 0) this.ctx.moveTo(x, wy);
+      else this.ctx.lineTo(x, wy);
+    }
+    this.ctx.stroke();
+    this.ctx.restore();
+
     const musicProgress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
     if (musicProgress > 0.4) {
-      const intensity = (musicProgress - 0.4) / 0.6; // 0 to 1
+      const intensity = (musicProgress - 0.4) / 0.6;
       if (Math.random() < 0.02 * intensity) {
         this.ctx.fillStyle = `rgba(162, 0, 255, ${0.1 + Math.random() * 0.2 * intensity})`;
         this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
-        // Rayo
         this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + Math.random() * 0.5})`;
         this.ctx.lineWidth = 2 + Math.random() * 4;
         this.ctx.beginPath();
@@ -1043,14 +1209,25 @@ class LisarArcade2D {
       this.ctx.beginPath(); this.ctx.moveTo(0, i); this.ctx.lineTo(this.logicalWidth, i); this.ctx.stroke();
     }
 
+    // Suelo elevado a 70px con tiling prominente y línea neón en el borde superior
     if (this.sprites.floor.loaded) {
       const tiles = Math.ceil(this.logicalWidth / 800) + 2;
       for (let i = 0; i < tiles; i++) {
-        this.ctx.drawImage(this.sprites.floor.img, this.floorOffset + i * 800, this.logicalHeight - 40, 800, 40);
+        this.ctx.drawImage(this.sprites.floor.img, this.floorOffset + i * 800, this.logicalHeight - 70, 800, 70);
       }
+      this.ctx.save();
+      this.ctx.strokeStyle = '#ff9900';
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = '#ff9900';
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, this.logicalHeight - 70);
+      this.ctx.lineTo(this.logicalWidth, this.logicalHeight - 70);
+      this.ctx.stroke();
+      this.ctx.restore();
     } else {
       this.ctx.fillStyle = '#ff9900';
-      this.ctx.fillRect(0, this.logicalHeight - 40, this.logicalWidth, 40);
+      this.ctx.fillRect(0, this.logicalHeight - 70, this.logicalWidth, 70);
     }
 
     // Monedas
@@ -1062,46 +1239,89 @@ class LisarArcade2D {
         const drawH = c.height;
         const drawX = c.x + (c.width - drawW) / 2;
         const drawY = c.y;
+        this.ctx.save();
+        this.ctx.shadowBlur = 14;
+        this.ctx.shadowColor = '#ffd700';
         this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        this.ctx.restore();
       } else {
+        this.ctx.save();
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#ffd700';
         this.ctx.fillStyle = 'gold';
         this.ctx.beginPath();
         this.ctx.arc(c.x + c.width / 2, c.y + c.height / 2, c.width / 2, 0, Math.PI * 2);
         this.ctx.fill();
+        this.ctx.restore();
       }
     });
 
-    // Powerups
+    // Powerups (Rayitos de Energía Eléctrica)
     this.powerups.forEach(p => {
-      this.ctx.fillStyle = '#00ffaa';
-      this.ctx.shadowBlur = 15;
-      this.ctx.shadowColor = '#00ffaa';
+      this.ctx.save();
+      const cx = p.x + p.width / 2;
+      const cy = p.y + p.height / 2;
+      const r = p.width / 2;
+      const time = performance.now() / 150;
+      
+      this.ctx.shadowBlur = 18;
+      this.ctx.shadowColor = '#00f3ff';
+      
+      // Anillo pulsante
+      this.ctx.strokeStyle = 'rgba(0, 243, 255, 0.7)';
+      this.ctx.lineWidth = 2;
       this.ctx.beginPath();
-      this.ctx.arc(p.x + p.width/2, p.y + p.height/2, p.width/2, 0, Math.PI * 2);
+      this.ctx.arc(cx, cy, r * (1 + Math.sin(time) * 0.15), 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Icono de Rayo Eléctrico
+      this.ctx.fillStyle = Math.sin(time * 3) > 0 ? '#ffffff' : '#00f3ff';
+      this.ctx.beginPath();
+      this.ctx.moveTo(cx + r * 0.2, cy - r * 0.85);
+      this.ctx.lineTo(cx - r * 0.5, cy + r * 0.05);
+      this.ctx.lineTo(cx - r * 0.05, cy + r * 0.05);
+      this.ctx.lineTo(cx - r * 0.35, cy + r * 0.85);
+      this.ctx.lineTo(cx + r * 0.5, cy - r * 0.05);
+      this.ctx.lineTo(cx + r * 0.05, cy - r * 0.05);
+      this.ctx.closePath();
       this.ctx.fill();
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = 'bold 24px sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.shadowBlur = 0;
-      this.ctx.fillText('+', p.x + p.width/2, p.y + p.height/2);
+      
+      this.ctx.restore();
     });
 
-    // Enemigos
+    // Enemigos con auras y transparencia limpia
     this.enemies.forEach(e => {
       if (e.type === 0) {
+        // Obstáculo cyber ciberpunk con degradado translúcido y bordes neón
+        this.ctx.save();
         const flash = Math.floor(performance.now() / 180) % 2 === 0;
-        this.ctx.fillStyle = flash ? '#33003a' : '#1a001f';
-        this.ctx.fillRect(e.x, e.y, e.width, e.height);
-        this.ctx.strokeStyle = flash ? '#ff00ff' : '#cc00cc';
+        
+        const grad = this.ctx.createLinearGradient(e.x, e.y, e.x + e.width, e.y + e.height);
+        grad.addColorStop(0, flash ? 'rgba(90, 10, 110, 0.82)' : 'rgba(35, 5, 55, 0.78)');
+        grad.addColorStop(1, flash ? 'rgba(160, 20, 190, 0.82)' : 'rgba(65, 10, 95, 0.78)');
+        
+        this.ctx.fillStyle = grad;
+        this.ctx.strokeStyle = flash ? '#ff00ff' : '#00ffff';
         this.ctx.lineWidth = 3;
-        this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#ff00ff';
-        this.ctx.strokeRect(e.x, e.y, e.width, e.height);
+        this.ctx.shadowBlur = 14;
+        this.ctx.shadowColor = flash ? '#ff00ff' : '#00ffff';
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(e.x + 5, e.y + 5);         this.ctx.lineTo(e.x + e.width - 5, e.y + e.height - 5);
-        this.ctx.moveTo(e.x + e.width - 5, e.y + 5); this.ctx.lineTo(e.x + 5, e.y + e.height - 5);
+        if (this.ctx.roundRect) {
+          this.ctx.roundRect(e.x, e.y, e.width, e.height, 8);
+        } else {
+          this.ctx.rect(e.x, e.y, e.width, e.height);
+        }
+        this.ctx.fill();
         this.ctx.stroke();
-        this.ctx.shadowBlur = 0;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(e.x + 8, e.y + 8);
+        this.ctx.lineTo(e.x + e.width - 8, e.y + e.height - 8);
+        this.ctx.moveTo(e.x + e.width - 8, e.y + 8);
+        this.ctx.lineTo(e.x + 8, e.y + e.height - 8);
+        this.ctx.stroke();
+        this.ctx.restore();
       } else if (e.type === 1) {
         let img = this.enemy1FlyFrames[e.frame % this.enemy1FlyFrames.length];
         if (e.isShooting && e.isShooting > 0) {
@@ -1115,10 +1335,11 @@ class LisarArcade2D {
           const drawH = e.height;
           const drawX = e.x + (e.width - drawW) / 2;
           const drawY = e.y;
+          this.ctx.save();
+          this.ctx.shadowBlur = 12;
+          this.ctx.shadowColor = '#00f3ff';
           this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
-        } else {
-          this.ctx.fillStyle = '#ff3366';
-          this.ctx.fillRect(e.x, e.y, e.width, e.height);
+          this.ctx.restore();
         }
       } else if (e.type === 2) {
         let img = this.enemy2BallFrames[e.frame % this.enemy2BallFrames.length];
@@ -1128,34 +1349,32 @@ class LisarArcade2D {
           const drawH = e.height;
           const drawX = e.x + (e.width - drawW) / 2;
           const drawY = e.y;
+          this.ctx.save();
+          this.ctx.shadowBlur = 14;
+          this.ctx.shadowColor = '#ff4400';
           this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
-        } else {
-          this.ctx.fillStyle = '#ff00aa';
-          this.ctx.beginPath();
-          this.ctx.arc(e.x + e.width/2, e.y + e.height/2, e.width/2, 0, Math.PI * 2);
-          this.ctx.fill();
+          this.ctx.restore();
         }
-      } else {
-        this.ctx.fillStyle = e.type === 1 ? '#ff4444' : '#aa00ff';
-        this.ctx.fillRect(e.x, e.y, e.width, e.height);
       }
     });
 
     // Proyectiles
     this.projectiles.forEach(p => {
+      this.ctx.save();
       if (p.color === 'enemy1_shot' && this.shotImg.loaded) {
         const imgRatio = this.shotImg.width / this.shotImg.height;
         const drawW = p.height * imgRatio;
         const drawH = p.height;
         const drawX = p.x + (p.width - drawW) / 2;
         const drawY = p.y;
+        this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#00ffff';
         this.ctx.drawImage(this.shotImg, drawX, drawY, drawW, drawH);
       } else {
         this.ctx.shadowBlur = 10; this.ctx.shadowColor = p.color;
         this.ctx.fillStyle = p.color;
         this.ctx.fillRect(p.x, p.y, p.width, p.height);
-        this.ctx.shadowBlur = 0;
       }
+      this.ctx.restore();
     });
 
     // Jugador (Lisar)
@@ -1179,16 +1398,20 @@ class LisarArcade2D {
         const progress = Math.min(1, this.gameTimer / 60);
         const onGround = this.player.y >= (this.logicalHeight - this.player.height - 42);
         if (progress > 0.15 && onGround) {
-          // Purple aura effect depending on speed
           this.ctx.filter = `drop-shadow(0 0 ${progress * 25}px #a200ff) drop-shadow(0 0 ${progress * 10}px #ff00ff)`;
         }
-        this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        
+        const centerX = drawX + drawW / 2;
+        const centerY = drawY + drawH / 2;
+        this.ctx.translate(centerX, centerY);
+        if (this.player.angle) {
+          this.ctx.rotate(this.player.angle);
+        }
+        this.ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
         this.ctx.filter = 'none';
         this.ctx.restore();
-      } else {
-        this.ctx.fillStyle = '#4488ff';
-        this.ctx.fillRect(this.player.x, this.player.y, this.player.width, this.player.height);
       }
+      // No fallback: no more blue square
 
       if (this.input.up) {
         this.ctx.fillStyle = Math.random() > 0.5 ? '#ff9900' : '#ffff00';
@@ -1226,6 +1449,101 @@ class LisarArcade2D {
     });
     this.ctx.globalAlpha = 1;
 
+    // Panel de instrucciones y 3...2...1... READY! en el CENTRO DEL CANVAS (durante intro)
+    if (this.introActive) {
+      const alpha = this.introAlpha || 0;
+      const panelW = this.logicalWidth * 0.88;
+      const panelH = 190;
+      const panelX = (this.logicalWidth - panelW) / 2;
+      const panelY = this.logicalHeight * 0.12;
+
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha;
+
+      // Fondo semitransparente tipo panel
+      this.ctx.fillStyle = 'rgba(10, 5, 20, 0.85)';
+      this.ctx.strokeStyle = '#00ffff';
+      this.ctx.lineWidth = 2;
+      this.ctx.shadowBlur = 18;
+      this.ctx.shadowColor = '#00ffff';
+      this.ctx.beginPath();
+      if (this.ctx.roundRect) {
+        this.ctx.roundRect(panelX, panelY, panelW, panelH, 10);
+      } else {
+        this.ctx.rect(panelX, panelY, panelW, panelH);
+      }
+      this.ctx.fill();
+      this.ctx.stroke();
+      this.ctx.shadowBlur = 0;
+
+      this.ctx.textAlign = 'center';
+      const cx = this.logicalWidth / 2;
+
+      // Titulo
+      this.ctx.font = 'bold 26px "Orbitron", monospace';
+      this.ctx.fillStyle = '#00ffff';
+      this.ctx.shadowBlur = 10; this.ctx.shadowColor = '#00ffff';
+      this.ctx.fillText('LISAR JET RUSH', cx, panelY + 38);
+      this.ctx.shadowBlur = 0;
+
+      // Controles
+      this.ctx.font = '15px "Orbitron", monospace';
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillText('CONTROL: ESPACIO / TOCAR PANTALLA = VOLAR', cx, panelY + 76);
+
+      // Objetivo
+      this.ctx.font = 'bold 16px "Orbitron", monospace';
+      this.ctx.fillStyle = '#ff9900';
+      this.ctx.shadowBlur = 8; this.ctx.shadowColor = '#ff9900';
+      this.ctx.fillText('OBJETIVO: SOBREVIVE 3 MINUTOS', cx, panelY + 110);
+      this.ctx.shadowBlur = 0;
+
+      // Sub texto
+      this.ctx.font = '14px "Orbitron", monospace';
+      this.ctx.fillStyle = '#ffd700';
+      this.ctx.fillText('JUNTA MONEDAS = DESCUENTO ACUMULABLE', cx, panelY + 138);
+
+      // Blink CTA
+      const blink = Math.floor(performance.now() / 500) % 2 === 0;
+      this.ctx.font = 'bold 17px "Orbitron", monospace';
+      this.ctx.fillStyle = blink ? '#ff0055' : '#ff9900';
+      this.ctx.shadowBlur = 10; this.ctx.shadowColor = this.ctx.fillStyle;
+      this.ctx.fillText('\u25B6 TOCATE LA PANTALLA O ESPACIO PARA INICIAR', cx, panelY + 172);
+      this.ctx.shadowBlur = 0;
+
+      // ================================================================
+      // COUNTDOWN 3... 2... 1... READY! (En el rectángulo central)
+      // ================================================================
+      const progress = (this.player.x + 250) / 330; // 0 to 1 as player enters
+      const cCenterY = this.logicalHeight * 0.58;
+      
+      this.ctx.save();
+      if (progress < 0.28) {
+        this.ctx.font = '900 68px "Orbitron", monospace';
+        this.ctx.fillStyle = '#00ffff';
+        this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#00ffff';
+        this.ctx.fillText('3', cx, cCenterY);
+      } else if (progress < 0.56) {
+        this.ctx.font = '900 68px "Orbitron", monospace';
+        this.ctx.fillStyle = '#ff9900';
+        this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#ff9900';
+        this.ctx.fillText('2', cx, cCenterY);
+      } else if (progress < 0.84) {
+        this.ctx.font = '900 68px "Orbitron", monospace';
+        this.ctx.fillStyle = '#ff0055';
+        this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#ff0055';
+        this.ctx.fillText('1', cx, cCenterY);
+      } else {
+        this.ctx.font = '900 62px "Orbitron", monospace';
+        this.ctx.fillStyle = '#00ffaa';
+        this.ctx.shadowBlur = 25; this.ctx.shadowColor = '#00ffaa';
+        this.ctx.fillText('READY!', cx, cCenterY);
+      }
+      this.ctx.restore();
+
+      this.ctx.restore();
+    }
+
     this.ctx.restore();
   }
 
@@ -1260,14 +1578,16 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btn && overlay) {
     btn.addEventListener('click', () => {
       overlay.style.display = 'none';
-      if (!window.arcadeGame || window.arcadeGame.state === 'destroyed') {
-        window.initArcadeGame();
-      }
+
+      // Always create a fresh game instance
+      window.initArcadeGame();
+
+      // Give the constructor time to finish resize & setup, then start
       setTimeout(() => {
-        if (window.arcadeGame && window.arcadeGame.state === 'ready') {
+        if (window.arcadeGame) {
           window.arcadeGame.startGame();
         }
-      }, 100);
+      }, 200);
     });
   }
 });
