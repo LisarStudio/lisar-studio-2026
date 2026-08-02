@@ -689,6 +689,31 @@ class LisarArcade2D {
     }, seconds * 1000);
   }
 
+  shareScore() {
+    const discount = Math.min(25, Math.floor(this.coinsCollected / 20) * 5);
+    const score = this.coinsCollected * 120;
+    const shareText = `🚀 ¡Logré ${score} pts y un ${discount}% de descuento en Lisar Jet Rush (Lisar Studio 2026)! 🎮✨ ¿Puedes superar mi puntaje?`;
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Lisar Jet Rush - Lisar Studio 2026',
+        text: shareText,
+        url: shareUrl
+      }).catch(() => {});
+    } else {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(`${shareText} ${shareUrl}`).then(() => {
+          alert('📋 ¡Puntaje copiado al portapapeles! Compártelo en tus redes sociales.');
+        }).catch(() => {
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
+        });
+      } else {
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
+      }
+    }
+  }
+
   showMessage(title, subtitle, btnText, btnAction) {
     this.msgOverlay.style.display    = 'flex';
     this.msgOverlay.style.pointerEvents = 'auto';
@@ -696,6 +721,36 @@ class LisarArcade2D {
       <h2 style="font-size:1.8rem;color:#ff9900;margin:0 0 8px 0;text-shadow:0 0 12px #ff0000;text-align:center;max-width:90%;font-family:'Orbitron',sans-serif;">${title}</h2>
       <p  style="font-size:0.95rem;margin:0 0 18px 0;text-align:center;max-width:90%;line-height:1.5;font-family:'Orbitron',sans-serif;">${subtitle}</p>
     `;
+
+    const btnContainer = document.createElement('div');
+    btnContainer.style.display = 'flex';
+    btnContainer.style.flexDirection = 'row';
+    btnContainer.style.flexWrap = 'wrap';
+    btnContainer.style.gap = '12px';
+    btnContainer.style.justifyContent = 'center';
+    btnContainer.style.alignItems = 'center';
+    btnContainer.style.marginTop = '10px';
+
+    // Botón de Compartir Redes Sociales
+    const shareBtn = document.createElement('button');
+    shareBtn.innerHTML = '📲 COMPARTIR PUNTAJE';
+    Object.assign(shareBtn.style, {
+      padding: '12px 24px', fontSize: '1.05rem',
+      background: 'linear-gradient(90deg, #00f3ff, #a200ff)',
+      color: '#fff', border: '2px solid #00ffff', borderRadius: '8px',
+      cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 14px #00f3ff',
+      fontFamily: "'Orbitron', sans-serif",
+      letterSpacing: '1px',
+      pointerEvents: 'auto',
+      userSelect: 'none'
+    });
+    shareBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.shareScore();
+    });
+    btnContainer.appendChild(shareBtn);
+
     if (btnText) {
       const btn = document.createElement('button');
       btn.innerText = btnText;
@@ -706,7 +761,6 @@ class LisarArcade2D {
         cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 15px #ff6600',
         fontFamily: "'Orbitron', sans-serif",
         letterSpacing: '1px',
-        marginTop: '10px',
         pointerEvents: 'auto',
         userSelect: 'none'
       });
@@ -721,8 +775,9 @@ class LisarArcade2D {
 
       btn.addEventListener('click', handleBtnClick);
       btn.addEventListener('touchstart', handleBtnClick, { passive: false });
-      this.msgOverlay.appendChild(btn);
+      btnContainer.appendChild(btn);
     }
+    this.msgOverlay.appendChild(btnContainer);
   }
 
   hideMessage() {
@@ -1281,6 +1336,31 @@ class LisarArcade2D {
       }
     }
 
+    // Generator de Montañitas con Lu y Peter Bailando de forma Aleatoria en el Fondo
+    this.hillTimer = (this.hillTimer || 0) + dt;
+    if (this.hillTimer > 10.0) {
+      this.hillTimer = 0;
+      this.bgHills = this.bgHills || [];
+      const quotes = [
+        "¡VAMOS LISAR!", "¡MENUDO COMBO!", "¡LISAR STUDIO!",
+        "¡SUPER COMBO!", "¡EXCELENTE VUELO!", "¡CASI LLEGAS!", "¡SIGUE ASÍ!", "¡AMAZING!"
+      ];
+      const txt = quotes[Math.floor(Math.random() * quotes.length)];
+      this.bgHills.push({
+        x: this.logicalWidth + 60,
+        y: this.logicalHeight - 165 - Math.random() * 45,
+        quote: txt,
+        vx: -this.floorSpeed * 0.40
+      });
+    }
+    if (this.bgHills) {
+      for (let i = this.bgHills.length - 1; i >= 0; i--) {
+        const h = this.bgHills[i];
+        h.x += h.vx * dt;
+        if (h.x < -240) this.bgHills.splice(i, 1);
+      }
+    }
+
     // Suelo scrolling
     this.floorOffset -= this.floorSpeed * dt;
     if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
@@ -1424,6 +1504,75 @@ class LisarArcade2D {
         this.ctx.fillStyle = '#ffffff';
         this.ctx.textAlign = 'center';
         this.ctx.fillText(b.text, b.x + 70, b.y + 22);
+        this.ctx.restore();
+      });
+    }
+
+    // Montañitas Dinámicas en el Fondo con Lu y Peter Bailando y Motivando al Jugador
+    if (this.bgHills) {
+      this.bgHills.forEach(h => {
+        this.ctx.save();
+        
+        // Cúspide de la montañita cibernética neón
+        this.ctx.fillStyle = 'rgba(22, 18, 42, 0.88)';
+        this.ctx.strokeStyle = '#a200ff';
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#a200ff';
+        this.ctx.beginPath();
+        this.ctx.moveTo(h.x - 55, this.logicalHeight - 70);
+        this.ctx.lineTo(h.x + 65, h.y + 45);
+        this.ctx.lineTo(h.x + 185, this.logicalHeight - 70);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Personajes Lu y Peter Bailando en la cúspide
+        const dance1 = Math.sin(performance.now() / 110) * 6;
+        const dance2 = Math.sin(performance.now() / 110 + Math.PI) * 6;
+
+        // Lu (Avatar 1)
+        const luX = h.x + 40;
+        const luY = h.y + 10 + dance1;
+        this.ctx.shadowBlur = 8; this.ctx.shadowColor = '#00ffaa';
+        this.ctx.fillStyle = '#00ffaa';
+        this.ctx.beginPath();
+        this.ctx.arc(luX + 10, luY + 8, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(luX + 4, luY + 16, 12, 20);
+
+        // Peter (Avatar 2)
+        const peterX = h.x + 80;
+        const peterY = h.y + 10 + dance2;
+        this.ctx.shadowBlur = 8; this.ctx.shadowColor = '#ff9900';
+        this.ctx.fillStyle = '#ff9900';
+        this.ctx.beginPath();
+        this.ctx.arc(peterX + 10, peterY + 8, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(peterX + 4, peterY + 16, 12, 20);
+
+        // Globo de diálogo motivador
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.beginPath();
+        if (this.ctx.roundRect) {
+          this.ctx.roundRect(h.x + 12, h.y - 28, 110, 24, 6);
+        } else {
+          this.ctx.rect(h.x + 12, h.y - 28, 110, 24);
+        }
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.font = 'bold 9px "Orbitron", monospace';
+        this.ctx.fillStyle = '#000000';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(h.quote, h.x + 67, h.y - 12);
+
         this.ctx.restore();
       });
     }
