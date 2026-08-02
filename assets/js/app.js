@@ -61,7 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Boss - Personaje",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/Boss.glb",
+      glbFile: "assets/viewer3d/models/Boss.glb",
+      customTexture: "assets/viewer3d/textures/boss_texture.png",
       description: "Personaje 3D hiperrealista optimizado para motores de videojuegos con texturizado PBR y rigging completo.",
       tools: ["Blender", "Substance Painter", "Unreal Engine"],
     },
@@ -70,7 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Crab - Criatura",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/crab.glb",
+      glbFile: "assets/viewer3d/models/crab.glb",
+      customTexture: "assets/viewer3d/textures/wukong_face.png",
       description: "Modelo orgánico de criatura listo para realidad virtual, con bajo conteo de polígonos y texturas estilizadas.",
       tools: ["Blender", "Maya", "Unity"],
     },
@@ -79,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Flutter Ship",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/Flutter.glb",
+      glbFile: "assets/viewer3d/models/Flutter.glb",
       description: "Nave voladora para entorno de realidad virtual con mapeo UV de alta fidelidad.",
       tools: ["ZBrush", "Blender 3D"],
     },
@@ -88,7 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Casco Elysium",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/helmet1.glb",
+      glbFile: "assets/viewer3d/models/helmet1.glb",
+      customTexture: "assets/viewer3d/textures/helmet1_texture.png",
       description: "Prop de ciencia ficción diseñado para integración en juegos FPS y simuladores de realidad virtual.",
       tools: ["Blender 3D", "Marmoset Toolbag"],
     },
@@ -97,7 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Casco Yamato",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/Helmet2.glb",
+      glbFile: "assets/viewer3d/models/Helmet2.glb",
+      customTexture: "assets/viewer3d/textures/helmet1_texture.png",
       description: "Variante con acabados cromados y visor modificado para juegos de acción en primera persona.",
       tools: ["3ds Max", "Substance Painter"],
     },
@@ -106,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Casco Trigger",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/helmet3.glb",
+      glbFile: "assets/viewer3d/models/helmet3.glb",
+      customTexture: "assets/viewer3d/textures/robot_helmets.png",
       description: "Edición premium con detalles de lujo y pintura metálica especializada, ideal para asset de rareza Legendaria.",
       tools: ["Blender 3D", "Substance 3D"],
     },
@@ -115,7 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: "Tron Bot",
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
-      glbFile: "assets/models/tron.glb",
+      glbFile: "assets/viewer3d/models/tron.glb",
+      visibleInViewer: false,
       description: "Diseño de Bot que sirve de asistente.",
       tools: ["3ds Max", "Unreal Engine 5", "Photoshop"],
     },
@@ -238,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!portfolioContainer) return;
 
     const filtered = portfolioData.filter(item =>
-      activeCategory === 'Todos' || item.category === activeCategory
+      (activeCategory === 'Todos' || item.category === activeCategory) && item.visibleInViewer !== false
     );
 
     portfolioContainer.innerHTML = '';
@@ -308,8 +314,63 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingDiv.innerHTML = '<span class="mv-spinner"></span>';
         wrapper.appendChild(loadingDiv);
 
-        mv.addEventListener('load', () => {
+        mv.addEventListener('load', async () => {
           loadingDiv.remove();
+
+          // CORRECCIÓN ESPECÍFICA PARA CASCO YAMATO (Helmet2)
+          // Los materiales metálicos fueron exportados como plástico negro. Los corregimos a cromo.
+          if (item.glbFile.includes('Helmet2.glb') && mv.model && mv.model.materials) {
+            for (const material of mv.model.materials) {
+              if (material.name === 'Material.003' || material.name === 'Material.016') {
+                if (material.pbrMetallicRoughness) {
+                  material.pbrMetallicRoughness.setMetallicFactor(1.0);
+                  material.pbrMetallicRoughness.setRoughnessFactor(0.2);
+                  material.pbrMetallicRoughness.setBaseColorFactor([0.8, 0.8, 0.8, 1]);
+                }
+              }
+            }
+          }
+
+
+          // Aplicar textura personalizada si existe
+          if (item.customTexture && mv.model && mv.model.materials) {
+            try {
+              let textureUrl = item.customTexture;
+              
+              // CORRECCIÓN ESPECÍFICA PARA CASCO TRIGGER
+              // La textura original requiere inversión vertical (flipY) para coincidir con las UV de WebGL
+              if (item.glbFile.includes('helmet3.glb')) {
+                const img = new Image();
+                img.src = item.customTexture;
+                await new Promise((resolve, reject) => {
+                  img.onload = resolve;
+                  img.onerror = reject;
+                });
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.translate(0, img.height);
+                ctx.scale(1, -1);
+                ctx.drawImage(img, 0, 0);
+                textureUrl = canvas.toDataURL('image/png');
+              }
+
+              const texture = await mv.createTexture(textureUrl);
+              
+              // Asignar textura SOLO a los materiales que originalmente tenían un mapa UV o textura
+              for (const material of mv.model.materials) {
+                if (material.pbrMetallicRoughness && material.pbrMetallicRoughness.baseColorTexture) {
+                  material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
+                  if (material.pbrMetallicRoughness.roughnessFactor === 0 && material.name !== 'Material.003' && material.name !== 'Material.016') {
+                      material.pbrMetallicRoughness.setRoughnessFactor(0.8);
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`[model-viewer] Error aplicando textura a ${item.glbFile}:`, err);
+            }
+          }
         });
         mv.addEventListener('error', (e) => {
           console.error(`[model-viewer] Error cargando ${item.glbFile}:`, e);
