@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.triggerPromoChatbot = function() {
+  window.triggerPromoChatbot = function(discount = 30) {
     container.classList.add('show');
     toggler.style.display = 'none';
     
@@ -370,11 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         hideTyping();
         
-        let msg = "¡Felicidades por conseguir las 100 Lisar Coins! ¿Qué esperas para utilizar ese 30% de descuento en tu primer servicio? 🚀";
-        
-        if (localStorage.getItem('lisar_discount_game2')) {
-            msg = "Veo que ya tienes varios descuentos acumulados por completar nuestras misiones. ¿No te gustaría gastar los descuentos acumulados en alguno de nuestros servicios?";
-        }
+        let msg = `¡Felicidades! Has acumulado un ${discount}% de descuento para tu primer servicio al recolectar monedas en Lisar Jet Rush. ¿Qué esperas para cotizar y agendar ahora? 🚀`;
         
         addBotMsg("🤖 " + msg);
         
@@ -388,18 +384,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const btnNo = document.createElement('button');
         btnNo.className = 'chat-option-btn';
-        btnNo.innerText = 'Luego, gracias.';
+        btnNo.innerText = 'No, gracias';
         btnNo.onclick = () => {
-            addUserMsg('Luego, gracias.');
-            footer.innerHTML = '';
-            showTyping();
-            setTimeout(() => {
-                hideTyping();
-                addBotMsg("🤖 ¡No hay problema! Cuando estés listo, aquí estaré. Recuerda guardar tu captura de pantalla. 😉");
-            }, 800);
+            addUserMsg('No, gracias');
+            addBotMsg('🤖 ¡No hay problema! Cuando estés listo, aquí estaré. Recuerda guardar tu captura de pantalla. 😉');
         };
         
-        footer.innerHTML = '';
         footer.appendChild(btnSi);
         footer.appendChild(btnNo);
     }, 1000);
