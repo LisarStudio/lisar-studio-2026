@@ -323,7 +323,7 @@ class LisarArcade2D {
     this.hud = document.createElement('div');
     Object.assign(this.hud.style, {
       position: 'absolute', top: '16px', left: '16px', right: '16px',
-      display: 'none', justifyContent: 'space-between', alignItems: 'flex-start',
+      display: 'none', gridTemplateColumns: '1fr auto 1fr', alignItems: 'flex-start',
       pointerEvents: 'none', color: '#fff',
       fontFamily: "'Orbitron', 'monospace'",
       zIndex: '5'
@@ -356,9 +356,6 @@ class LisarArcade2D {
     leftBar.appendChild(coinRow);
 
     const centerBar = document.createElement('div');
-    centerBar.style.position = 'absolute';
-    centerBar.style.left = '50%';
-    centerBar.style.transform = 'translateX(-50%)';
     centerBar.style.display = 'flex';
     centerBar.style.flexDirection = 'column';
     centerBar.style.alignItems = 'center';
@@ -574,17 +571,22 @@ class LisarArcade2D {
 
   spawnEntity(dt) {
     this.spawnTimer += dt;
-    const progress  = Math.min(1, this.gameTimer / 60);
+    const t = this.gameTimer;
+    const progress  = Math.min(1, t / 60);
     
-    // Tasa de generación acelerada para más protagonismo
-    const spawnRate = Math.max(0.65, 1.8 - progress * 1.3);
+    // Pacing changes with time phases (Inafune/Kojima style design)
+    let spawnRate = 1.8;
+    if (t > 45) spawnRate = 0.65;
+    else if (t > 30) spawnRate = 0.9;
+    else if (t > 15) spawnRate = 1.3;
 
     if (this.spawnTimer < spawnRate) return;
     this.spawnTimer = 0;
 
     const r = Math.random();
 
-    if (r < 0.38) {
+    // Monedas frecuentes (35%)
+    if (r < 0.35) {
       this.coins.push({
         x: this.logicalWidth + 30,
         y: 60 + Math.random() * (this.logicalHeight - 160),
@@ -592,56 +594,86 @@ class LisarArcade2D {
         vx: -this.floorSpeed,
         frame: 0, frameTimer: 0
       });
-
-    } else if (r < 0.65) {
-      this.enemies.push({
-        type: 1,
-        x: this.logicalWidth + 30,
-        y: 20 + Math.random() * 130, // Limitado para no traspasar el suelo (450-40-260=150 max)
-        width: 260, height: 260,
-        vx: -(this.floorSpeed + 60 + progress * 90),
-        hp: 1, shootTimer: Math.random() * 1.5,
-        frame: 0, frameTimer: 0,
-        isShooting: 0,
-        isHit: 0
-      });
-
-    } else if (r < 0.85) {
-      if (Math.random() > 0.5) {
-        // Items de energia
-        this.powerups.push({
-          x: this.logicalWidth + 30,
-          y: 60 + Math.random() * (this.logicalHeight - 200),
-          width: 50, height: 50,
-          vx: -(this.floorSpeed + 25),
-          frameTimer: 0
-        });
-      } else {
-        // Enemy 2 (Bola pegada al piso)
-        this.enemies.push({
-          type: 2,
-          x: this.logicalWidth + 30,
-          y: this.logicalHeight - 120 - 40,
-          width: 120, height: 120,
-          vx: -(this.floorSpeed + 120 + progress * 60),
-          hp: 1, shootTimer: 0,
-          frame: 0, frameTimer: 0
-        });
-      }
-
-    } else {
-      // Obstáculos tipo cubo magenta - se mueven verticalmente más rápido
-      const isTop = Math.random() > 0.5;
-      this.enemies.push({
-        type: 0,
-        x: this.logicalWidth + 30,
-        y: isTop ? 0 : this.logicalHeight - 200 - 40,
-        width: 130, height: 200,
-        vx: -this.floorSpeed,
-        vy: (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 80),
-        hp: 9999
-      });
+      return;
     }
+
+    // Powerups si hace falta vida
+    if (r > 0.88 && this.player.hp < this.player.maxHp) {
+      this.powerups.push({
+        x: this.logicalWidth + 30,
+        y: 60 + Math.random() * (this.logicalHeight - 200),
+        width: 50, height: 50,
+        vx: -(this.floorSpeed + 25),
+        frameTimer: 0
+      });
+      return;
+    }
+
+    // Olas y Patrones
+    let p = Math.random();
+    if (t < 15) {
+      // Fase 1: Solo Obstaculos
+      this.spawnEnemy0();
+    } else if (t < 30) {
+      // Fase 2: Introducir Enemigo Volador
+      if (p < 0.5) this.spawnEnemy0();
+      else this.spawnEnemy1(progress);
+    } else if (t < 45) {
+      // Fase 3: Introducir Bola rodante
+      if (p < 0.33) this.spawnEnemy0();
+      else if (p < 0.66) this.spawnEnemy1(progress);
+      else this.spawnEnemy2(progress);
+    } else {
+      // Fase 4: Combinaciones Difíciles
+      if (p < 0.3) {
+        this.spawnEnemy1(progress);
+        this.spawnEnemy2(progress, 200); // Ataque doble!
+      } else if (p < 0.6) {
+        this.spawnEnemy0();
+        this.spawnEnemy2(progress, 300); 
+      } else {
+        this.spawnEnemy1(progress);
+      }
+    }
+  }
+
+  spawnEnemy0(offsetX = 0) {
+    const isTop = Math.random() > 0.5;
+    this.enemies.push({
+      type: 0,
+      x: this.logicalWidth + 30 + offsetX,
+      y: isTop ? 0 : this.logicalHeight - 200 - 40,
+      width: 130, height: 200,
+      vx: -this.floorSpeed,
+      vy: (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 80),
+      hp: 9999
+    });
+  }
+
+  spawnEnemy1(progress, offsetX = 0) {
+    this.enemies.push({
+      type: 1,
+      x: this.logicalWidth + 30 + offsetX,
+      y: 20 + Math.random() * 130,
+      width: 260, height: 260,
+      vx: -(this.floorSpeed + 60 + progress * 90),
+      hp: 1, shootTimer: Math.random() * 1.5,
+      frame: 0, frameTimer: 0,
+      isShooting: 0,
+      isHit: 0
+    });
+  }
+
+  spawnEnemy2(progress, offsetX = 0) {
+    this.enemies.push({
+      type: 2,
+      x: this.logicalWidth + 30 + offsetX,
+      y: this.logicalHeight - 120 - 40,
+      width: 120, height: 120,
+      vx: -(this.floorSpeed + 120 + progress * 60),
+      hp: 1, shootTimer: 0,
+      frame: 0, frameTimer: 0
+    });
   }
 
   checkCollisions() {
@@ -980,9 +1012,9 @@ class LisarArcade2D {
       this.ctx.fillRect(s.x, s.y, s.size, s.size);
     });
 
-    const remaining = Math.max(0, 60 - this.gameTimer);
-    if (remaining < 30) {
-      const intensity = 1 - (remaining / 30); // 0 to 1
+    const musicProgress = this.audio.duration ? (this.audio.currentTime / this.audio.duration) : 0;
+    if (musicProgress > 0.4) {
+      const intensity = (musicProgress - 0.4) / 0.6; // 0 to 1
       if (Math.random() < 0.02 * intensity) {
         this.ctx.fillStyle = `rgba(162, 0, 255, ${0.1 + Math.random() * 0.2 * intensity})`;
         this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
