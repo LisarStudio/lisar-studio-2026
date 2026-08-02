@@ -188,21 +188,78 @@ class LisarArcade2D {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.container);
 
+    this.initReadyCSS();
     this.loadSheetSprites();
     this.setupControls();
     this.createHUD();
     setTimeout(() => this.resize(), 0);
   }
 
+  initReadyCSS() {
+    if (!document.getElementById('ready-futuristic-css-arcade')) {
+      const style = document.createElement('style');
+      style.id = 'ready-futuristic-css-arcade';
+      style.textContent = `
+        @keyframes readyZoomIn {
+          0% { transform: scale(0.2); opacity: 0; }
+          80% { transform: scale(1.15); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shoot1 { to { transform: translate(-320px, -220px) rotate(-45deg); opacity: 0; } }
+        @keyframes shoot2 { to { transform: translate(-160px, 320px) rotate(20deg); opacity: 0; } }
+        @keyframes shoot3 { to { transform: translate(50px, -360px) rotate(-10deg); opacity: 0; } }
+        @keyframes shoot4 { to { transform: translate(160px, 280px) rotate(60deg); opacity: 0; } }
+        @keyframes shoot5 { to { transform: translate(320px, -180px) rotate(-30deg); opacity: 0; } }
+        @keyframes shoot6 { to { transform: translate(280px, 320px) rotate(90deg); opacity: 0; } }
+
+        .ready-futuristic {
+          font-size: clamp(35px, 7vw, 65px);
+          font-weight: 900;
+          color: #ffffff;
+          text-shadow: 0 0 20px #ff8800, 0 0 40px #ff8800, 0 0 60px #ff9900;
+          animation: readyZoomIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          letter-spacing: 6px;
+          text-align: center;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .ready-futuristic span {
+          display: inline-block;
+          opacity: 1;
+        }
+        .ready-futuristic span:nth-child(1) { animation: shoot1 0.45s 1.1s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+        .ready-futuristic span:nth-child(2) { animation: shoot2 0.45s 1.1s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+        .ready-futuristic span:nth-child(3) { animation: shoot3 0.45s 1.1s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+        .ready-futuristic span:nth-child(4) { animation: shoot4 0.45s 1.1s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+        .ready-futuristic span:nth-child(5) { animation: shoot5 0.45s 1.1s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+        .ready-futuristic span:nth-child(6) { animation: shoot6 0.45s 1.1s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045); }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  speak(text) {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 1.2;
+        utterance.pitch = 1.1;
+        utterance.volume = 1.0;
+        window.speechSynthesis.speak(utterance);
+      } catch(e) {}
+    }
+  }
+
   loadSheetSprites() {
-    // Simplified: just set up sprites, then draw ready screen after a short delay
     const keys = Object.keys(this.sprites);
     keys.forEach(k => {
       this.sprites[k].img.onload = () => { this.sprites[k].loaded = true; };
       this.sprites[k].img.onerror = () => { this.sprites[k].loaded = false; };
       this.sprites[k].img.src = this.sprites[k].src;
     });
-    // Draw ready screen once resize has run
     setTimeout(() => {
       this.resize();
       if (this.state === 'ready') this.drawReadyScreen();
@@ -398,6 +455,15 @@ class LisarArcade2D {
       background: 'rgba(0,0,0,0.88)', color: '#fff', zIndex: '20', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
+
+    this.readyOverlayEl = document.createElement('div');
+    Object.assign(this.readyOverlayEl.style, {
+      position: 'absolute', top: '56%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+      pointerEvents: 'none', zIndex: '25',
+      display: 'none'
+    });
+    this.container.appendChild(this.readyOverlayEl);
   }
 
   updateEnergyBars() {
@@ -519,7 +585,7 @@ class LisarArcade2D {
 
   startGame() {
     this.hideMessage();
-    // Set state FIRST so resize() won't call drawReadyScreen()
+    if (this.readyOverlayEl) this.readyOverlayEl.style.display = 'none';
     this.state = 'playing';
     this.resize();
     this.hud.style.display = 'flex';
@@ -531,8 +597,7 @@ class LisarArcade2D {
     this.player.angle          = 0;
     this.introActive           = true;
     this.introAlpha            = 0;
-    this.countdown             = 3;
-    this.countdownTimer        = 0;
+    this.lastCountStep         = -1;
     this.player.invulnerable   = 0;
     this.player.frame          = 0;
     this.player.wasFlying      = false;
@@ -620,22 +685,86 @@ class LisarArcade2D {
     else if (t > 30) spawnRate = 0.9;
     else if (t > 15) spawnRate = 1.3;
 
+    // High Density Coin Wave Generator (100+ coins per minute guaranteed)
+    this.coinSpawnTimer = (this.coinSpawnTimer || 0) + dt;
+    if (this.coinSpawnTimer > 1.25) {
+      this.coinSpawnTimer = 0;
+      const pattern = Math.floor(Math.random() * 5);
+      const startX = this.logicalWidth + 40;
+      const startY = 70 + Math.random() * (this.logicalHeight - 220);
+
+      if (pattern === 0) {
+        // Fila recta horizontal (7 monedas)
+        for (let i = 0; i < 7; i++) {
+          this.coins.push({
+            x: startX + i * 48,
+            y: startY,
+            width: 70, height: 70,
+            vx: -this.floorSpeed,
+            frame: 0, frameTimer: 0
+          });
+        }
+      } else if (pattern === 1) {
+        // Arco parabólico (8 monedas)
+        for (let i = 0; i < 8; i++) {
+          const archY = startY - Math.sin((i / 7) * Math.PI) * 85;
+          this.coins.push({
+            x: startX + i * 46,
+            y: Math.max(30, Math.min(this.logicalHeight - 140, archY)),
+            width: 70, height: 70,
+            vx: -this.floorSpeed,
+            frame: 0, frameTimer: 0
+          });
+        }
+      } else if (pattern === 2) {
+        // Matriz 3x3 de monedas (9 monedas)
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 3; col++) {
+            this.coins.push({
+              x: startX + col * 46,
+              y: startY + row * 46,
+              width: 65, height: 65,
+              vx: -this.floorSpeed,
+              frame: 0, frameTimer: 0
+            });
+          }
+        }
+      } else if (pattern === 3) {
+        // Onda doble arriba y abajo (10 monedas)
+        for (let i = 0; i < 5; i++) {
+          this.coins.push({
+            x: startX + i * 50,
+            y: 50,
+            width: 70, height: 70,
+            vx: -this.floorSpeed,
+            frame: 0, frameTimer: 0
+          });
+          this.coins.push({
+            x: startX + i * 50,
+            y: this.logicalHeight - 150,
+            width: 70, height: 70,
+            vx: -this.floorSpeed,
+            frame: 0, frameTimer: 0
+          });
+        }
+      } else {
+        // Rampa diagonal (6 monedas)
+        for (let i = 0; i < 6; i++) {
+          this.coins.push({
+            x: startX + i * 48,
+            y: startY + i * 18,
+            width: 70, height: 70,
+            vx: -this.floorSpeed,
+            frame: 0, frameTimer: 0
+          });
+        }
+      }
+    }
+
     if (this.spawnTimer < spawnRate) return;
     this.spawnTimer = 0;
 
     const r = Math.random();
-
-    // Monedas frecuentes (35%)
-    if (r < 0.35) {
-      this.coins.push({
-        x: this.logicalWidth + 30,
-        y: 60 + Math.random() * (this.logicalHeight - 160),
-        width: 110, height: 110,
-        vx: -this.floorSpeed,
-        frame: 0, frameTimer: 0
-      });
-      return;
-    }
 
     // Powerups si hace falta vida
     if (r > 0.88 && this.player.hp < this.player.maxHp) {
@@ -652,22 +781,18 @@ class LisarArcade2D {
     // Olas y Patrones
     let p = Math.random();
     if (t < 15) {
-      // Fase 1: Solo Obstaculos
       this.spawnEnemy0();
     } else if (t < 30) {
-      // Fase 2: Introducir Enemigo Volador
       if (p < 0.5) this.spawnEnemy0();
       else this.spawnEnemy1(progress);
     } else if (t < 45) {
-      // Fase 3: Introducir Bola rodante
       if (p < 0.33) this.spawnEnemy0();
       else if (p < 0.66) this.spawnEnemy1(progress);
       else this.spawnEnemy2(progress);
     } else {
-      // Fase 4: Combinaciones Difíciles
       if (p < 0.3) {
         this.spawnEnemy1(progress);
-        this.spawnEnemy2(progress, 200); // Ataque doble!
+        this.spawnEnemy2(progress, 200);
       } else if (p < 0.6) {
         this.spawnEnemy0();
         this.spawnEnemy2(progress, 300); 
@@ -1512,36 +1637,68 @@ class LisarArcade2D {
       this.ctx.shadowBlur = 0;
 
       // ================================================================
-      // COUNTDOWN 3... 2... 1... READY! (En el rectángulo central)
+      // COUNTDOWN 3... 2... 1... READY! (Game 1 Style with Lisar Coin & Shooting Letters)
       // ================================================================
       const progress = (this.player.x + 250) / 330; // 0 to 1 as player enters
       const cCenterY = this.logicalHeight * 0.58;
       
       this.ctx.save();
-      if (progress < 0.28) {
-        this.ctx.font = '900 68px "Orbitron", monospace';
+      const currentStep = progress < 0.25 ? 3 : progress < 0.50 ? 2 : progress < 0.75 ? 1 : 0;
+      
+      if (this.lastCountStep !== currentStep) {
+        this.lastCountStep = currentStep;
+        if (currentStep > 0) {
+          this.speak(currentStep.toString());
+        } else if (progress >= 0.75) {
+          this.speak("Ready!");
+        }
+      }
+
+      if (progress < 0.25) {
+        if (this.readyOverlayEl) this.readyOverlayEl.style.display = 'none';
+        this.ctx.font = '900 75px "Orbitron", monospace';
         this.ctx.fillStyle = '#00ffff';
-        this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#00ffff';
+        this.ctx.shadowBlur = 22; this.ctx.shadowColor = '#00ffff';
         this.ctx.fillText('3', cx, cCenterY);
-      } else if (progress < 0.56) {
-        this.ctx.font = '900 68px "Orbitron", monospace';
+      } else if (progress < 0.50) {
+        if (this.readyOverlayEl) this.readyOverlayEl.style.display = 'none';
+        this.ctx.font = '900 75px "Orbitron", monospace';
         this.ctx.fillStyle = '#ff9900';
-        this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#ff9900';
+        this.ctx.shadowBlur = 22; this.ctx.shadowColor = '#ff9900';
         this.ctx.fillText('2', cx, cCenterY);
-      } else if (progress < 0.84) {
-        this.ctx.font = '900 68px "Orbitron", monospace';
+      } else if (progress < 0.75) {
+        if (this.readyOverlayEl) this.readyOverlayEl.style.display = 'none';
+        this.ctx.font = '900 75px "Orbitron", monospace';
         this.ctx.fillStyle = '#ff0055';
-        this.ctx.shadowBlur = 20; this.ctx.shadowColor = '#ff0055';
+        this.ctx.shadowBlur = 22; this.ctx.shadowColor = '#ff0055';
         this.ctx.fillText('1', cx, cCenterY);
       } else {
-        this.ctx.font = '900 62px "Orbitron", monospace';
-        this.ctx.fillStyle = '#00ffaa';
-        this.ctx.shadowBlur = 25; this.ctx.shadowColor = '#00ffaa';
-        this.ctx.fillText('READY!', cx, cCenterY);
+        // Moneda dorada gigante girando al centro detrás de READY!
+        const coinImg = this.coinFrames[Math.floor(performance.now() / 80) % this.coinFrames.length];
+        if (coinImg && coinImg.loaded) {
+          const cSize = 135;
+          this.ctx.shadowBlur = 35;
+          this.ctx.shadowColor = '#ffd700';
+          this.ctx.drawImage(coinImg, cx - cSize / 2, cCenterY - cSize / 2 - 10, cSize, cSize);
+        }
+
+        // Overlay con letras animadas que salen disparadas
+        if (this.readyOverlayEl && this.readyOverlayEl.style.display !== 'block') {
+          this.readyOverlayEl.style.display = 'block';
+          this.readyOverlayEl.innerHTML = `
+            <div class="ready-futuristic">
+              <span>R</span><span>E</span><span>A</span><span>D</span><span>Y</span><span>!</span>
+            </div>
+          `;
+        }
       }
       this.ctx.restore();
 
       this.ctx.restore();
+    } else {
+      if (this.readyOverlayEl && this.readyOverlayEl.style.display !== 'none') {
+        this.readyOverlayEl.style.display = 'none';
+      }
     }
 
     this.ctx.restore();
