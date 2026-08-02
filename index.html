@@ -455,13 +455,20 @@
 
         <div class="row justify-content-center">
           <div class="col-lg-4 col-md-6 mb-4">
-            <div class="glass-card text-center p-0 overflow-hidden" style="border: 2px solid var(--lisar-gold);">
-              <div class="game-container" id="runner-game-container" style="position: relative; width: 100%; height: 500px; background: #000;">
+            <style>
+              .game-card-featured { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+              .game-card-featured:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(255, 183, 3, 0.4) !important; }
+              .game-cover-btn { transition: filter 0.3s ease; background: none; border: none; padding: 0; margin: 0; width: 100%; height: 100%; display: block; cursor: pointer; }
+              .game-cover-btn:hover { filter: brightness(1.1); }
+              .game-cover-btn:focus-visible { outline: 3px solid var(--lisar-gold); outline-offset: -3px; }
+            </style>
+            <div class="glass-card text-center p-0 overflow-hidden game-card-featured" style="border: 2px solid var(--lisar-gold); box-shadow: 0 0 15px rgba(255, 183, 3, 0.15);">
+              <div class="game-container" id="runner-game-container" style="position: relative; width: 100%; aspect-ratio: 941/1672; background: #000;">
                 <!-- Overlay Start -->
-                <div id="game-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
-                  <h3 class="text-white mb-2 font-weight-bold">Lisar Runner 3D</h3>
-                  <p class="text-white-50 small px-3">Toca los lados de la pantalla o usa las flechas de tu teclado para esquivar los obstáculos.</p>
-                  <button id="start-game-btn" class="btn btn-gold-primary mt-3"><i class="bi bi-play-fill"></i> Jugar Ahora</button>
+                <div id="game-overlay" style="position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                  <button id="start-game-btn" class="game-cover-btn" aria-label="Jugar Lisar Runner 3D">
+                    <img src="assets/img/portada_juego.png" alt="Portada de Lisar Runner 3D" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;" loading="lazy">
+                  </button>
                 </div>
                 <!-- Canvas will be injected here -->
               </div>
