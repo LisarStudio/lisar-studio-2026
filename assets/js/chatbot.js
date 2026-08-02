@@ -359,10 +359,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.triggerPromoChatbot = function(discount = 30) {
+    if (localStorage.getItem('lisar_discount_game2_claimed') === 'true') {
+      container.classList.add('show');
+      toggler.style.display = 'none';
+      body.innerHTML = '';
+      footer.innerHTML = '';
+      addBotMsg("🤖 ¡Hola! Ya has reclamado el cupón de descuento correspondiente a esta partida. Para obtener un nuevo beneficio debes jugar una partida nueva. 🚀");
+      
+      const btnReplay = document.createElement('button');
+      btnReplay.className = 'chat-option-btn';
+      btnReplay.innerText = '🎮 Jugar una nueva partida';
+      btnReplay.onclick = () => {
+        container.classList.remove('show');
+        toggler.style.display = 'flex';
+        const gameSec = document.getElementById('advergames');
+        if (gameSec) gameSec.scrollIntoView({ behavior: 'smooth' });
+      };
+      footer.appendChild(btnReplay);
+      return;
+    }
+
+    // Registrar reclamado para impedir acumulaciones múltiples en una misma partida
+    localStorage.setItem('lisar_discount_game2_claimed', 'true');
+
     container.classList.add('show');
     toggler.style.display = 'none';
     
-    // Clear any previous chat
     body.innerHTML = '';
     footer.innerHTML = '';
     
@@ -370,15 +392,15 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         hideTyping();
         
-        let msg = `¡Felicidades! Has acumulado un ${discount}% de descuento para tu primer servicio al recolectar monedas en Lisar Jet Rush. ¿Qué esperas para cotizar y agendar ahora? 🚀`;
+        let msg = `¡Felicidades! Has acumulado un ${discount}% de descuento para tu servicio en Lisar Studio. Este beneficio es válido por 1 sola partida jugada. ¿Deseas aplicarlo en tu cotización ahora? 🚀`;
         
         addBotMsg("🤖 " + msg);
         
         const btnSi = document.createElement('button');
         btnSi.className = 'chat-option-btn';
-        btnSi.innerText = '¡Quiero cotizar ahora! 💬';
+        btnSi.innerText = '¡Quiero cotizar con mi descuento! 💬';
         btnSi.onclick = () => {
-            addUserMsg('¡Quiero cotizar ahora! 💬');
+            addUserMsg('¡Quiero cotizar con mi descuento! 💬');
             loadState('start');
         };
         
@@ -387,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnNo.innerText = 'No, gracias';
         btnNo.onclick = () => {
             addUserMsg('No, gracias');
-            addBotMsg('🤖 ¡No hay problema! Cuando estés listo, aquí estaré. Recuerda guardar tu captura de pantalla. 😉');
+            addBotMsg('🤖 ¡Entendido! Tu beneficio de esta partida ha sido registrado. Juega otra partida si deseas superar tu récord. 😉');
         };
         
         footer.appendChild(btnSi);

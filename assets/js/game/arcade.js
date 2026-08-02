@@ -686,10 +686,10 @@ class LisarArcade2D {
 
     this.msgOverlay = document.createElement('div');
     Object.assign(this.msgOverlay.style, {
-      position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
+      position: 'absolute', top: '185px', left: '0', right: '0', bottom: '0',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-      paddingTop: '185px', boxSizing: 'border-box',
-      background: 'rgba(5,6,15,0.92)', color: '#fff', zIndex: '40', pointerEvents: 'none'
+      paddingTop: '10px', boxSizing: 'border-box',
+      background: 'rgba(5,6,15,0.85)', color: '#ffffff', zIndex: '40', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
 
@@ -856,9 +856,9 @@ class LisarArcade2D {
     this.msgOverlay.style.display    = 'flex';
     this.msgOverlay.style.pointerEvents = 'auto';
     this.msgOverlay.innerHTML = `
-      <div style="background:rgba(10,12,28,0.96); border:2.5px solid #00f3ff; box-shadow:0 0 24px rgba(0,243,255,0.8); border-radius:12px; padding:20px 24px; max-width:88%; width:420px; text-align:center; box-sizing:border-box;">
-        <h2 style="font-size:1.5rem;color:#ffd700;margin:0 0 10px 0;text-shadow:0 0 12px #ff8800;font-family:'Orbitron',sans-serif;font-weight:900;">${title}</h2>
-        <div style="font-size:0.92rem;margin:0 0 16px 0;text-align:center;line-height:1.5;font-family:'Orbitron',sans-serif;color:#ffffff;">${subtitle}</div>
+      <div style="background:rgba(10,12,28,0.98); border:2.5px solid #00f3ff; box-shadow:0 0 24px rgba(0,243,255,0.9); border-radius:12px; padding:20px 24px; max-width:88%; width:420px; text-align:center; box-sizing:border-box;">
+        <h2 style="font-size:1.5rem; color:#ffffff; margin:0 0 10px 0; text-shadow:0 0 12px #00f3ff, 0 0 24px #00f3ff; font-family:'Orbitron',sans-serif; font-weight:900; letter-spacing:1px;">${title}</h2>
+        <div style="font-size:0.95rem; margin:0 0 16px 0; text-align:center; line-height:1.5; font-family:'Orbitron',sans-serif; color:#ffffff; font-weight:bold; text-shadow:0 0 8px #ffffff;">${subtitle}</div>
         <div id="msg-btn-container" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; margin-top:12px;"></div>
       </div>
     `;
@@ -948,6 +948,7 @@ class LisarArcade2D {
     this.player.flyAscendIndex = 0;
     this.coinsCollected        = 0;
     this.lastDiscountThreshold = 0;
+    localStorage.removeItem('lisar_discount_game2_claimed');
 
     this.enemies     = [];
     this.projectiles = [];
@@ -1156,20 +1157,20 @@ class LisarArcade2D {
   }
 
   spawnEnemy0(offsetX = 0) {
-    const isTop = Math.random() > 0.5;
+    // Bloques solo en el suelo (NUNCA en el techo Y=0 para evitar tapar el HUD)
     this.enemies.push({
       type: 0,
       x: this.logicalWidth + 30 + offsetX,
-      y: isTop ? 0 : this.logicalHeight - 200 - 40,
+      y: this.logicalHeight - 200 - 40,
       width: 130, height: 200,
       vx: -this.floorSpeed,
-      vy: (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 80),
       hp: 9999
     });
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    const minY = 200;
+    // Enemigos voladores únicamente en la franja del rectángulo verde (230px - 270px)
+    const minY = 230;
     const maxY = 270;
     const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
