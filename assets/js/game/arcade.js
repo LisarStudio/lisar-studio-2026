@@ -39,8 +39,7 @@ class LisarArcade2D {
       enemigo1: { src: 'images/sprites_arcade/Sprite_enemigo1.png', img: new Image(), loaded: false, frameCount: 1 },
       enemigo2: { src: 'images/sprites_arcade/Sprite_enemigo2.png', img: new Image(), loaded: false, frameCount: 1 },
       coin: { src: 'images/sprites_arcade/Sprite_Lisarcoins.png', img: new Image(), loaded: false, frameCount: 6 },
-      floor: { src: 'images/sprites_arcade/tiling_floor.png', img: new Image(), loaded: false, frameCount: 1 },
-      obstaculo: { src: 'images/sprites_arcade/Sprite_enemigo1.png', img: new Image(), loaded: false, frameCount: 1 } // Fallback si no está el obstáculo, usaré el Sprite_enemigo1 dibujado distinto
+      floor: { src: 'images/sprites_arcade/tiling_floor.png', img: new Image(), loaded: false, frameCount: 1 }
     };
     
     // Estados del juego
@@ -713,6 +712,9 @@ class LisarArcade2D {
     this.state = 'destroyed';
     if(this.audio) this.audio.pause();
     this.container.innerHTML = ''; // Limpiar el DOM encapsulado
+    if (this.container.id === 'arcade-game-fullscreen') {
+        this.container.remove();
+    }
   }
 }
 
@@ -722,18 +724,53 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.arcadeGame) {
             window.arcadeGame.destroy();
         }
-        window.arcadeGame = new LisarArcade2D('arcade-game-container');
+        
+        // Crear contenedor de pantalla completa
+        let fs = document.getElementById('arcade-game-fullscreen');
+        if (!fs) {
+            fs = document.createElement('div');
+            fs.id = 'arcade-game-fullscreen';
+            fs.style.position = 'fixed';
+            fs.style.inset = '0';
+            fs.style.width = '100vw';
+            fs.style.height = '100dvh';
+            fs.style.zIndex = '9999';
+            fs.style.overflow = 'hidden';
+            fs.style.background = '#000';
+            document.body.appendChild(fs);
+            
+            // Botón de cerrar
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.position = 'absolute';
+            closeBtn.style.top = '20px';
+            closeBtn.style.right = '20px';
+            closeBtn.style.zIndex = '10000';
+            closeBtn.style.background = 'transparent';
+            closeBtn.style.color = '#fff';
+            closeBtn.style.border = 'none';
+            closeBtn.style.fontSize = '3rem';
+            closeBtn.style.lineHeight = '1';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.style.textShadow = '0 0 10px #000';
+            closeBtn.onclick = () => {
+                if(window.arcadeGame) window.arcadeGame.destroy();
+                window.arcadeGame = null;
+            };
+            fs.appendChild(closeBtn);
+        }
+
+        window.arcadeGame = new LisarArcade2D('arcade-game-fullscreen');
     };
     
     const btn = document.getElementById('start-arcade-btn');
-    const overlay = document.getElementById('arcade-overlay');
     
-    if (btn && overlay) {
+    if (btn) {
         btn.addEventListener('click', () => {
-            overlay.style.display = 'none';
             if (!window.arcadeGame) window.initArcadeGame();
+            else if (window.arcadeGame.state === 'destroyed') window.initArcadeGame();
             
-            if(window.arcadeGame.state === 'ready') {
+            if(window.arcadeGame && window.arcadeGame.state === 'ready') {
                window.arcadeGame.startGame();
             }
         });
