@@ -552,12 +552,12 @@ class LisarArcade2D {
   setupControls() {
     window.addEventListener('keydown', e => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
-        if (this.state === 'ready') this.startGame();
+        if (this.state === 'ready' && !this.instructionCardEl) this.startGame();
         this.input.up = true;
         e.preventDefault();
       }
       if (e.code === 'KeyX' || e.code === 'KeyJ' || e.code === 'KeyZ') {
-        if (this.state === 'ready') this.startGame();
+        if (this.state === 'ready' && !this.instructionCardEl) this.startGame();
         this.performAttack();
         e.preventDefault();
       }
@@ -568,6 +568,7 @@ class LisarArcade2D {
     });
     this.container.addEventListener('touchstart', e => {
       if (this.state !== 'playing' && this.state !== 'ready') return;
+      if (this.instructionCardEl) return;
       if (this.state === 'ready') this.startGame();
       this.input.up = true;
       if (e.cancelable) e.preventDefault();
@@ -575,6 +576,7 @@ class LisarArcade2D {
     this.container.addEventListener('touchend',  () => { this.input.up = false; });
     this.container.addEventListener('mousedown', e => { 
       if (this.state !== 'playing' && this.state !== 'ready') return;
+      if (this.instructionCardEl) return;
       if (this.state === 'ready') this.startGame();
       this.input.up = true;  
     });
@@ -662,8 +664,9 @@ class LisarArcade2D {
     this.msgOverlay = document.createElement('div');
     Object.assign(this.msgOverlay.style, {
       position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      background: 'rgba(0,0,0,0.88)', color: '#fff', zIndex: '20', pointerEvents: 'none'
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
+      paddingTop: '105px', boxSizing: 'border-box',
+      background: 'rgba(5,6,15,0.92)', color: '#fff', zIndex: '20', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
 
@@ -816,24 +819,20 @@ class LisarArcade2D {
     this.msgOverlay.style.display    = 'flex';
     this.msgOverlay.style.pointerEvents = 'auto';
     this.msgOverlay.innerHTML = `
-      <h2 style="font-size:1.8rem;color:#ff9900;margin:0 0 8px 0;text-shadow:0 0 12px #ff0000;text-align:center;max-width:90%;font-family:'Orbitron',sans-serif;">${title}</h2>
-      <p  style="font-size:0.95rem;margin:0 0 18px 0;text-align:center;max-width:90%;line-height:1.5;font-family:'Orbitron',sans-serif;">${subtitle}</p>
+      <div style="background:rgba(10,12,28,0.96); border:2.5px solid #00f3ff; box-shadow:0 0 24px rgba(0,243,255,0.8); border-radius:12px; padding:20px 24px; max-width:88%; width:420px; text-align:center; box-sizing:border-box;">
+        <h2 style="font-size:1.5rem;color:#ffd700;margin:0 0 10px 0;text-shadow:0 0 12px #ff8800;font-family:'Orbitron',sans-serif;font-weight:900;">${title}</h2>
+        <div style="font-size:0.92rem;margin:0 0 16px 0;text-align:center;line-height:1.5;font-family:'Orbitron',sans-serif;color:#ffffff;">${subtitle}</div>
+        <div id="msg-btn-container" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center; align-items:center; margin-top:12px;"></div>
+      </div>
     `;
 
-    const btnContainer = document.createElement('div');
-    btnContainer.style.display = 'flex';
-    btnContainer.style.flexDirection = 'row';
-    btnContainer.style.flexWrap = 'wrap';
-    btnContainer.style.gap = '12px';
-    btnContainer.style.justifyContent = 'center';
-    btnContainer.style.alignItems = 'center';
-    btnContainer.style.marginTop = '10px';
+    const btnContainer = document.getElementById('msg-btn-container');
 
     // Botón de Compartir Redes Sociales
     const shareBtn = document.createElement('button');
     shareBtn.innerHTML = '📲 COMPARTIR PUNTAJE';
     Object.assign(shareBtn.style, {
-      padding: '12px 24px', fontSize: '1.05rem',
+      padding: '12px 20px', fontSize: '0.95rem',
       background: 'linear-gradient(90deg, #00f3ff, #a200ff)',
       color: '#fff', border: '2px solid #00ffff', borderRadius: '8px',
       cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 0 14px #00f3ff',
@@ -847,7 +846,7 @@ class LisarArcade2D {
       e.stopPropagation();
       this.shareScore();
     });
-    btnContainer.appendChild(shareBtn);
+    if (btnContainer) btnContainer.appendChild(shareBtn);
 
     if (btnText) {
       const btn = document.createElement('button');
@@ -873,9 +872,8 @@ class LisarArcade2D {
 
       btn.addEventListener('click', handleBtnClick);
       btn.addEventListener('touchstart', handleBtnClick, { passive: false });
-      btnContainer.appendChild(btn);
+      if (btnContainer) btnContainer.appendChild(btn);
     }
-    this.msgOverlay.appendChild(btnContainer);
   }
 
   hideMessage() {
@@ -1033,7 +1031,7 @@ class LisarArcade2D {
       // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en el Cielo Alto
       this.spawnEnemy2(progress);
 
-      const highY = 60;
+      const highY = 165;
       const diamondOffsets = [
         { dx: 0, dy: 0 }, { dx: 40, dy: -30 }, { dx: 40, dy: 30 }, { dx: 80, dy: 0 }
       ];
@@ -1141,11 +1139,18 @@ class LisarArcade2D {
     const pw = 80;
     const ph = 110;
 
+    const playerCenterX = this.player.x + 120;
+    const playerCenterY = this.player.y + 110;
+
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const c = this.coins[i];
-      if (px < c.x + c.width && px + pw > c.x && py < c.y + c.height && py + ph > c.y) {
+      const coinCenterX = c.x + c.width / 2;
+      const coinCenterY = c.y + c.height / 2;
+      const dist = Math.hypot(playerCenterX - coinCenterX, playerCenterY - coinCenterY);
+
+      if (dist < 115 || (px - 50 < c.x + c.width && px + pw + 50 > c.x && py - 70 < c.y + c.height && py + ph + 70 > c.y)) {
         this.coinsCollected++;
-        this.createExplosion(c.x + c.width / 2, c.y + c.height / 2, 'gold', 6);
+        this.createExplosion(coinCenterX, coinCenterY, 'gold', 8);
         this.coins.splice(i, 1);
         this.playCoinSound();
 
