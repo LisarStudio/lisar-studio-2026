@@ -695,12 +695,25 @@
      AOS.init({ once: true, offset: 100, duration: 800 });
    </script>
 
-    <!-- App Custom Scripts -->
-    <script src="assets/js/3d-bg.js?v=999"></script>
-    <script src="assets/js/game/runner.js?v=999"></script>
-    <script src="assets/js/game/arcade.js?v=20260802_V110_DYNAMIC_HEIGHT"></script>
-    <script src="assets/js/chatbot.js?v=20260802_V110_DYNAMIC_HEIGHT"></script>
-    <script src="assets/js/app.js?v=999"></script>
+     <!-- App Custom Scripts -->
+     <script src="assets/js/3d-bg.js?v=999"></script>
+     <script src="assets/js/game/runner.js?v=999"></script>
+     <script>
+       (function() {
+         const time = Date.now();
+         const scripts = [
+           'assets/js/game/arcade.js?v=' + time,
+           'assets/js/chatbot.js?v=' + time,
+           'assets/js/app.js?v=' + time
+         ];
+         scripts.forEach(src => {
+           const s = document.createElement('script');
+           s.src = src;
+           s.async = false;
+           document.head.appendChild(s);
+         });
+       })();
+     </script>
    
    <!-- Floating WhatsApp Button -->
    <a href="https://api.whatsapp.com/send?phone=56964486208" class="whatsapp-float" target="_blank" title="Contáctanos por WhatsApp">
