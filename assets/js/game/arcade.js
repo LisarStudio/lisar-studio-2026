@@ -383,9 +383,15 @@ class LisarArcade2D {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
-        utterance.rate = 1.2;
-        utterance.pitch = 1.1;
+        // Arcade-like voice: slightly lower rate, higher pitch, choose synthetic voice when available
+        utterance.rate = 0.95;
+        utterance.pitch = 1.6;
         utterance.volume = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        if (voices && voices.length) {
+          const preferred = voices.find(v => /Google|Microsoft|Alloy|Samantha|Alex|Daniel|Serena/i.test(v.name));
+          if (preferred) utterance.voice = preferred;
+        }
         window.speechSynthesis.speak(utterance);
       } catch(e) {}
     }
@@ -886,7 +892,8 @@ class LisarArcade2D {
 
   showMessage(title, subtitle, buttons = [], legacyAction = null) {
     this.msgOverlay.style.display    = 'flex';
-    this.msgOverlay.style.pointerEvents = 'auto';
+    // No bloquear la jugabilidad cuando el juego está en estado 'playing'
+    this.msgOverlay.style.pointerEvents = (this.state === 'playing') ? 'none' : 'auto';
     this.msgOverlay.innerHTML = `
       <div style="background:rgba(10,12,28,0.98); border:2.5px solid #00f3ff; box-shadow:0 0 24px rgba(0,243,255,0.9); border-radius:12px; padding:20px 24px; max-width:88%; width:440px; text-align:center; box-sizing:border-box;">
         <h2 style="font-size:1.45rem; color:#ffffff; margin:0 0 10px 0; text-shadow:0 0 12px #00f3ff, 0 0 24px #00f3ff; font-family:'Orbitron',sans-serif; font-weight:900; letter-spacing:1px;">${title}</h2>
@@ -1071,7 +1078,8 @@ class LisarArcade2D {
     // Only run once
     if (this._preloaderStarted) return; this._preloaderStarted = true;
     this.showPreloader();
-    this.preloadAssets((p) => {}).then(() => {
+    // Return the promise so callers can await completion
+    return this.preloadAssets((p) => {}).then(() => {
       setTimeout(() => {
         this.hidePreloader();
         this.assetsReady = true;
@@ -1089,6 +1097,19 @@ class LisarArcade2D {
   }
 
   startGame() {
+    // If assets not ready, start preloader now and wait, then re-enter startGame
+    if (!this.assetsReady) {
+      this.initPreloaderAndStart();
+      const check = setInterval(() => {
+        if (this.assetsReady) {
+          clearInterval(check);
+          // Re-enter startGame once assets ready
+          this.startGame();
+        }
+      }, 120);
+      return;
+    }
+
     this.hideMessage();
     this.hideInstructionsCard();
     if (this.readyOverlayEl) this.readyOverlayEl.style.display = 'none';
@@ -1780,8 +1801,8 @@ class LisarArcade2D {
       const widths = [135, 195, 260];
       const colors = ['#a200ff', '#00f3ff', '#ff00aa'];
 
-      // Personajes: 0: Solo Lu, 1: Solo Peter, 2: Lu y Peter juntos
-      const charType = Math.floor(Math.random() * 3);
+      // Personajes: -1: ninguno (no mostrar en montañas), 0: Solo Lu, 1: Solo Peter, 2: Lu y Peter juntos
+      const charType = -1; // evitar que Lu/Peter aparezcan en montañas de fondo
 
       this.bgHills.push({
         x: this.logicalWidth + 80,
@@ -1810,10 +1831,13 @@ class LisarArcade2D {
       }
     }
 
-    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU EN SU NUBE (Trigger a 3 barras de energía = hp <= 60)
-    if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
+    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU EN SU NUBE
+    // Solo puede activarse si tienes las ayudas de Lu completamente cargadas (3 cargas)
+    if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0 && this.luBoostCharges === 3) {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
+      // Consumir las cargas al invocar la ayuda de Lu
+      this.luBoostCharges = 0;
       this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
       const playableTopY = 185 / this.scale;
       this.luBoostY = Math.max(playableTopY + 10, 225);  // Altura cómoda de vuelo medio (Y = 225px)
@@ -1878,8 +1902,13 @@ class LisarArcade2D {
     // Movimiento de Letras Naranjas L-I-S-A-R
     for (let i = this.letterItems.length - 1; i >= 0; i--) {
       const item = this.letterItems[i];
-      item.x += item.vx * dt;
-      if (item.x < -item.width * 2) this.letterItems.splice(i, 1);
+      item.x += (item.vx || 0) * dt;
+      if (item.vy !== undefined) {
+        // flying letters (meta celebration) have vertical motion + gravity
+        item.y += item.vy * dt;
+        item.vy += 420 * dt;
+      }
+      if (item.x < -item.width * 2 || item.y > this.logicalHeight + 200 || (item.life !== undefined && item.life <= 0)) this.letterItems.splice(i, 1);
     }
 
     // Powerups (Bota de Energía Magnética Homing / Rayitos)
@@ -1895,18 +1924,32 @@ class LisarArcade2D {
 
         if (dist > 10) {
           p.x += (dx / dist) * 480 * dt;
-          // Handle different powerup types
-          if (p.isBoot) {
-            const healAmt = 35;
-            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
-            this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
-            this.playCoinSound();
-            this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
-            this.speak("Energy Restored!");
-            // Using a boot drop counts as consuming one Lu charge
-            if (this.luBoostCharges > 0) this.luBoostCharges = Math.max(0, this.luBoostCharges - 1);
-          } else if (p.isLuHelp) {
-            // Restore Lu charges fully
+        } else {
+          // collect
+          const healAmt = 35;
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
+          this.playCoinSound();
+          this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
+          this.speak("Energy Restored!");
+          // Using a boot drop counts as consuming one Lu charge (if any)
+          if (this.luBoostCharges > 0) this.luBoostCharges = Math.max(0, this.luBoostCharges - 1);
+          this.powerups.splice(i, 1);
+          this.updateHUD();
+          continue;
+        }
+      } else {
+        // non-homing powerups: move and float
+        p.x += p.vx * dt;
+        p.frameTimer += dt * 5;
+        p.y += Math.sin(p.frameTimer) * 1.8;
+        // Check pickup overlap
+        const px = p.x + p.width / 2;
+        const py = p.y + p.height / 2;
+        const dx = px - (this.player.x + this.player.width / 2);
+        const dy = py - (this.player.y + this.player.height / 2);
+        if (Math.hypot(dx, dy) < 48) {
+          if (p.isLuHelp) {
             this.luBoostCharges = 3;
             this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#ffd700', 12);
             this.playCoinSound();
@@ -1930,18 +1973,9 @@ class LisarArcade2D {
             this.playCoinSound();
           }
           this.powerups.splice(i, 1);
-          // Update HUD icons immediately after any potential lu change
-          this.updateHUD();
-            this.luBoostCharges = Math.max(0, this.luBoostCharges - 1);
-          }
-          // Update HUD icons immediately
           this.updateHUD();
           continue;
         }
-      } else {
-        p.x += p.vx * dt;
-        p.frameTimer += dt * 5;
-        p.y += Math.sin(p.frameTimer) * 1.8;
       }
       if (p.x < -p.width * 2) this.powerups.splice(i, 1);
     }
@@ -2414,6 +2448,24 @@ class LisarArcade2D {
       }
     });
 
+    // Moneda gigante pixelada en la victoria
+    if (this.victoryCoin) {
+      const vc = this.victoryCoin;
+      vc.frameTimer += dt * 10;
+      if (vc.frameTimer > 0.12) { vc.frame = (vc.frame + 1) % this.coinFrames.length; vc.frameTimer = 0; }
+      const img = this.coinFrames[vc.frame % this.coinFrames.length];
+      if (img && img.loaded) {
+        this.ctx.save();
+        // Pixel-art look
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.shadowBlur = 32; this.ctx.shadowColor = '#ffd700';
+        const size = vc.size || 140;
+        this.ctx.drawImage(img, vc.x - size/2, vc.y - size/2, size, size);
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.restore();
+      }
+    }
+
     // Renderizado de Letras Naranjas Brillantes L-I-S-A-R
     this.letterItems.forEach(item => {
       this.ctx.save();
@@ -2599,7 +2651,7 @@ class LisarArcade2D {
       const peterImg = this.peterFrames[animIdx];
       const charH = 145;
 
-      if (luImg && luImg.loaded) {
+      if (luImg && luImg.loaded && this.state !== 'playing') {
         const luW = luImg.width * (charH / luImg.height);
         this.ctx.save();
         this.ctx.shadowBlur = 16;
@@ -2608,7 +2660,7 @@ class LisarArcade2D {
         this.ctx.restore();
       }
 
-      if (peterImg && peterImg.loaded) {
+      if (peterImg && peterImg.loaded && this.state !== 'playing') {
         const peterW = peterImg.width * (charH / peterImg.height);
         this.ctx.save();
         this.ctx.shadowBlur = 16;
@@ -2617,29 +2669,49 @@ class LisarArcade2D {
         this.ctx.restore();
       }
 
-      // Globo de diálogo de Lu y Peter en la Meta
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.strokeStyle = '#000000';
-      this.ctx.lineWidth = 3;
-      this.ctx.shadowBlur = 18;
-      this.ctx.shadowColor = '#00ffff';
-      this.ctx.beginPath();
-      const bubbleW = 330;
-      const bubbleH = 34;
-      const bubbleX = archX + 100 - bubbleW / 2;
-      const bubbleY = floorY - charH - 42;
-      if (this.ctx.roundRect) {
-        this.ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 8);
-      } else {
-        this.ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
-      }
-      this.ctx.fill();
-      this.ctx.stroke();
+      // Globo de diálogo de Lu y Peter en la Meta (solo fuera de 'playing')
+      if (this.state !== 'playing') {
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 18;
+        this.ctx.shadowColor = '#00ffff';
+        this.ctx.beginPath();
+        const bubbleW = 330;
+        const bubbleH = 34;
+        const bubbleX = archX + 100 - bubbleW / 2;
+        const bubbleY = floorY - charH - 42;
+        if (this.ctx.roundRect) {
+          this.ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 8);
+        } else {
+          this.ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
+        }
+        this.ctx.fill();
+        this.ctx.stroke();
 
-      this.ctx.font = 'bold 11px "Orbitron", monospace';
-      this.ctx.fillStyle = '#0a0a0c';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText("¡FELICIDADES POR TERMINAR NUESTRO DEMO JUGABLE!", bubbleX + bubbleW / 2, bubbleY + 21);
+        this.ctx.font = 'bold 11px "Orbitron", monospace';
+        this.ctx.fillStyle = '#0a0a0c';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText("¡FELICIDADES POR TERMINAR NUESTRO DEMO JUGABLE!", bubbleX + bubbleW / 2, bubbleY + 21);
+      }
+
+      // Cuando se llega a la meta (victory), despachar la animación de letras volando y moneda grande una sola vez
+      if (this.state === 'victory' && !this.victoryTriggered) {
+        this.victoryTriggered = true;
+        const lOffs = [-70, -35, 0, 35, 70];
+        ['L','I','S','A','R'].forEach((L, idx) => {
+          this.letterItems.push({
+            letter: L,
+            x: archX + 118 + lOffs[idx],
+            y: floorY - charH + 12,
+            width: 55, height: 55,
+            vx: -120 + (Math.random() * 240),
+            vy: -260 - Math.random() * 140,
+            life: 3.5
+          });
+        });
+        this.victoryCoin = { x: archX + 118, y: floorY - 90, frame:0, frameTimer:0, size:160 };
+      }
 
       this.ctx.restore();
     }
