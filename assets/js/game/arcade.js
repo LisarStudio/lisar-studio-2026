@@ -749,7 +749,9 @@ class LisarArcade2D {
     if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
 
     // Actualización de la barra de progreso de descuento (Max 20% Monedas + 10% LISAR = 30% TOTAL)
-    const baseDiscount = Math.min(20, Math.floor(this.coinsCollected / 20) * 5);
+    const currentTier = Math.min(4, Math.floor(this.coinsCollected / 20));
+    const currentDiscountPct = currentTier * 5;
+    const baseDiscount = currentDiscountPct;
     const extraBonus = (this.lisarWordBonusGranted ? 10 : 0);
     const totalDiscountPct = Math.min(30, baseDiscount + extraBonus);
 
@@ -2624,7 +2626,7 @@ class LisarArcade2D {
   }
 
   loop(now) {
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing' && this.state !== 'celebration') return;
     let dt = (now - this.lastTime) / 1000;
     if (dt > 0.1) dt = 0.1;
     this.lastTime = now;
