@@ -249,7 +249,6 @@ class LisarArcade2D {
     this.floorOffset    = 0;
     this.floorSpeed     = 200;
     this.coinsCollected = 0;
-    this.coinsRequired  = 100;
     this.lastDiscountThreshold = 0;
     this.spawnTimer     = 0;
     this.isFlying       = false;
@@ -552,6 +551,18 @@ class LisarArcade2D {
         this.playExplosionSound();
         this.enemies.splice(i, 1);
         this.coinsCollected += 1;
+        // Chance to drop powerups on enemy death (rare)
+        const r = Math.random();
+        if (r < 0.10) {
+          // Lu help recharge
+          this.powerups.push({ x: e.x, y: e.y, width: 48, height:48, vx: -this.floorSpeed * 0.6, isLuHelp: true, frameTimer:0 });
+        } else if (r < 0.30) {
+          // small coin bundle
+          this.powerups.push({ x: e.x, y: e.y, width: 44, height:44, vx: -this.floorSpeed * 0.6, isCoinBundle: true, amount: 3, frameTimer:0 });
+        } else if (r < 0.35) {
+          // short flight boost
+          this.powerups.push({ x: e.x, y: e.y, width: 44, height:44, vx: -this.floorSpeed * 0.6, isFlight: true, duration: 3.5, frameTimer:0 });
+        }
       }
     }
   }
@@ -703,7 +714,7 @@ class LisarArcade2D {
       position: 'absolute', top: '185px', left: '0', right: '0', bottom: '0',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
       paddingTop: '10px', boxSizing: 'border-box',
-      background: 'rgba(5,6,15,0.85)', color: '#ffffff', zIndex: '40', pointerEvents: 'none'
+      background: 'rgba(5,6,15,0.85)', color: '#ffffff', zIndex: '12', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
 
@@ -761,16 +772,18 @@ class LisarArcade2D {
     }
 
     const coins = document.getElementById('arcade-coin-text');
-    if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
+    if (coins) coins.innerText = this.coinsCollected;
 
     // Actualización de la barra de progreso de descuento (Max 20% Monedas + 10% LISAR = 30% TOTAL)
-    const currentTier = Math.min(4, Math.floor(this.coinsCollected / 20));
-    const currentDiscountPct = currentTier * 5;
+    const currentTier = Math.floor(this.coinsCollected / 20);
+    const currentDiscountPct = Math.min(20, currentTier * 5);
     const baseDiscount = currentDiscountPct;
     const extraBonus = (this.lisarWordBonusGranted ? 10 : 0);
     const totalDiscountPct = Math.min(30, baseDiscount + extraBonus);
 
-    const progressPct = Math.min(100, (this.coinsCollected / 100) * 100);
+    // Progress towards next +5% tier (0-20 coins)
+    const coinsInTier = this.coinsCollected % 20;
+    const progressPct = Math.min(100, (coinsInTier / 20) * 100);
 
     const discountPctEl = document.getElementById('arcade-discount-pct');
     if (discountPctEl) discountPctEl.innerText = `${totalDiscountPct}%`;
@@ -780,15 +793,8 @@ class LisarArcade2D {
 
     const discountSubEl = document.getElementById('arcade-discount-sub');
     if (discountSubEl) {
-      if (this.coinsCollected >= 100) {
-        discountSubEl.innerText = '¡MÁXIMO 20% MONEDAS ALCANZADO!';
-        discountSubEl.style.color = '#00ffaa';
-      } else {
-        const currentTier = Math.floor(this.coinsCollected / 20);
-        const coinsInTier = this.coinsCollected % 20;
-        discountSubEl.innerText = `Próximo +5%: ${coinsInTier}/20`;
-        discountSubEl.style.color = '#a0a0b0';
-      }
+      discountSubEl.innerText = `Próximo +5%: ${coinsInTier}/20`;
+      discountSubEl.style.color = '#a0a0b0';
     }
 
     // Voz de Anunciador Arcade y Alerta Visual al completar cada +5% de descuento
@@ -950,6 +956,129 @@ class LisarArcade2D {
   hideMessage() {
     this.msgOverlay.style.display    = 'none';
     this.msgOverlay.style.pointerEvents = 'none';
+  }
+
+  // ------------------ Preloader / Asset Decoder ------------------
+  showPreloader() {
+    if (this.preloaderEl) return;
+    const ov = document.createElement('div');
+    ov.style.position = 'absolute';
+    ov.style.left = '0'; ov.style.top = '0';
+    ov.style.width = '100%'; ov.style.height = '100%';
+    ov.style.display = 'flex'; ov.style.alignItems = 'center'; ov.style.justifyContent = 'center';
+    ov.style.background = 'rgba(0,0,0,0.85)';
+    ov.style.zIndex = '60';
+
+    const box = document.createElement('div');
+    box.style.width = '420px'; box.style.maxWidth = '88%'; box.style.padding = '18px';
+    box.style.background = 'linear-gradient(180deg,#0b0b0d, #121214)'; box.style.borderRadius = '12px';
+    box.style.boxShadow = '0 8px 40px rgba(0,0,0,0.6)'; box.style.textAlign = 'center';
+    box.style.color = '#fff';
+
+    const title = document.createElement('div');
+    title.innerText = 'Cargando recursos...'; title.style.fontSize = '1.05rem'; title.style.marginBottom = '8px';
+    box.appendChild(title);
+
+    const progressWrap = document.createElement('div');
+    progressWrap.style.height = '14px'; progressWrap.style.background = '#111'; progressWrap.style.borderRadius = '8px';
+    progressWrap.style.overflow = 'hidden'; progressWrap.style.margin = '10px 0 6px';
+    const bar = document.createElement('div');
+    bar.style.width = '0%'; bar.style.height = '100%'; bar.style.background = 'linear-gradient(90deg,#72C936,#5EAE27)';
+    progressWrap.appendChild(bar);
+    box.appendChild(progressWrap);
+
+    const pct = document.createElement('div'); pct.innerText = '0%'; pct.style.fontSize = '0.9rem'; pct.style.opacity = '0.95';
+    box.appendChild(pct);
+
+    ov.appendChild(box);
+    this.container.appendChild(ov);
+    this.preloaderEl = ov;
+    this._preloaderBar = bar; this._preloaderPct = pct;
+  }
+
+  hidePreloader() {
+    if (!this.preloaderEl) return;
+    try { this.preloaderEl.remove(); } catch (e) {}
+    this.preloaderEl = null; this._preloaderBar = null; this._preloaderPct = null;
+  }
+
+  _collectImageList() {
+    const imgs = [];
+    const pushIfImg = (v) => { if (!v) return; if (Array.isArray(v)) v.forEach(x=>x && imgs.push(x)); else imgs.push(v); };
+    pushIfImg(this.runFrames);
+    pushIfImg(this.flyAscendFrames);
+    pushIfImg(this.flyLoopFrames);
+    pushIfImg(this.flyFallImg);
+    pushIfImg(this.flyLandImg);
+    pushIfImg(this.attackFrames);
+    pushIfImg(this.coinFrames);
+    pushIfImg(this.enemy1FlyFrames);
+    pushIfImg(this.enemy1FireImg);
+    pushIfImg(this.enemy1DamageImg);
+    pushIfImg(this.enemy1ExplodeImg);
+    pushIfImg(this.shotImg);
+    pushIfImg(this.enemy2BallFrames);
+    pushIfImg(this.logoImg);
+    pushIfImg(this.luFrames);
+    pushIfImg(this.peterFrames);
+    pushIfImg(this.boostFrames);
+    // sprites map
+    if (this.sprites) {
+      Object.values(this.sprites).forEach(s => { if (s && s.img) imgs.push(s.img); });
+    }
+    // remove duplicates
+    const seen = new Set();
+    return imgs.filter(i => { if (!i) return false; if (seen.has(i.src)) return false; seen.add(i.src); return true; });
+  }
+
+  async preloadAssets(progressCb = ()=>{}) {
+    const imgs = this._collectImageList();
+    const total = imgs.length + 1; // +1 for audio
+    let done = 0;
+
+    const tick = () => {
+      done++; const p = Math.round((done / total) * 100);
+      try { if (this._preloaderBar) this._preloaderBar.style.width = p + '%'; if (this._preloaderPct) this._preloaderPct.innerText = p + '%'; } catch(e){}
+      progressCb(p);
+    };
+
+    const imgPromises = imgs.map(img => new Promise(async (resolve) => {
+      if (img.complete && img.naturalWidth && img.naturalWidth > 0) { try { if ('createImageBitmap' in window) await createImageBitmap(img); } catch(e){} tick(); return resolve(); }
+      const onLoad = async () => { try { if (img.decode) { await img.decode(); } if ('createImageBitmap' in window) await createImageBitmap(img); } catch(e){} tick(); resolve(); };
+      const onErr = () => { tick(); resolve(); };
+      img.addEventListener('load', onLoad, { once: true });
+      img.addEventListener('error', onErr, { once: true });
+      // ensure src is set (in case some were created late)
+      if (!img.src) { tick(); resolve(); }
+    }));
+
+    // Audio readiness promise
+    const audioPromise = new Promise((resolve) => {
+      let resolved = false;
+      const onReady = () => { if (resolved) return; resolved = true; tick(); resolve(); };
+      const onTimeout = () => { if (resolved) return; resolved = true; tick(); resolve(); };
+      this.audio.addEventListener('canplaythrough', onReady, { once: true });
+      this.audio.addEventListener('loadeddata', onReady, { once: true });
+      this.audio.addEventListener('error', onReady, { once: true });
+      this.audio.load();
+      setTimeout(onTimeout, 5000);
+    });
+
+    await Promise.all([...imgPromises, audioPromise]);
+  }
+
+  initPreloaderAndStart() {
+    // Only run once
+    if (this._preloaderStarted) return; this._preloaderStarted = true;
+    this.showPreloader();
+    this.preloadAssets((p) => {}).then(() => {
+      setTimeout(() => {
+        this.hidePreloader();
+        this.assetsReady = true;
+      }, 140);
+    }).catch(() => {
+      this.hidePreloader(); this.assetsReady = true;
+    });
   }
 
   drawReadyScreen() {
@@ -1115,7 +1244,7 @@ class LisarArcade2D {
     this.stageStep = (this.stageStep || 0) + 1;
     const progress = Math.min(1, this.gameTimer / 180);
     // Build weighted choices depending on progress (early game easier, late game harder)
-    const weights = [1, 1 + progress * 0.6, 1 + progress * 0.8, 0.9 + progress * 0.9, 0.8 + progress * 1.2];
+    const weights = [1, 1 + progress * 0.6, 1.6 + progress * 1.0, 0.9 + progress * 0.9, 0.8 + progress * 1.2];
     // pick index using weights but avoid repeating same index twice
     let candidate = this._lastChallengeIndex || -1;
     for (let attempts = 0; attempts < 6; attempts++) {
@@ -1136,6 +1265,8 @@ class LisarArcade2D {
         type: 0,
         x: startX,
         y: cubeY,
+        baseY: cubeY,
+        movePhase: Math.random() * Math.PI * 2,
         width: 140, height: 200,
         vx: -this.floorSpeed,
         hp: 9999
@@ -1214,6 +1345,8 @@ class LisarArcade2D {
         type: 0,
         x: startX,
         y: playableTopY + 10,
+        baseY: playableTopY + 10,
+        movePhase: Math.random() * Math.PI * 2,
         width: 140, height: 180,
         vx: -this.floorSpeed,
         hp: 9999
@@ -1265,14 +1398,18 @@ class LisarArcade2D {
   }
 
   spawnEnemy2(progress, offsetX = 0) {
+    // Spawn rolling ball enemy slightly above ground with random bounce routine
+    const baseY = this.logicalHeight - 140 - 40;
     this.enemies.push({
       type: 2,
       x: this.logicalWidth + 30 + offsetX,
-      y: this.logicalHeight - 120 - 40,
+      y: baseY + Math.random() * 18,
+      baseY: baseY,
       width: 120, height: 120,
-      vx: -(this.floorSpeed + 120 + progress * 60),
+      vx: -(this.floorSpeed + 120 + progress * 60 + Math.random() * 40),
       hp: 1, shootTimer: 0,
-      frame: 0, frameTimer: 0
+      frame: 0, frameTimer: 0,
+      bounceTimer: Math.random() * 2
     });
   }
 
@@ -1758,19 +1895,43 @@ class LisarArcade2D {
 
         if (dist > 10) {
           p.x += (dx / dist) * 480 * dt;
-          p.y += (dy / dist) * 480 * dt;
-        }
-
-        // Absorción Automática cuando está cerca del personaje
-        if (dist < 50) {
-          this.player.hp = Math.min(this.player.maxHp, this.player.hp + 35);
-          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 16);
-          this.playCoinSound();
-          this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
-          this.speak("Energy Restored!");
+          // Handle different powerup types
+          if (p.isBoot) {
+            const healAmt = 35;
+            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+            this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
+            this.playCoinSound();
+            this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
+            this.speak("Energy Restored!");
+            // Using a boot drop counts as consuming one Lu charge
+            if (this.luBoostCharges > 0) this.luBoostCharges = Math.max(0, this.luBoostCharges - 1);
+          } else if (p.isLuHelp) {
+            // Restore Lu charges fully
+            this.luBoostCharges = 3;
+            this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#ffd700', 12);
+            this.playCoinSound();
+            this.showTemporaryAlert("⚡ ¡AYUDA DE LU RECIBIDA!", "Tus cargas de Lu han sido restauradas.", 3.0);
+            this.speak("Lu charges restored!");
+          } else if (p.isCoinBundle) {
+            const amt = p.amount || 3;
+            this.coinsCollected += amt;
+            this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, 'gold', 10);
+            this.playCoinSound();
+            this.showTemporaryAlert(`+${amt} Monedas`, `Has recogido ${amt} monedas.`, 2.0);
+          } else if (p.isFlight) {
+            this.player.flyBoostTimer = (p.duration || 3.5);
+            this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffff', 10);
+            this.playCoinSound();
+            this.showTemporaryAlert("🕊️ Pluma de Vuelo", `Tiempo de vuelo +${(p.duration||3.5).toFixed(1)}s`, 2.5);
+          } else {
+            const healAmt = p.isBoot ? 35 : 25;
+            this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+            this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
+            this.playCoinSound();
+          }
           this.powerups.splice(i, 1);
-          // Consume one Lu charge when Lu drops emergency energy
-          if (this.luBoostCharges > 0) {
+          // Update HUD icons immediately after any potential lu change
+          this.updateHUD();
             this.luBoostCharges = Math.max(0, this.luBoostCharges - 1);
           }
           // Update HUD icons immediately
@@ -1798,10 +1959,33 @@ class LisarArcade2D {
         if (e.y > maxY) { e.y = maxY; e.vy *= -1; }
       }
 
+      // Movimiento coherente para cubos (tipo 0): oscilación vertical pequeña + desplazamiento
+      if (e.type === 0 && e.baseY !== undefined) {
+        const oscillation = Math.sin((performance.now() / 600) + (e.movePhase || 0)) * 18 * (0.6 + progress * 0.6);
+        // apply gentle vertical oscillation but keep them mostly on the ground
+        e.y = e.baseY + oscillation;
+        // Slight vx variation so cubes feel alive but not impossible
+        e.x += (Math.sin(performance.now() / 900 + (e.movePhase || 0)) * 6) * dt;
+      }
+
       if (e.type === 1) {
         if (e.baseY) {
           e.y = e.baseY + Math.sin(performance.now() / 400 + (e.sineOffset || 0)) * 30;
         }
+        // Shooting behavior already exists
+      } else if (e.type === 2) {
+        // Rolling / bouncing behaviour for ball enemies
+        e.bounceTimer = (e.bounceTimer || 0) + dt;
+        if (e.bounceTimer > 0.32) {
+          e.bounceTimer = 0;
+          e.vy = -120 - Math.random() * 80;
+        }
+        // Apply gravity-like pull
+        if (!e.vy) e.vy = 0;
+        e.vy += 420 * dt;
+        const groundY = e.baseY || (this.logicalHeight - e.height - 70);
+        e.y += e.vy * dt;
+        if (e.y > groundY) { e.y = groundY; e.vy = 0; }
       }
 
       if (e.type !== 0) {
