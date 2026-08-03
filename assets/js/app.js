@@ -111,7 +111,6 @@ function initLisarApp() {
       category: "Modelos 3D para juegos y VR",
       instagramUrl: "https://www.instagram.com/lisarstudiooficial/",
       glbFile: "assets/viewer3d/models/helmet3.glb",
-      customTexture: "assets/viewer3d/textures/robot_helmets.png",
       description: "Edición premium con detalles de lujo y pintura metálica especializada, ideal para asset de rareza Legendaria.",
       tools: ["Blender 3D", "Substance 3D"],
     },
@@ -335,28 +334,7 @@ function initLisarApp() {
           // Aplicar textura personalizada si existe
           if (item.customTexture && mv.model && mv.model.materials) {
             try {
-              let textureUrl = item.customTexture;
-              
-              // CORRECCIÓN ESPECÍFICA PARA CASCO TRIGGER
-              // La textura original requiere inversión vertical (flipY) para coincidir con las UV de WebGL
-              if (item.glbFile.includes('helmet3.glb')) {
-                const img = new Image();
-                img.src = item.customTexture;
-                await new Promise((resolve, reject) => {
-                  img.onload = resolve;
-                  img.onerror = reject;
-                });
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.translate(0, img.height);
-                ctx.scale(1, -1);
-                ctx.drawImage(img, 0, 0);
-                textureUrl = canvas.toDataURL('image/png');
-              }
-
-              const texture = await mv.createTexture(textureUrl);
+              const texture = await mv.createTexture(item.customTexture);
               
               // Asignar textura SOLO a los materiales que originalmente tenían un mapa UV o textura
               for (const material of mv.model.materials) {
