@@ -269,6 +269,16 @@ class LisarArcade2D {
     }, 50);
   }
 
+  resize() {
+    if (!this.container || !this.canvas) return;
+    const rect = this.container.getBoundingClientRect();
+    const w = rect.width || this.container.clientWidth || 800;
+    const h = rect.height || this.container.clientHeight || 450;
+    this.canvas.width = w;
+    this.canvas.height = h;
+    this.scale = Math.min(w / this.logicalWidth, h / this.logicalHeight);
+  }
+
   showInstructions() {
     if (this.instructionCardEl) this.instructionCardEl.remove();
 
@@ -2664,7 +2674,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const overlay = document.getElementById('arcade-overlay');
 
   if (btn && overlay) {
-    btn.addEventListener('click', () => {
+    const handleLaunch = (e) => {
+      if (e) { e.preventDefault(); e.stopPropagation(); }
       overlay.style.display = 'none';
 
       // Always create a fresh game instance
@@ -2675,7 +2686,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.arcadeGame) {
           window.arcadeGame.startGame();
         }
-      }, 200);
-    });
+      }, 150);
+    };
+
+    btn.addEventListener('click', handleLaunch);
+    btn.addEventListener('touchstart', handleLaunch, { passive: false });
   }
 });
