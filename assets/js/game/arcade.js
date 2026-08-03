@@ -1881,11 +1881,14 @@ class LisarArcade2D {
 
   draw() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.ctx.save();
-    this.ctx.scale(this.scale, this.scale);
-
     this.ctx.fillStyle = '#0a0a0c';
-    this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    this.ctx.save();
+    const offsetX = Math.max(0, (this.canvas.width - (this.logicalWidth * this.scale)) / 2);
+    const offsetY = Math.max(0, (this.canvas.height - (this.logicalHeight * this.scale)) / 2);
+    this.ctx.translate(offsetX, offsetY);
+    this.ctx.scale(this.scale, this.scale);
 
     this.ctx.fillStyle = '#ffffff';
     this.stars.forEach(s => {
