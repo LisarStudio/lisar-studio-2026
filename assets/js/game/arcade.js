@@ -276,7 +276,20 @@ class LisarArcade2D {
     const h = rect.height || this.container.clientHeight || 450;
     this.canvas.width = w;
     this.canvas.height = h;
-    this.scale = Math.min(w / this.logicalWidth, h / this.logicalHeight);
+    
+    this.scale = w / this.logicalWidth;
+
+    const dynamicHeight = h / this.scale;
+    this.stars = [];
+    for (let i = 0; i < 80; i++) {
+      this.stars.push({
+        x: Math.random() * this.logicalWidth,
+        y: Math.random() * dynamicHeight,
+        size: 0.5 + Math.random() * 1.5,
+        alpha: 0.2 + Math.random() * 0.6,
+        twinkle: Math.random() > 0.5
+      });
+    }
   }
 
   speak(text) {
@@ -954,7 +967,7 @@ class LisarArcade2D {
 
     this.player.hp             = this.player.maxHp;
     this.player.x              = -250; // Animación de entrada
-    this.player.y              = 200;
+    this.player.y              = 140;
     this.player.vy             = 0;
     this.player.angle          = 0;
     this.introActive           = true;
@@ -1098,7 +1111,7 @@ class LisarArcade2D {
 
     if (challengeIndex === 0) {
       // DESAFÍO TIPO MEGAMAN X4 - A: Plataforma de Cubo + Monedas sobre la superficie
-      const cubeY = this.logicalHeight - 200 - 70;
+      const cubeY = 180;
       this.enemies.push({
         type: 0,
         x: startX,
@@ -1120,11 +1133,10 @@ class LisarArcade2D {
       }
     } else if (challengeIndex === 1) {
       // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Altura Media
-      const floorY = this.logicalHeight - 70;
       this.spawnEnemy1(progress);
 
       for (let i = 0; i < 5; i++) {
-        const archY = floorY - 240 - Math.sin((i / 4) * Math.PI) * 40;
+        const archY = 240 - Math.sin((i / 4) * Math.PI) * 20;
         this.coins.push({
           x: startX + i * 48,
           y: archY,
@@ -1137,8 +1149,7 @@ class LisarArcade2D {
       // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Altura Media
       this.spawnEnemy2(progress);
 
-      const floorY = this.logicalHeight - 70;
-      const highY = floorY - 240;
+      const highY = 235;
       const diamondOffsets = [
         { dx: 0, dy: 0 }, { dx: 36, dy: -20 }, { dx: 36, dy: 20 }, { dx: 72, dy: 0 }
       ];
@@ -1153,11 +1164,10 @@ class LisarArcade2D {
       });
     } else if (challengeIndex === 3) {
       // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Altura Media
-      const floorY = this.logicalHeight - 70;
       if (this.player.hp < this.player.maxHp * 0.8) {
         this.powerups.push({
           x: startX + 40,
-          y: floorY - 240,
+          y: 235,
           width: 50, height: 50,
           vx: -(this.floorSpeed + 15),
           frameTimer: 0
@@ -1167,7 +1177,7 @@ class LisarArcade2D {
       for (let i = 0; i < 6; i++) {
         this.coins.push({
           x: startX + i * 50,
-          y: floorY - 240 + Math.sin(i * 0.9) * 30,
+          y: 235 + Math.sin(i * 0.9) * 20,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
@@ -1175,8 +1185,7 @@ class LisarArcade2D {
       }
     } else if (challengeIndex === 4) {
       // DESAFÍO TIPO MEGAMAN X4 - E: Plataforma de Cubo + Corredor de Monedas
-      const floorY = this.logicalHeight - 70;
-      const cubeY = floorY - 140;
+      const cubeY = 240;
       this.enemies.push({
         type: 0,
         x: startX,
@@ -1203,7 +1212,7 @@ class LisarArcade2D {
     this.enemies.push({
       type: 0,
       x: this.logicalWidth + 30 + offsetX,
-      y: this.logicalHeight - 200 - 40,
+      y: 180,
       width: 130, height: 200,
       vx: -this.floorSpeed,
       hp: 9999
@@ -1211,10 +1220,9 @@ class LisarArcade2D {
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    // Enemigos voladores únicamente en la franja segura del rectángulo verde relativa a la altura del suelo
-    const floorY = this.logicalHeight - 70;
-    const minY = floorY - 260;
-    const maxY = floorY - 180;
+    // Enemigos voladores únicamente en la franja segura del rectángulo verde (230px - 270px)
+    const minY = 230;
+    const maxY = 270;
     const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
       type: 1,
@@ -1235,7 +1243,7 @@ class LisarArcade2D {
     this.enemies.push({
       type: 2,
       x: this.logicalWidth + 30 + offsetX,
-      y: this.logicalHeight - 120 - 40,
+      y: 260,
       width: 120, height: 120,
       vx: -(this.floorSpeed + 120 + progress * 60),
       hp: 1, shootTimer: 0,
@@ -1645,8 +1653,7 @@ class LisarArcade2D {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
       this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
-      const floorY = this.logicalHeight - 70;
-      this.luBoostY = floorY - 230;  // Altura cómoda de vuelo medio relativa al suelo
+      this.luBoostY = 225;  // Altura cómoda de vuelo medio (Y = 225px)
       this.luBoostFrame = 0;
       this.luBoostTimer = 0;
       this.luBoostDropped = false;
@@ -1869,11 +1876,14 @@ class LisarArcade2D {
     this.ctx.fillStyle = '#0a0a0c';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.ctx.save();
     const offsetX = Math.max(0, (this.canvas.width - (this.logicalWidth * this.scale)) / 2);
     const offsetY = Math.max(0, (this.canvas.height - (this.logicalHeight * this.scale)) / 2);
+    this.ctx.save();
     this.ctx.translate(offsetX, offsetY);
     this.ctx.scale(this.scale, this.scale);
+
+    const minLogicalY = -offsetY / this.scale;
+    const maxLogicalY = this.logicalHeight + (offsetY / this.scale);
 
     this.ctx.fillStyle = '#ffffff';
     this.stars.forEach(s => {
@@ -2118,7 +2128,7 @@ class LisarArcade2D {
       if (isPsychedelic) {
         const flashHue = Math.floor((performance.now() / 250) % 3) === 0 ? 'rgba(255, 0, 255, 0.14)' : 'rgba(0, 255, 255, 0.14)';
         this.ctx.fillStyle = flashHue;
-        this.ctx.fillRect(0, 0, this.logicalWidth, this.logicalHeight);
+        this.ctx.fillRect(0, minLogicalY, this.logicalWidth, maxLogicalY - minLogicalY);
       }
 
       this.ctx.strokeStyle = Math.random() > 0.4 ? 'rgba(0, 255, 255, 0.90)' : 'rgba(255, 255, 255, 0.95)';
@@ -2127,9 +2137,9 @@ class LisarArcade2D {
       this.ctx.shadowColor = '#00ffff';
       this.ctx.beginPath();
       let lx = (Math.random() * 0.8 + 0.1) * this.logicalWidth;
-      let ly = 0;
+      let ly = minLogicalY;
       this.ctx.moveTo(lx, ly);
-      while (ly < this.logicalHeight - 70) {
+      while (ly < 380) {
         lx += (Math.random() - 0.5) * 120;
         ly += 30 + Math.random() * 45;
         this.ctx.lineTo(lx, ly);
@@ -2141,17 +2151,19 @@ class LisarArcade2D {
     this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.03)';
     this.ctx.lineWidth = 1;
     for (let i = 0; i < this.logicalWidth;  i += 40) {
-      this.ctx.beginPath(); this.ctx.moveTo(i, 0); this.ctx.lineTo(i, this.logicalHeight); this.ctx.stroke();
+      this.ctx.beginPath(); this.ctx.moveTo(i, minLogicalY); this.ctx.lineTo(i, maxLogicalY); this.ctx.stroke();
     }
-    for (let i = 0; i < this.logicalHeight; i += 40) {
+    for (let i = Math.floor(minLogicalY / 40) * 40; i < maxLogicalY; i += 40) {
       this.ctx.beginPath(); this.ctx.moveTo(0, i); this.ctx.lineTo(this.logicalWidth, i); this.ctx.stroke();
     }
 
-    // Suelo elevado a 70px con tiling prominente y línea neón en el borde superior
+    // Suelo elevado a 70px que se extiende hasta el borde inferior de la pantalla
+    const floorY = 380;
+    const floorHeight = Math.max(70, maxLogicalY - floorY);
     if (this.sprites.floor.loaded) {
       const tiles = Math.ceil(this.logicalWidth / 800) + 2;
       for (let i = 0; i < tiles; i++) {
-        this.ctx.drawImage(this.sprites.floor.img, this.floorOffset + i * 800, this.logicalHeight - 70, 800, 70);
+        this.ctx.drawImage(this.sprites.floor.img, this.floorOffset + i * 800, floorY, 800, floorHeight);
       }
       this.ctx.save();
       this.ctx.strokeStyle = '#ff9900';
@@ -2159,13 +2171,13 @@ class LisarArcade2D {
       this.ctx.shadowBlur = 10;
       this.ctx.shadowColor = '#ff9900';
       this.ctx.beginPath();
-      this.ctx.moveTo(0, this.logicalHeight - 70);
-      this.ctx.lineTo(this.logicalWidth, this.logicalHeight - 70);
+      this.ctx.moveTo(0, floorY);
+      this.ctx.lineTo(this.logicalWidth, floorY);
       this.ctx.stroke();
       this.ctx.restore();
     } else {
       this.ctx.fillStyle = '#ff9900';
-      this.ctx.fillRect(0, this.logicalHeight - 70, this.logicalWidth, 70);
+      this.ctx.fillRect(0, floorY, this.logicalWidth, floorHeight);
     }
 
     // Monedas
