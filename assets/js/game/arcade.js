@@ -1074,7 +1074,8 @@ class LisarArcade2D {
       letterSchedule.forEach(item => {
         if (this.gameTimer >= item.time && !this.spawnedLetters[item.letter]) {
           this.spawnedLetters[item.letter] = true;
-          const randomY = 210 + Math.random() * 70; // Franja segura del rectángulo verde (210px - 280px)
+          const floorY = this.logicalHeight - 70;
+          const randomY = floorY - 250 + Math.random() * 60;
           this.letterItems.push({
             letter: item.letter,
             x: this.logicalWidth + 80,
@@ -1118,11 +1119,12 @@ class LisarArcade2D {
         });
       }
     } else if (challengeIndex === 1) {
-      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Altura Media (Y = 220-240px)
+      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Altura Media
+      const floorY = this.logicalHeight - 70;
       this.spawnEnemy1(progress);
 
       for (let i = 0; i < 5; i++) {
-        const archY = 240 - Math.sin((i / 4) * Math.PI) * 20;
+        const archY = floorY - 240 - Math.sin((i / 4) * Math.PI) * 40;
         this.coins.push({
           x: startX + i * 48,
           y: archY,
@@ -1132,12 +1134,13 @@ class LisarArcade2D {
         });
       }
     } else if (challengeIndex === 2) {
-      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Altura Media (Y = 235px)
+      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Altura Media
       this.spawnEnemy2(progress);
 
-      const highY = 235;
+      const floorY = this.logicalHeight - 70;
+      const highY = floorY - 240;
       const diamondOffsets = [
-        { dx: 0, dy: 0 }, { dx: 36, dy: -14 }, { dx: 36, dy: 14 }, { dx: 72, dy: 0 }
+        { dx: 0, dy: 0 }, { dx: 36, dy: -20 }, { dx: 36, dy: 20 }, { dx: 72, dy: 0 }
       ];
       diamondOffsets.forEach(off => {
         this.coins.push({
@@ -1149,11 +1152,12 @@ class LisarArcade2D {
         });
       });
     } else if (challengeIndex === 3) {
-      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Altura Media (Y = 235px)
+      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Altura Media
+      const floorY = this.logicalHeight - 70;
       if (this.player.hp < this.player.maxHp * 0.8) {
         this.powerups.push({
           x: startX + 40,
-          y: 235,
+          y: floorY - 240,
           width: 50, height: 50,
           vx: -(this.floorSpeed + 15),
           frameTimer: 0
@@ -1163,19 +1167,21 @@ class LisarArcade2D {
       for (let i = 0; i < 6; i++) {
         this.coins.push({
           x: startX + i * 50,
-          y: 235 + Math.sin(i * 0.9) * 20,
+          y: floorY - 240 + Math.sin(i * 0.9) * 30,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
         });
       }
     } else if (challengeIndex === 4) {
-      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Medio de Monedas en Altura Media (Y = 245px)
+      // DESAFÍO TIPO MEGAMAN X4 - E: Plataforma de Cubo + Corredor de Monedas
+      const floorY = this.logicalHeight - 70;
+      const cubeY = floorY - 140;
       this.enemies.push({
         type: 0,
         x: startX,
-        y: 0,
-        width: 140, height: 180,
+        y: cubeY,
+        width: 140, height: 140,
         vx: -this.floorSpeed,
         hp: 9999
       });
@@ -1183,7 +1189,7 @@ class LisarArcade2D {
       for (let i = 0; i < 5; i++) {
         this.coins.push({
           x: startX + i * 46,
-          y: 245,
+          y: cubeY - 60,
           width: 60, height: 60,
           vx: -this.floorSpeed,
           frame: 0, frameTimer: 0
@@ -1205,9 +1211,10 @@ class LisarArcade2D {
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    // Enemigos voladores únicamente en la franja del rectángulo verde (230px - 270px)
-    const minY = 230;
-    const maxY = 270;
+    // Enemigos voladores únicamente en la franja segura del rectángulo verde relativa a la altura del suelo
+    const floorY = this.logicalHeight - 70;
+    const minY = floorY - 260;
+    const maxY = floorY - 180;
     const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
       type: 1,
@@ -1638,7 +1645,8 @@ class LisarArcade2D {
       this.luBoostActive = true;
       this.luBoostCooldown = 18;
       this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
-      this.luBoostY = 225;  // Altura cómoda de vuelo medio (Y = 225px)
+      const floorY = this.logicalHeight - 70;
+      this.luBoostY = floorY - 230;  // Altura cómoda de vuelo medio relativa al suelo
       this.luBoostFrame = 0;
       this.luBoostTimer = 0;
       this.luBoostDropped = false;
