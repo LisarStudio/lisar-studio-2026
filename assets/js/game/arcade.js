@@ -287,7 +287,7 @@ class LisarArcade2D {
       padding: '16px 20px',
       color: '#ffffff',
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: '50',
+      zIndex: '10',
       textAlign: 'center',
       pointerEvents: 'auto',
       transition: 'opacity 0.4s ease-out'
@@ -1067,6 +1067,11 @@ class LisarArcade2D {
             text: '🎮 REINTENTAR',
             primary: true,
             action: () => this.startGame()
+          },
+          {
+            text: '📲 COMPARTIR PUNTAJE',
+            primary: false,
+            action: () => this.shareScore()
           }
         ]
       );
@@ -1078,23 +1083,23 @@ class LisarArcade2D {
 
     // Generador de Letras Naranjas L-I-S-A-R (Inicia a los 20s, 1 sola vez por letra, alturas aleatorias)
     if (this.gameTimer >= 20.0) {
+      // Fixed schedule and positions so letters appear in predictable locations
       const letterSchedule = [
-        { time: 25.0, letter: 'L' },
-        { time: 55.0, letter: 'I' },
-        { time: 85.0, letter: 'S' },
-        { time: 115.0, letter: 'A' },
-        { time: 145.0, letter: 'R' }
+        { time: 25.0, letter: 'L', y: 240 },
+        { time: 55.0, letter: 'I', y: 210 },
+        { time: 85.0, letter: 'S', y: 260 },
+        { time: 115.0, letter: 'A', y: 230 },
+        { time: 145.0, letter: 'R', y: 200 }
       ];
 
       letterSchedule.forEach(item => {
         if (this.gameTimer >= item.time && !this.spawnedLetters[item.letter]) {
           this.spawnedLetters[item.letter] = true;
-          const playableTopY = 185 / this.scale;
-          const randomY = Math.max(playableTopY + 10, 210) + Math.random() * 70;
+          const spawnY = item.y / this.scale;
           this.letterItems.push({
             letter: item.letter,
             x: this.logicalWidth + 80,
-            y: randomY,
+            y: spawnY,
             width: 55, height: 55,
             vx: -this.floorSpeed
           });
@@ -1106,9 +1111,22 @@ class LisarArcade2D {
     if (this.spawnTimer < 2.4) return;
     this.spawnTimer = 0;
 
+    // Dynamic challenge selection: avoid strict repetition and bias difficulty over time
     this.stageStep = (this.stageStep || 0) + 1;
-    const challengeIndex = this.stageStep % 5;
     const progress = Math.min(1, this.gameTimer / 180);
+    // Build weighted choices depending on progress (early game easier, late game harder)
+    const weights = [1, 1 + progress * 0.6, 1 + progress * 0.8, 0.9 + progress * 0.9, 0.8 + progress * 1.2];
+    // pick index using weights but avoid repeating same index twice
+    let candidate = this._lastChallengeIndex || -1;
+    for (let attempts = 0; attempts < 6; attempts++) {
+      const totalW = weights.reduce((a,b)=>a+b,0);
+      let r = Math.random() * totalW;
+      let idx = 0;
+      for (let w of weights) { if (r < w) break; r -= w; idx++; }
+      if (idx !== this._lastChallengeIndex) { candidate = idx; break; }
+    }
+    const challengeIndex = candidate === -1 ? (this.stageStep % 5) : candidate;
+    this._lastChallengeIndex = challengeIndex;
     const startX = this.logicalWidth + 30;
 
     if (challengeIndex === 0) {
@@ -1751,6 +1769,12 @@ class LisarArcade2D {
           this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
           this.speak("Energy Restored!");
           this.powerups.splice(i, 1);
+          // Consume one Lu charge when Lu drops emergency energy
+          if (this.luBoostCharges > 0) {
+            this.luBoostCharges = Math.max(0, this.luBoostCharges - 1);
+          }
+          // Update HUD icons immediately
+          this.updateHUD();
           continue;
         }
       } else {
