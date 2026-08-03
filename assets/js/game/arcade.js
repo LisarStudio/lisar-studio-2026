@@ -2651,8 +2651,7 @@ class LisarArcade2D {
   }
 }
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
+function initLisarArcadeBootstrap() {
   window.initArcadeGame = function() {
     if (window.arcadeGame) window.arcadeGame.destroy();
     window.arcadeGame = new LisarArcade2D('arcade-game-container');
@@ -2680,4 +2679,10 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', handleLaunch);
     btn.addEventListener('touchstart', handleLaunch, { passive: false });
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLisarArcadeBootstrap);
+} else {
+  initLisarArcadeBootstrap();
+}
