@@ -4,7 +4,7 @@
  * filtros de portafolio y sticky header.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+function initLisarApp() {
   'use strict';
 
   // ============================================================
@@ -552,4 +552,11 @@ document.addEventListener('DOMContentLoaded', () => {
   sectionsToSpy.forEach(sec => {
       if(sec) persuasionObserver.observe(sec);
   });
-});
+}
+
+// Ensure the app initializes whether the script loads before or after DOMContentLoaded
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLisarApp);
+} else {
+  initLisarApp();
+}
