@@ -720,7 +720,7 @@ class LisarArcade2D {
       position: 'absolute', top: '185px', left: '0', right: '0', bottom: '0',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
       paddingTop: '10px', boxSizing: 'border-box',
-      background: 'rgba(5,6,15,0.85)', color: '#ffffff', zIndex: '12', pointerEvents: 'none'
+      background: 'rgba(5,6,15,0.65)', color: '#ffffff', zIndex: '10', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
 
@@ -839,18 +839,18 @@ class LisarArcade2D {
   showTemporaryAlert(title, subtitle, seconds) {
     const alertEl = document.createElement('div');
     Object.assign(alertEl.style, {
-      position: 'absolute', top: '185px', left: '50%',
+      position: 'absolute', top: '220px', left: '50%',
       transform: 'translateX(-50%)',
-      background: 'rgba(0,0,0,0.95)',
-      border: '2.5px solid #00f3ff',
-      boxShadow: '0 0 15px #00f3ff',
+      background: 'rgba(0,0,0,0.88)',
+      border: '2px solid rgba(0,243,255,0.12)',
+      boxShadow: '0 0 8px rgba(0,243,255,0.12)',
       color: '#fff',
       borderRadius: '8px',
-      padding: '12px 24px',
+      padding: '10px 20px',
       textAlign: 'center',
       fontFamily: "'Orbitron', sans-serif",
-      zIndex: '99',
-      transition: 'all 0.4s ease-out',
+      zIndex: '11',
+      transition: 'all 0.28s ease-out',
       pointerEvents: 'none'
     });
     alertEl.innerHTML = `
@@ -1079,11 +1079,13 @@ class LisarArcade2D {
     if (this._preloaderStarted) return; this._preloaderStarted = true;
     this.showPreloader();
     // Return the promise so callers can await completion
+    // Prefer background silent preload without forcing Play to wait: keep assetsReady flag but hide preloader quickly
     return this.preloadAssets((p) => {}).then(() => {
+      // smooth hide but keep short delay
       setTimeout(() => {
         this.hidePreloader();
         this.assetsReady = true;
-      }, 140);
+      }, 80);
     }).catch(() => {
       this.hidePreloader(); this.assetsReady = true;
     });
