@@ -216,7 +216,7 @@ class LisarArcade2D {
       isAttacking: false,
       attackTimer: 0,
       attackFrame: 0,
-      
+      facing: 'right',
       wasFlying: false,
       landTimer: 0,
       flyAscendIndex: 0
@@ -1209,6 +1209,11 @@ class LisarArcade2D {
     this.billboardTimer = 0;
     this.stageStep     = 0;
     this.gameTimer     = 0;
+    this.victoryCoin = null;
+    this.victoryTriggered = false;
+    this.player.facing = 'right';
+    this.isFlyToInfinity = false;
+    this.celebrationTimer = 0;
 
     this.audio.currentTime = 0;
     requestAnimationFrame(t => this.loop(t));
@@ -1796,8 +1801,8 @@ class LisarArcade2D {
       if (this.player.x > 80) this.player.x = 80;
     } else {
       const moveSpeed = 280;
-      if (this.input.left)  { this.player.x -= moveSpeed * rawDt; }
-      if (this.input.right) { this.player.x += moveSpeed * rawDt; }
+      if (this.input.left)  { this.player.x -= moveSpeed * rawDt; this.player.facing = 'left'; }
+      if (this.input.right) { this.player.x += moveSpeed * rawDt; this.player.facing = 'right'; }
       if (this.player.x < 20)  this.player.x = 20;
       if (this.player.x > 450) this.player.x = 450;
     }
@@ -1994,7 +1999,7 @@ class LisarArcade2D {
     this.ctx.drawImage(spriteInfo.img, col * fw, row * fh, fw, fh, x, y, w, h);
   }
 
-  draw() {
+  draw(dt) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.save();
     this.ctx.scale(this.scale, this.scale);
@@ -2592,6 +2597,9 @@ class LisarArcade2D {
         if (this.player.angle) {
           this.ctx.rotate(this.player.angle);
         }
+        if (this.player.facing === 'left') {
+          this.ctx.scale(-1, 1);
+        }
         this.ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
         this.ctx.filter = 'none';
         this.ctx.restore();
@@ -2770,7 +2778,7 @@ class LisarArcade2D {
     this._lastLoopTime = now;
 
     // Determine if this is an active game session
-    const activeState = this.state === 'playing' || this.state === 'paused' || this.state === 'celebration';
+    const activeState = ['playing', 'paused', 'celebration', 'victory', 'gameover'].includes(this.state);
 
     // If game session has ended, stop the loop and music
     if (!activeState) {
@@ -2796,7 +2804,7 @@ class LisarArcade2D {
     }
 
     try {
-      this.draw();
+      this.draw(dt);
     } catch(e) {
       console.error('[ArcadeCrash] draw() threw:', e);
     }
@@ -2807,7 +2815,8 @@ class LisarArcade2D {
     if (this._watchdogId) clearInterval(this._watchdogId);
     this._lastLoopTime = performance.now();
     this._watchdogId = setInterval(() => {
-      if (this.state !== 'playing' && this.state !== 'celebration') {
+      const activeState = ['playing', 'paused', 'celebration', 'victory', 'gameover'].includes(this.state);
+      if (!activeState) {
         clearInterval(this._watchdogId);
         return;
       }
