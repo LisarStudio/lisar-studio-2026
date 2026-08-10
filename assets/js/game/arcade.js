@@ -1161,10 +1161,9 @@ class LisarArcade2D {
     this.gameTimer   = 0;
 
     this.audio.currentTime = 0;
+    requestAnimationFrame(t => this.loop(t));
+    this.startWatchdog();
     this.audio.play().catch(() => {});
-
-    this.lastTime = performance.now();
-    this.loop(this.lastTime);
   }
 
   togglePause() {
@@ -1177,7 +1176,7 @@ class LisarArcade2D {
       this.audio.play();
       this.hideMessage();
       this.lastTime = performance.now();
-      this.loop(this.lastTime);
+      requestAnimationFrame(t => this.loop(t));
     }
   }
 
@@ -2141,7 +2140,6 @@ class LisarArcade2D {
   }
 
   draw() {
-    try {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.save();
     this.ctx.scale(this.scale, this.scale);
@@ -2910,31 +2908,59 @@ class LisarArcade2D {
     }
 
     this.ctx.restore();
-  } catch(err) {
-      console.error("Draw exception caught safely:", err);
-    }
   }
 
   loop(now) {
+    // Reset watchdog every frame so it knows the loop is alive
+    this._lastLoopTime = now;
+
     if (this.state !== 'playing' && this.state !== 'celebration') {
-      // State changed to victory/gameover - make sure music is always stopped
       if (this.audio && !this.audio.paused) this.audio.pause();
       return;
     }
+
     let dt = (now - this.lastTime) / 1000;
-    if (dt > 0.1) dt = 0.1;
+    if (dt <= 0 || dt > 0.1) dt = 0.033; // Cap AND floor dt to safe range
     this.lastTime = now;
 
-    this.update(dt);
-    try { this.draw(); } catch(e) { console.error('Draw error:', e); }
+    try {
+      this.update(dt);
+    } catch(e) {
+      console.error('[ArcadeCrash] update() threw:', e);
+    }
 
-    // Always re-queue next frame while in active states
+    try {
+      this.draw();
+    } catch(e) {
+      console.error('[ArcadeCrash] draw() threw:', e);
+    }
+
+    // ALWAYS re-queue next frame if still in an active state
+    // This runs even if update() or draw() threw an error
     if (this.state === 'playing' || this.state === 'celebration') {
       requestAnimationFrame(t => this.loop(t));
     } else {
-      // Stopped - cut music
       if (this.audio && !this.audio.paused) this.audio.pause();
     }
+  }
+
+  startWatchdog() {
+    // Clear any existing watchdog
+    if (this._watchdogId) clearInterval(this._watchdogId);
+    this._lastLoopTime = performance.now();
+    this._watchdogId = setInterval(() => {
+      if (this.state !== 'playing' && this.state !== 'celebration') {
+        clearInterval(this._watchdogId);
+        return;
+      }
+      const elapsed = performance.now() - (this._lastLoopTime || 0);
+      if (elapsed > 800) {
+        // Loop has been dead for 800ms - restart it
+        console.warn('[ArcadeWatchdog] Loop frozen for ' + Math.round(elapsed) + 'ms - restarting!');
+        this.lastTime = performance.now();
+        requestAnimationFrame(t => this.loop(t));
+      }
+    }, 500);
   }
 
   destroy() {
