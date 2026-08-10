@@ -298,6 +298,9 @@ class LisarArcade2D {
       <h3 style="margin:0 0 8px 0; color:#00f3ff; font-size:1.15rem; font-weight:900; text-shadow:0 0 10px #00f3ff; letter-spacing:1px;">
         🎮 LISAR JET RUSH — GUÍA DE VUELO
       </h3>
+      <div style="font-size:0.75rem; color:#ffd700; margin-bottom:10px; font-weight:900; text-shadow:0 0 6px rgba(255, 215, 0, 0.4); letter-spacing:0.5px;">
+        VERSIÓN 3.2 - ALTURA MEDIA AJUSTADA (HUD SAFE)
+      </div>
       <div style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(0,243,255,0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; text-align:left;">
         <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#ffd700;">🚀 VUELO / JETPACK:</span> <b style="color:#ffffff;">Espacio</b> / <b style="color:#ffffff;">Flecha Arriba</b> / <b style="color:#ffffff;">Touch</b></p>
         <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#ff00ff;">⚔️ ATAQUE CON BÁCULO:</span> Tecla <b style="color:#ffffff;">X</b> / <b style="color:#ffffff;">J</b> / <b style="color:#ffffff;">Z</b> / <b style="color:#ffffff;">Botón</b></p>
