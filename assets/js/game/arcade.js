@@ -1512,10 +1512,11 @@ class LisarArcade2D {
         this.coins.push({ x: startX + i * 50, y: startY + Math.sin(i * 0.9) * 20, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 4) {
-      // 4. PLATAFORMA TECHO LARGA: Bloque horizontal de techo ancho (width: 320) + monedas corriendo por debajo
-      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 320, height: 180, vx: -this.floorSpeed, hp: 9999 });
+      // 4. PLATAFORMA FLOTANTE LARGA EN EL CENTRO: Bloque horizontal de centro ancho (width: 320) + monedas arriba
+      const randomY = 210 + Math.random() * 25; // Y entre 210 y 235 (centro exacto)
+      this.enemies.push({ type: 0, x: startX, y: randomY, width: 320, height: 35, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 48, y: Math.max(playableTopY + 10, 245), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 48, y: randomY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 5) {
       // 5. DOBLE AMENAZA: Un enemigo volador alto, uno rodante bajo, y monedas en zigzag intermedio
@@ -1543,11 +1544,12 @@ class LisarArcade2D {
         this.coins.push({ x: startX + i * 40, y: centerY - Math.sin(i * 0.8) * 32, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 8) {
-      // 8. TÚNEL CORREDOR ANCHO: Techo y suelo bloqueados a la vez (width: 240), monedas por el centro
-      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 240, height: 110, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX, y: this.logicalHeight - 120 - 70, width: 240, height: 120, vx: -this.floorSpeed, hp: 9999 });
-      for (let i = 0; i < 5; i++) {
-        this.coins.push({ x: startX + 10 + i * 45, y: Math.max(playableTopY + 10, 240), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      // 8. PASOS ESCALONADOS: Dos plataformas flotantes a diferente altura media, monedas sobre ellas
+      this.enemies.push({ type: 0, x: startX, y: 240, width: 150, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 190, y: 205, width: 150, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      for (let i = 0; i < 3; i++) {
+        this.coins.push({ x: startX + 15 + i * 45, y: 240 - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 205 + i * 45, y: 205 - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 9) {
       // 9. PLATAFORMA FLOTANTE INTERMEDIA: Plataforma flotante en medio (width: 260, height: 50) + monedas arriba + enemigo rodante abajo!
