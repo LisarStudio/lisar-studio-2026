@@ -253,6 +253,7 @@ class LisarArcade2D {
     this.lastDiscountThreshold = 0;
     this.spawnTimer     = 0;
     this.isFlying       = false;
+    this.loopRunning    = false;
 
     this.input = { up: false };
 
@@ -1215,8 +1216,15 @@ class LisarArcade2D {
     this.isFlyToInfinity = false;
     this.celebrationTimer = 0;
 
+    this.lastChallengeIndex = -1;
     this.audio.currentTime = 0;
-    requestAnimationFrame(t => this.loop(t));
+    
+    // Fix duplicate loop speed multiplication on retry
+    if (!this.loopRunning) {
+      this.loopRunning = true;
+      this.lastTime = performance.now();
+      requestAnimationFrame(t => this.loop(t));
+    }
     this.startWatchdog();
     this.audio.play().catch(() => {});
   }
@@ -1403,113 +1411,100 @@ class LisarArcade2D {
       });
     }
 
-    // Spacing interval: 2.4s between challenge waves ensures zero screen clutter!
-    if (this.spawnTimer < 2.4) return;
+    // Spacing interval: 2.5s between challenge waves ensures zero screen clutter!
+    if (this.spawnTimer < 2.5) return;
     this.spawnTimer = 0;
 
-    this.stageStep = (this.stageStep || 0) + 1;
-    const challengeIndex = this.stageStep % 5;
+    // Select a random challenge index that is not the same as the last one
+    let challengeIndex;
+    do {
+      challengeIndex = Math.floor(Math.random() * 10);
+    } while (challengeIndex === this.lastChallengeIndex);
+    this.lastChallengeIndex = challengeIndex;
+
     const progress = Math.min(1, this.gameTimer / 180);
     const startX = this.logicalWidth + 30;
+    const playableTopY = 185 / this.scale;
 
     if (challengeIndex === 0) {
-      // DESAFÍO TIPO MEGAMAN X4 - A: Plataforma de Cubo + Monedas sobre la superficie
+      // 0. PLATAFORMA SUELO: Cubo en el suelo + 4 monedas arriba
       const cubeY = this.logicalHeight - 200 - 70;
-      this.enemies.push({
-        type: 0,
-        x: startX,
-        y: cubeY,
-        width: 140, height: 200,
-        vx: -this.floorSpeed,
-        hp: 9999
-      });
-
-      // 4 Monedas descansando sobre el cubo (recompensa por pisar el bloque)
+      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 140, height: 200, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 4; i++) {
-        this.coins.push({
-          x: startX + 15 + i * 30,
-          y: cubeY - 60,
-          width: 60, height: 60,
-          vx: -this.floorSpeed,
-          frame: 0, frameTimer: 0
-        });
+        this.coins.push({ x: startX + 15 + i * 30, y: cubeY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 1) {
-      // DESAFÍO TIPO MEGAMAN X4 - B: Enemigo Volador + Arco Parabólico en Altura Media (Y = 220-240px)
+      // 1. HAZARD VOLADOR: Enemigo volador + arco parabólico de monedas
       this.spawnEnemy1(progress);
-
-      const playableTopY = 185 / this.scale;
       for (let i = 0; i < 5; i++) {
         const archY = Math.max(playableTopY + 10, 240) - Math.sin((i / 4) * Math.PI) * 20;
-        this.coins.push({
-          x: startX + i * 48,
-          y: archY,
-          width: 60, height: 60,
-          vx: -this.floorSpeed,
-          frame: 0, frameTimer: 0
-        });
+        this.coins.push({ x: startX + i * 48, y: archY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 2) {
-      // DESAFÍO TIPO MEGAMAN X4 - C: Enemigo Rodante + Rombo de Monedas en Altura Media (Y = 235px)
+      // 2. ENEMIGO RODANTE: Bola eléctrica rodante + rombo de monedas
       this.spawnEnemy2(progress);
-
-      const playableTopY = 185 / this.scale;
       const highY = Math.max(playableTopY + 10, 235);
-      const diamondOffsets = [
-        { dx: 0, dy: 0 }, { dx: 36, dy: -14 }, { dx: 36, dy: 14 }, { dx: 72, dy: 0 }
-      ];
+      const diamondOffsets = [{ dx: 0, dy: 0 }, { dx: 36, dy: -14 }, { dx: 36, dy: 14 }, { dx: 72, dy: 0 }];
       diamondOffsets.forEach(off => {
-        this.coins.push({
-          x: startX + 60 + off.dx,
-          y: highY + off.dy,
-          width: 60, height: 60,
-          vx: -this.floorSpeed,
-          frame: 0, frameTimer: 0
-        });
+        this.coins.push({ x: startX + 60 + off.dx, y: highY + off.dy, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       });
     } else if (challengeIndex === 3) {
-      // DESAFÍO TIPO MEGAMAN X4 - D: Pista Panorámica Libre + Powerup + Onda en Altura Media (Y = 235px)
-      const playableTopY = 185 / this.scale;
+      // 3. REABASTECIMIENTO: Magnetic Boot (si está herido) o carga de Lu + onda de monedas
       const startY = Math.max(playableTopY + 10, 235);
       if (this.player.hp < this.player.maxHp * 0.8) {
-        this.powerups.push({
-          x: startX + 40,
-          y: startY,
-          width: 50, height: 50,
-          vx: -(this.floorSpeed + 15),
-          frameTimer: 0
-        });
+        this.powerups.push({ x: startX + 40, y: startY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isBoot: true, frameTimer: 0 });
+      } else if (this.luBoostCharges < 3 && Math.random() > 0.5) {
+        this.powerups.push({ x: startX + 40, y: startY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isLuHelp: true, frameTimer: 0 });
       }
-
       for (let i = 0; i < 6; i++) {
-        this.coins.push({
-          x: startX + i * 50,
-          y: startY + Math.sin(i * 0.9) * 20,
-          width: 60, height: 60,
-          vx: -this.floorSpeed,
-          frame: 0, frameTimer: 0
-        });
+        this.coins.push({ x: startX + i * 50, y: startY + Math.sin(i * 0.9) * 20, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 4) {
-      // DESAFÍO TIPO MEGAMAN X4 - E: Bloque Techo + Corredor Medio de Monedas en Altura Media (Y = 245px)
-      const playableTopY = 185 / this.scale;
-      this.enemies.push({
-        type: 0,
-        x: startX,
-        y: playableTopY + 10,
-        width: 140, height: 180,
-        vx: -this.floorSpeed,
-        hp: 9999
-      });
-
+      // 4. PLATAFORMA TECHO: Bloque de techo + monedas corriendo por el medio
+      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 140, height: 180, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 5; i++) {
-        this.coins.push({
-          x: startX + i * 46,
-          y: Math.max(playableTopY + 10, 245),
-          width: 60, height: 60,
-          vx: -this.floorSpeed,
-          frame: 0, frameTimer: 0
-        });
+        this.coins.push({ x: startX + i * 46, y: Math.max(playableTopY + 10, 245), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      }
+    } else if (challengeIndex === 5) {
+      // 5. DOBLE AMENAZA: Un enemigo volador alto, uno rodante bajo, y monedas en zigzag intermedio
+      this.spawnEnemy1(progress);
+      this.spawnEnemy2(progress, 80); // Ligeramente desfasado
+      const highY = Math.max(playableTopY + 10, 230);
+      for (let i = 0; i < 6; i++) {
+        const offset = i % 2 === 0 ? -18 : 18;
+        this.coins.push({ x: startX + i * 42, y: highY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      }
+    } else if (challengeIndex === 6) {
+      // 6. PARKOUR DE CUBOS: Dos cubos seguidos en el suelo con monedas flotando arriba
+      const cubeY = this.logicalHeight - 200 - 70;
+      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 100, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 180, y: cubeY, width: 100, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      for (let i = 0; i < 6; i++) {
+        this.coins.push({ x: startX + i * 46, y: cubeY - 80, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      }
+    } else if (challengeIndex === 7) {
+      // 7. COIN RUSH: Sin enemigos, gran oleada de monedas en doble hélice + rayito de salud
+      const centerY = Math.max(playableTopY + 10, 230);
+      this.powerups.push({ x: startX + 120, y: centerY, width: 50, height: 50, vx: -this.floorSpeed, isBoot: Math.random() > 0.5, frameTimer: 0 });
+      for (let i = 0; i < 8; i++) {
+        this.coins.push({ x: startX + i * 40, y: centerY + Math.sin(i * 0.8) * 32, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 40, y: centerY - Math.sin(i * 0.8) * 32, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      }
+    } else if (challengeIndex === 8) {
+      // 8. TÚNEL CORREDOR: Techo y suelo bloqueados a la vez, monedas por el centro
+      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 120, height: 110, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX, y: this.logicalHeight - 120 - 70, width: 120, height: 120, vx: -this.floorSpeed, hp: 9999 });
+      for (let i = 0; i < 4; i++) {
+        this.coins.push({ x: startX + 10 + i * 36, y: Math.max(playableTopY + 10, 240), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      }
+    } else if (challengeIndex === 9) {
+      // 9. ATAQUE CONCENTRADO: Un volador que dispara rápido + anillo de monedas protectoras
+      this.spawnEnemy1(progress);
+      const centerY = Math.max(playableTopY + 10, 230);
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+        const cx = startX + 110 + Math.cos(angle) * 45;
+        const cy = centerY + Math.sin(angle) * 45;
+        this.coins.push({ x: cx, y: cy, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     }
   }
@@ -2783,6 +2778,7 @@ class LisarArcade2D {
     // If game session has ended, stop the loop and music
     if (!activeState) {
       if (this.audio && !this.audio.paused) this.audio.pause();
+      this.loopRunning = false; // Mark loop as stopped
       return; // Do NOT re-queue rAF — loop is truly done
     }
 
