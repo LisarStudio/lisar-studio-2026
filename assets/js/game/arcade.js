@@ -1694,8 +1694,9 @@ class LisarArcade2D {
     
     // Aumento progresivo de velocidad a lo largo de los 3 minutos
     const progress = Math.min(1, this.gameTimer / 180);
-    const speedBoost = 1.0 + progress * 0.90; // Hasta 90% más rápido al final
-    dt *= 1.30 * speedBoost; // 30% base extra siempre
+    const speedBoost = 1.0 + progress * 0.90;
+    const rawDt = dt; // Keep raw dt for celebration timer (NOT affected by speedBoost)
+    dt *= 1.30 * speedBoost; // Game objects move faster
 
     // Físicas del jugador
     if (this.player.x < 80) {
@@ -2085,9 +2086,10 @@ class LisarArcade2D {
     }
 
     if (this.state === 'celebration') {
-      this.celebrationTimer -= dt;
+      // CRITICAL: use rawDt (not speed-boosted dt) so celebration lasts the full real-time 8 seconds
+      this.celebrationTimer -= rawDt;
 
-      // Fuegos artificiales neón de celebración estallando en el cielo
+      // Fuegos artificiales neón
       if (Math.random() > 0.20) {
         const fireworkColor = ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa', '#ff2266'][Math.floor(Math.random() * 5)];
         const fx = Math.random() * this.logicalWidth;
@@ -2105,13 +2107,10 @@ class LisarArcade2D {
         }
       }
 
-      // Animación Vuelo al Infinito (Ascenso directo al espacio)
+      // Vuelo al Infinito - use rawDt for player movement too during celebration
       if (this.celebrationTimer <= 5.5) {
         this.isFlyToInfinity = true;
-        this.player.vy = -680;
-        this.player.y += this.player.vy * dt;
-
-        // Estela de propulsor neón del personaje volando al infinito
+        this.player.y -= 280 * rawDt; // Smooth ascent using real time
         for (let i = 0; i < 3; i++) {
           this.particles.push({
             x: this.player.x + this.player.width / 2 + (Math.random() - 0.5) * 20,
@@ -2126,7 +2125,7 @@ class LisarArcade2D {
         }
       }
 
-      if (this.celebrationTimer <= 0 || (this.isFlyToInfinity && this.player.y < -250)) {
+      if (this.celebrationTimer <= 0 || (this.isFlyToInfinity && this.player.y < -300)) {
         this.endGame(true);
       }
     }
@@ -2917,20 +2916,24 @@ class LisarArcade2D {
   }
 
   loop(now) {
-    if (this.state !== 'playing' && this.state !== 'celebration') return;
+    if (this.state !== 'playing' && this.state !== 'celebration') {
+      // State changed to victory/gameover - make sure music is always stopped
+      if (this.audio && !this.audio.paused) this.audio.pause();
+      return;
+    }
     let dt = (now - this.lastTime) / 1000;
     if (dt > 0.1) dt = 0.1;
     this.lastTime = now;
 
-    try {
-      this.update(dt);
-      this.draw();
-    } catch(e) {
-      console.error('Arcade loop error:', e);
-    }
+    this.update(dt);
+    try { this.draw(); } catch(e) { console.error('Draw error:', e); }
 
+    // Always re-queue next frame while in active states
     if (this.state === 'playing' || this.state === 'celebration') {
       requestAnimationFrame(t => this.loop(t));
+    } else {
+      // Stopped - cut music
+      if (this.audio && !this.audio.paused) this.audio.pause();
     }
   }
 
