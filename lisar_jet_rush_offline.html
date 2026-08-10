@@ -1906,6 +1906,16 @@
               });
             }
           }
+          if (Math.random() > 0.4) {
+            this.powerups.push({
+              x: startX + randomW / 2 - 22,
+              y: platY - 50,
+              width: 44, height: 44,
+              vx: -this.floorSpeed,
+              isFlight: true,
+              frameTimer: 0
+            });
+          }
         }
       }
     }
@@ -1967,6 +1977,7 @@
       for (let i = 0; i < 6; i++) {
         this.coins.push({ x: startX + 20 + i * 46, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
+      this.powerups.push({ x: startX + 130, y: platY - 50, width: 44, height: 44, vx: -this.floorSpeed, isFlight: true, frameTimer: 0 });
     } else if (challengeIndex === 5) {
       // 5. DOBLE AMENAZA: Jefe volador + rodante en suelo + monedas a la altura del bloque verde
       this.spawnEnemy1(progress);
@@ -1999,6 +2010,7 @@
         this.coins.push({ x: startX + 15 + i * 42, y: plat1Y - 65, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
         this.coins.push({ x: startX + 195 + i * 42, y: plat2Y - 65, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
+      this.powerups.push({ x: startX + 230, y: plat2Y - 50, width: 44, height: 44, vx: -this.floorSpeed, isFlight: true, frameTimer: 0 });
     } else if (challengeIndex === 9) {
       // 9. PLATAFORMA FLOTANTE LARGA + monedas encima + rodante en suelo
       this.pushEnemySafely({ type: 0, x: startX, y: platY, width: 240, height: platH, vx: -this.floorSpeed, hp: 9999 });
@@ -2006,6 +2018,7 @@
       for (let i = 0; i < 5; i++) {
         this.coins.push({ x: startX + 20 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
+      this.powerups.push({ x: startX + 100, y: platY - 50, width: 44, height: 44, vx: -this.floorSpeed, isFlight: true, frameTimer: 0 });
     }
   }
 
