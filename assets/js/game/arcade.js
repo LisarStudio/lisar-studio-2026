@@ -2142,6 +2142,7 @@ class LisarArcade2D {
   }
 
   draw() {
+    try {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.ctx.save();
     this.ctx.scale(this.scale, this.scale);
@@ -2209,23 +2210,23 @@ class LisarArcade2D {
 
         const charH = 145; // Personajes grandes y prominentes (10% menor al héroe principal)
 
-        if (h.charType === 0 && luImg && luImg.loaded) {
+        if (h.charType === 0 && luImg && luImg.loaded && luImg.height > 0) {
           // Solo Lu bailando/animándose en la cumbre
-          const luW = luImg.width * (charH / luImg.height);
-          this.ctx.drawImage(luImg, peakX - luW / 2, peakY - charH + 12, luW, charH);
-        } else if (h.charType === 1 && peterImg && peterImg.loaded) {
+          const luW = luImg.width * (charH / (luImg.height || 1));
+          if (isFinite(luW) && luW > 0) this.ctx.drawImage(luImg, peakX - luW / 2, peakY - charH + 12, luW, charH);
+        } else if (h.charType === 1 && peterImg && peterImg.loaded && peterImg.height > 0) {
           // Solo Peter bailando/animándose en la cumbre
-          const peterW = peterImg.width * (charH / peterImg.height);
-          this.ctx.drawImage(peterImg, peakX - peterW / 2, peakY - charH + 12, peterW, charH);
+          const peterW = peterImg.width * (charH / (peterImg.height || 1));
+          if (isFinite(peterW) && peterW > 0) this.ctx.drawImage(peterImg, peakX - peterW / 2, peakY - charH + 12, peterW, charH);
         } else if (h.charType === 2) {
           // Lu y Peter Juntos en la cumbre
-          if (luImg && luImg.loaded) {
-            const luW = luImg.width * (charH / luImg.height);
-            this.ctx.drawImage(luImg, peakX - luW - 5, peakY - charH + 12, luW, charH);
+          if (luImg && luImg.loaded && luImg.height > 0) {
+            const luW = luImg.width * (charH / (luImg.height || 1));
+            if (isFinite(luW) && luW > 0) this.ctx.drawImage(luImg, peakX - luW - 5, peakY - charH + 12, luW, charH);
           }
-          if (peterImg && peterImg.loaded) {
-            const peterW = peterImg.width * (charH / peterImg.height);
-            this.ctx.drawImage(peterImg, peakX + 5, peakY - charH + 12, peterW, charH);
+          if (peterImg && peterImg.loaded && peterImg.height > 0) {
+            const peterW = peterImg.width * (charH / (peterImg.height || 1));
+            if (isFinite(peterW) && peterW > 0) this.ctx.drawImage(peterImg, peakX + 5, peakY - charH + 12, peterW, charH);
           }
         }
 
@@ -2653,22 +2654,26 @@ class LisarArcade2D {
       const peterImg = this.peterFrames[animIdx];
       const charH = 145;
 
-      if (luImg && luImg.loaded) {
-        const luW = luImg.width * (charH / luImg.height);
-        this.ctx.save();
-        this.ctx.shadowBlur = 16;
-        this.ctx.shadowColor = '#00ffaa';
-        this.ctx.drawImage(luImg, archX + 25 - luW / 2, floorY - charH + 10, luW, charH);
-        this.ctx.restore();
+      if (luImg && luImg.loaded && luImg.height > 0) {
+        const luW = luImg.width * (charH / (luImg.height || 1));
+        if (isFinite(luW) && luW > 0) {
+          this.ctx.save();
+          this.ctx.shadowBlur = 16;
+          this.ctx.shadowColor = '#00ffaa';
+          this.ctx.drawImage(luImg, archX + 25 - luW / 2, floorY - charH + 10, luW, charH);
+          this.ctx.restore();
+        }
       }
 
-      if (peterImg && peterImg.loaded) {
-        const peterW = peterImg.width * (charH / peterImg.height);
-        this.ctx.save();
-        this.ctx.shadowBlur = 16;
-        this.ctx.shadowColor = '#ff8800';
-        this.ctx.drawImage(peterImg, archX + 175 - peterW / 2, floorY - charH + 10, peterW, charH);
-        this.ctx.restore();
+      if (peterImg && peterImg.loaded && peterImg.height > 0) {
+        const peterW = peterImg.width * (charH / (peterImg.height || 1));
+        if (isFinite(peterW) && peterW > 0) {
+          this.ctx.save();
+          this.ctx.shadowBlur = 16;
+          this.ctx.shadowColor = '#ff8800';
+          this.ctx.drawImage(peterImg, archX + 175 - peterW / 2, floorY - charH + 10, peterW, charH);
+          this.ctx.restore();
+        }
       }
 
       // Globo de diálogo de Lu y Peter en la Meta
@@ -2906,9 +2911,12 @@ class LisarArcade2D {
     }
 
     this.ctx.restore();
+  } catch(err) {
+      console.error("Draw exception caught safely:", err);
+    }
   }
 
-    loop(now) {
+  loop(now) {
     if (this.state !== 'playing' && this.state !== 'celebration') return;
     let dt = (now - this.lastTime) / 1000;
     if (dt > 0.1) dt = 0.1;
