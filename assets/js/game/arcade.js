@@ -1215,6 +1215,7 @@ class LisarArcade2D {
     this.player.facing = 'right';
     this.isFlyToInfinity = false;
     this.celebrationTimer = 0;
+    this.randomBlockTimer = 0;
 
     this.lastChallengeIndex = -1;
     this.audio.currentTime = 0;
@@ -1298,21 +1299,25 @@ class LisarArcade2D {
         `</div>`,
         [
           {
-            text: '🤖 RECLAMAR DESCUENTO CON NUESTRO ASISTENTE IA 🚀',
+            text: '🤖 RECLAMAR DESCUENTO Y SALIR 🚀',
             primary: true,
             action: () => {
               this.hideMessage();
               if (window.triggerPromoChatbot) {
                 window.triggerPromoChatbot(totalDiscount);
-              } else {
-                alert(`¡Felicidades! Ganaste un ${totalDiscount}% de descuento.`);
               }
+              this.exitGame();
             }
           },
           {
             text: '🎮 JUGAR DE NUEVO',
             primary: false,
             action: () => this.startGame()
+          },
+          {
+            text: '🚪 VOLVER A PORTADA',
+            primary: false,
+            action: () => this.exitGame()
           }
         ]
       );
@@ -1324,6 +1329,7 @@ class LisarArcade2D {
           if (window.triggerPromoChatbot) {
             window.triggerPromoChatbot(totalDiscount);
           }
+          this.exitGame(); // Subtle exit when claiming discount
         }
       }, 6000);
 
@@ -1376,6 +1382,11 @@ class LisarArcade2D {
             text: '🎮 REINTENTAR',
             primary: true,
             action: () => this.startGame()
+          },
+          {
+            text: '🚪 VOLVER A PORTADA',
+            primary: false,
+            action: () => this.exitGame()
           }
         ]
       );
@@ -1409,6 +1420,47 @@ class LisarArcade2D {
           });
         }
       });
+    }
+
+    // Generador de bloques horizontales flotantes en la altura media (para rellenar vacíos)
+    this.randomBlockTimer = (this.randomBlockTimer || 0) + dt;
+    if (this.randomBlockTimer >= 1.4 && this.gameTimer < 165) {
+      this.randomBlockTimer = 0;
+      if (Math.random() < 0.38) {
+        const startX = this.logicalWidth + 30;
+        const noObstaclesNear = this.enemies.every(e => e.x < startX - 160);
+        const noPowerupsNear = this.powerups.every(p => p.x < startX - 120);
+        
+        if (noObstaclesNear && noPowerupsNear) {
+          // Rango de altura media ideal
+          const randomY = 135 + Math.random() * 75; // Y entre 135 y 210
+          const randomW = 100 + Math.random() * 150; // Ancho entre 100 y 250
+          
+          this.enemies.push({
+            type: 0,
+            x: startX,
+            y: randomY,
+            width: randomW,
+            height: 35, // Plataforma horizontal delgada
+            vx: -this.floorSpeed,
+            hp: 9999
+          });
+          
+          // Recompensa de monedas
+          if (Math.random() > 0.4) {
+            const coinCount = Math.floor(randomW / 50);
+            for (let i = 0; i < coinCount; i++) {
+              this.coins.push({
+                x: startX + 15 + i * 45,
+                y: randomY - 55,
+                width: 60, height: 60,
+                vx: -this.floorSpeed,
+                frame: 0, frameTimer: 0
+              });
+            }
+          }
+        }
+      }
     }
 
     // Spacing interval: 1.8s between challenge waves makes the level dense and dynamic!
@@ -1741,9 +1793,28 @@ class LisarArcade2D {
 
       if (this.celebrationTimer <= 5.5) {
         this.isFlyToInfinity = true;
-        this.player.y -= 280 * dt;
+        
+        // Dynamic flying rocket takeoff
+        const elapsedFly = 5.5 - this.celebrationTimer;
+        const flySpeed = 160 + elapsedFly * 360; // Accelerates upwards like a real rocket!
+        this.player.y -= flySpeed * dt;
+        
+        // Swaying jetpack control wave
+        this.player.x = 80 + Math.sin(elapsedFly * 5) * 45;
+        this.player.angle = Math.cos(elapsedFly * 5) * 0.16; // Sprite tilts dynamically
+        
+        // Rocket exhaust fire and plasma particles
         for (let i = 0; i < 3; i++) {
-          this.particles.push({ x: this.player.x + this.player.width/2 + (Math.random()-0.5)*20, y: this.player.y + this.player.height, vx: (Math.random()-0.5)*80, vy: 300+Math.random()*200, life: 0.5, maxLife: 0.5, color: ['#00ffff','#ffd700','#ff00ff','#ffffff'][Math.floor(Math.random()*4)], size: 4+Math.random()*6 });
+          this.particles.push({
+            x: this.player.x + 120 + (Math.random() - 0.5) * 20,
+            y: this.player.y + 170, // Emits below feet
+            vx: (Math.random() - 0.5) * 90,
+            vy: 360 + Math.random() * 240, // Jet blast downwards
+            life: 0.6,
+            maxLife: 0.6,
+            color: ['#ff3300', '#ffaa00', '#ffff00', '#00ffff'][Math.floor(Math.random() * 4)],
+            size: 4 + Math.random() * 8
+          });
         }
       }
 
@@ -2473,8 +2544,14 @@ class LisarArcade2D {
     // ================================================================
     // META LISAR STUDIO & PERSONAJES LU Y PETER BAILANDO EN LA LLEGADA
     // ================================================================
-    if (this.gameTimer >= 165) {
-      const archX = Math.max(this.logicalWidth * 0.50, this.logicalWidth + 100 - (this.gameTimer - 165) * 110);
+    const showMeta = this.state === 'celebration' || this.state === 'victory';
+    if (showMeta) {
+      // Calculate archX based on celebration progression
+      let archX = this.logicalWidth * 0.50;
+      if (this.state === 'celebration') {
+        const elapsed = Math.max(0, 8.0 - this.celebrationTimer);
+        archX = Math.max(this.logicalWidth * 0.50, this.logicalWidth + 100 - elapsed * 240);
+      }
       const floorY = this.logicalHeight - 70;
 
       this.ctx.save();
@@ -2806,6 +2883,40 @@ class LisarArcade2D {
   }
 
 
+
+  exitGame() {
+    this.container.style.transition = 'opacity 0.45s ease';
+    this.container.style.opacity = '0';
+    setTimeout(() => {
+      this.destroy();
+      // Recreate the original arcade-overlay cover inside container
+      this.container.innerHTML = `
+        <div id="arcade-overlay" style="position: absolute; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+          <button id="start-arcade-btn" class="game-cover-btn" aria-label="Jugar Lisar Jet Rush">
+            <img src="assets/img/portada_juego2.png" alt="Portada de Lisar Jet Rush" style="width: 100%; height: 100%; object-fit: contain; object-position: center; display: block;" loading="lazy">
+          </button>
+        </div>
+      `;
+      // Re-bind the click and touch handlers to the start button
+      const btn = document.getElementById('start-arcade-btn');
+      const overlay = document.getElementById('arcade-overlay');
+      if (btn && overlay) {
+        const handleStart = (e) => {
+          if (e) { e.preventDefault(); e.stopPropagation(); }
+          overlay.style.display = 'none';
+          window.initArcadeGame();
+          setTimeout(() => {
+            if (window.arcadeGame) {
+              window.arcadeGame.startGame();
+            }
+          }, 200);
+        };
+        btn.addEventListener('click', handleStart);
+        btn.addEventListener('touchstart', handleStart, { passive: false });
+      }
+      this.container.style.opacity = '1';
+    }, 450);
+  }
 
   destroy() {
     this.state = 'destroyed';
