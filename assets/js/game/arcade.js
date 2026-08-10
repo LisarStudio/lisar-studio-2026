@@ -1641,19 +1641,19 @@ class LisarArcade2D {
 
       if (e.type === 0) {
         // CUBE PLATFORMING PHYSICS:
-        const prevBottom = (this.player.prevY !== undefined ? this.player.prevY : this.player.y) + this.player.height;
+        const prevBottom = (this.player.prevY !== undefined ? this.player.prevY + 175 : py + ph);
         const currentBottom = py + ph;
-        const cubeTop = ey;
+        const physicalCubeTop = ey - 65; // Hitbox bottom stands at (ey - 65) when feet are on ey
 
         // Dynamic fall threshold based on vertical velocity so there is NO snapping or teleportation
         const fallDist = Math.max(6, Math.abs((this.player.vy || 0) * dt) + 4);
-        const wasAboveCube = prevBottom <= cubeTop + fallDist;
+        const wasAboveCube = prevBottom <= physicalCubeTop + fallDist;
         const isHorizontallyOverCube = (px + pw - 10 > ex) && (px + 10 < ex + ew);
 
         // Land smoothly on top ONLY if player was falling down onto the cube from above
-        if (wasAboveCube && isHorizontallyOverCube && this.player.vy >= 0 && currentBottom >= cubeTop - 6) {
-          // FLUID LANDING ON TOP OF CUBE PLATFORM (NO TELEPORTATION)
-          this.player.y = cubeTop - ph;
+        if (wasAboveCube && isHorizontallyOverCube && this.player.vy >= 0 && currentBottom >= physicalCubeTop - 6) {
+          // FLUID LANDING ON TOP OF CUBE PLATFORM
+          this.player.y = ey - 240; // Align sprite's bottom (feet) exactly with the cube's top
           this.player.vy = 0;
           this.player.angle = 0;
           if (this.player.wasFlying) {
