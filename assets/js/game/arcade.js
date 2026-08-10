@@ -1467,20 +1467,28 @@ class LisarArcade2D {
       if (e.type === 0) {
         // CUBE PLATFORMING PHYSICS:
         const prevBottom = (this.player.prevY !== undefined ? this.player.prevY : this.player.y) + this.player.height;
+        const currentBottom = py + ph;
         const cubeTop = ey;
 
-        // Is player landing on top of the cube from above?
-        if (prevBottom <= cubeTop + 30 && this.player.vy >= 0 && px + pw > ex + 15 && px < ex + ew - 15) {
-          // LAND ON TOP SAFELY AS A SOLID PLATFORM! (NO DAMAGE)
-          this.player.y = cubeTop - this.player.height;
+        // Dynamic fall threshold based on vertical velocity so there is NO snapping or teleportation
+        const fallDist = Math.max(6, Math.abs((this.player.vy || 0) * dt) + 4);
+        const wasAboveCube = prevBottom <= cubeTop + fallDist;
+        const isHorizontallyOverCube = (px + pw - 10 > ex) && (px + 10 < ex + ew);
+
+        // Land smoothly on top ONLY if player was falling down onto the cube from above
+        if (wasAboveCube && isHorizontallyOverCube && this.player.vy >= 0 && currentBottom >= cubeTop - 6) {
+          // FLUID LANDING ON TOP OF CUBE PLATFORM (NO TELEPORTATION)
+          this.player.y = cubeTop - ph;
           this.player.vy = 0;
           this.player.angle = 0;
-          this.player.wasFlying = false;
-          this.player.landTimer = 0;
+          if (this.player.wasFlying) {
+            this.player.landTimer = 0.12;
+            this.player.wasFlying = false;
+          }
           this.player.onCube = true;
-        } else if (px < ex + ew && px + pw > ex && py < ey + eh && py + ph > ey) {
-          // SIDE HIT: Push back slightly inside screen bounds (never force off-screen!)
-          this.player.x = Math.max(15, this.player.x - 25);
+        } else if (px < ex + ew - 6 && px + pw > ex + 6 && py < ey + eh - 4 && py + ph > ey + 4) {
+          // SIDE HIT: Smooth side collision without vertical snapping
+          this.player.x = Math.max(15, this.player.x - 15);
           if (this.player.invulnerable <= 0) {
             this.player.hp -= 12;
             this.player.invulnerable = 0.6;
