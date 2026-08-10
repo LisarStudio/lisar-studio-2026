@@ -1530,10 +1530,10 @@
         const noPowerupsNear = this.powerups.every(p => p.x < startX - 120);
         
         if (noObstaclesNear && noPowerupsNear) {
-          // Rango de altura media ideal
-          // centerY(obstáculo_superior) = 238.75 (Centro exacto del rectángulo verde de referencia)
+          // Green box center = 53.06% of logicalHeight (measured from reference image)
           const platHeight = 35;
-          const platY = 238.75 - (platHeight / 2); // Y = 221.25 (Centro visual = 238.75)
+          const greenCenterY = this.logicalHeight * 0.5306;
+          const platY = greenCenterY - (platHeight / 2); // top edge so center = greenCenterY
           const randomW = 100 + Math.random() * 150;
           
           this.enemies.push({
@@ -1546,13 +1546,13 @@
             hp: 9999
           });
           
-          // Recompensa de monedas
+          // Recompensa de monedas ENCIMA del bloque
           if (Math.random() > 0.4) {
             const coinCount = Math.floor(randomW / 50);
             for (let i = 0; i < coinCount; i++) {
               this.coins.push({
                 x: startX + 15 + i * 45,
-                y: randomY - 55,
+                y: platY - 65,
                 width: 60, height: 60,
                 vx: -this.floorSpeed,
                 frame: 0, frameTimer: 0
@@ -1576,92 +1576,86 @@
 
     const progress = Math.min(1, this.gameTimer / 180);
     const startX = this.logicalWidth + 30;
-    const playableTopY = 185 / this.scale;
+    // GREEN BOX REFERENCE: center at 53.06% of logicalHeight (measured from image)
+    const greenCenterY = this.logicalHeight * 0.5306;
+    const platH = 35; // platform thickness
+    const platY = greenCenterY - (platH / 2); // top edge → visual center = greenCenterY
+    const coinAboveY = platY - 65; // coins sit 65px above platform top edge
+    // Floor spawns: bottom-relative
+    const floorBlockY = this.logicalHeight - 70 - 70; // 70px block, 70px above ground line
 
     if (challengeIndex === 0) {
-      // 0. PLATAFORMA SUELO: Bloque terrestre de altura baja (width: 320, height: 70) + monedas arriba
-      const cubeY = 310; // Y = 310 en el suelo (monedas a Y = 250 en la franja verde)
-      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 320, height: 70, vx: -this.floorSpeed, hp: 9999 });
+      // 0. PLATAFORMA SUELO + monedas a altura del bloque verde
+      this.enemies.push({ type: 0, x: startX, y: floorBlockY, width: 320, height: 70, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + 20 + i * 45, y: 250, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 45, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 1) {
-      // 1. HAZARD VOLADOR: Robot OVNI volador centrado en el bloque verde + arco de monedas central
+      // 1. HAZARD VOLADOR + arco de monedas a la altura del bloque verde
       this.spawnEnemy1(progress);
       for (let i = 0; i < 5; i++) {
-        const archY = 220 - Math.sin((i / 4) * Math.PI) * 20; // Y entre 200 y 220
+        const archY = greenCenterY - Math.sin((i / 4) * Math.PI) * 40;
         this.coins.push({ x: startX + i * 48, y: archY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 2) {
-      // 2. ENEMIGO RODANTE: Bola eléctrica en el suelo + rombo de monedas en el bloque verde
+      // 2. ENEMIGO RODANTE en suelo + rombo de monedas a la altura del bloque verde
       this.spawnEnemy2(progress);
-      const highY = 225;
-      const diamondOffsets = [{ dx: 0, dy: 0 }, { dx: 36, dy: -12 }, { dx: 36, dy: 12 }, { dx: 72, dy: 0 }];
+      const diamondOffsets = [{ dx: 0, dy: 0 }, { dx: 36, dy: -20 }, { dx: 36, dy: 20 }, { dx: 72, dy: 0 }];
       diamondOffsets.forEach(off => {
-        this.coins.push({ x: startX + 60 + off.dx, y: highY + off.dy, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 60 + off.dx, y: greenCenterY + off.dy, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       });
     } else if (challengeIndex === 3) {
-      // 3. REABASTECIMIENTO: Powerup centrado en el bloque verde + onda de monedas
-      const startY = 225;
+      // 3. REABASTECIMIENTO: Powerup + monedas a la altura del bloque verde
       if (this.player.hp < this.player.maxHp * 0.8) {
-        this.powerups.push({ x: startX + 40, y: startY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isBoot: true, frameTimer: 0 });
+        this.powerups.push({ x: startX + 40, y: greenCenterY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isBoot: true, frameTimer: 0 });
       } else if (this.luBoostCharges < 3 && Math.random() > 0.5) {
-        this.powerups.push({ x: startX + 40, y: startY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isLuHelp: true, frameTimer: 0 });
+        this.powerups.push({ x: startX + 40, y: greenCenterY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isLuHelp: true, frameTimer: 0 });
       }
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 50, y: startY + Math.sin(i * 0.9) * 16, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 50, y: greenCenterY + Math.sin(i * 0.9) * 25, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 4) {
-      // 4. PLATAFORMA SUPERIOR: centerY = 238.75 (Centro exacto del rectángulo verde)
-      const platHeight = 35;
-      const platY = 238.75 - (platHeight / 2); // Y = 221.25
-      this.enemies.push({ type: 0, x: startX, y: platY, width: 300, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
+      // 4. PLATAFORMA FLOTANTE en la altura exacta del bloque verde + monedas encima
+      this.enemies.push({ type: 0, x: startX, y: platY, width: 300, height: platH, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + 20 + i * 46, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 46, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 5) {
-      // 5. DOBLE AMENAZA: Robot OVNI en el centro + rodante en el suelo + monedas intermedias
+      // 5. DOBLE AMENAZA: Jefe volador + rodante en suelo + monedas a la altura del bloque verde
       this.spawnEnemy1(progress);
       this.spawnEnemy2(progress, 80);
-      const highY = 225;
       for (let i = 0; i < 6; i++) {
-        const offset = i % 2 === 0 ? -14 : 14;
-        this.coins.push({ x: startX + i * 42, y: highY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        const offset = i % 2 === 0 ? -25 : 25;
+        this.coins.push({ x: startX + i * 42, y: greenCenterY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 6) {
-      // 6. PARKOUR DE CUBOS: Dos plataformas bajas en el suelo con monedas arriba
-      const cubeY = 310; // Y = 310 en el suelo
-      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 200, y: cubeY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
+      // 6. PARKOUR DE CUBOS: Dos bloques en suelo + monedas a la altura del bloque verde
+      this.enemies.push({ type: 0, x: startX, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 200, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 52, y: 250, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 52, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 7) {
-      // 7. COIN RUSH: Doble hélice de monedas centrada en el bloque verde (Y = 225)
-      const centerY = 225;
-      this.powerups.push({ x: startX + 120, y: centerY, width: 50, height: 50, vx: -this.floorSpeed, isBoot: Math.random() > 0.5, frameTimer: 0 });
+      // 7. COIN RUSH: Doble hélice centrada en el bloque verde
+      this.powerups.push({ x: startX + 120, y: greenCenterY, width: 50, height: 50, vx: -this.floorSpeed, isBoot: Math.random() > 0.5, frameTimer: 0 });
       for (let i = 0; i < 8; i++) {
-        this.coins.push({ x: startX + i * 40, y: centerY + Math.sin(i * 0.8) * 22, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
-        this.coins.push({ x: startX + i * 40, y: centerY - Math.sin(i * 0.8) * 22, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 40, y: greenCenterY + Math.sin(i * 0.8) * 35, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 40, y: greenCenterY - Math.sin(i * 0.8) * 35, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 8) {
-      // 8. PLATAFORMAS SUPERIORES: centerY = 238.75 (Centro exacto del rectángulo verde)
-      const platHeight = 35;
-      const platY = 238.75 - (platHeight / 2); // Y = 221.25
-      this.enemies.push({ type: 0, x: startX, y: platY, width: 140, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 180, y: platY, width: 140, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
+      // 8. PASOS ESCALONADOS: Dos plataformas a la altura del bloque verde + monedas encima
+      this.enemies.push({ type: 0, x: startX, y: platY, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 180, y: platY, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 3; i++) {
-        this.coins.push({ x: startX + 15 + i * 42, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
-        this.coins.push({ x: startX + 195 + i * 42, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 15 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 195 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 9) {
-      // 9. PLATAFORMA SUPERIOR: centerY = 238.75 (Centro exacto del rectángulo verde)
-      const platHeight = 35;
-      const platY = 238.75 - (platHeight / 2); // Y = 221.25
-      this.enemies.push({ type: 0, x: startX, y: platY, width: 240, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
+      // 9. PLATAFORMA FLOTANTE LARGA + monedas encima + rodante en suelo
+      this.enemies.push({ type: 0, x: startX, y: platY, width: 240, height: platH, vx: -this.floorSpeed, hp: 9999 });
       this.spawnEnemy2(progress, 60);
       for (let i = 0; i < 5; i++) {
-        this.coins.push({ x: startX + 20 + i * 42, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     }
   }
@@ -1679,14 +1673,16 @@
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    // Enemigo volador robot OVNI ubicado EXACTAMENTE en la franja central del bloque verde (Y = 195 a 215)
-    const spawnY = 195 + Math.random() * 20;
+    // Jefe volador: centrado en el bloque verde (53.06% de logicalHeight), debajo del HUD
+    const greenCenterY = this.logicalHeight * 0.5306;
+    const enemyH = 110;
+    const spawnY = greenCenterY - (enemyH / 2); // centro visual = greenCenterY
     this.enemies.push({
       type: 1,
       x: this.logicalWidth + 30 + offsetX,
       y: spawnY,
       baseY: spawnY,
-      width: 110, height: 110,
+      width: 110, height: enemyH,
       vx: -(this.floorSpeed + 60 + progress * 90),
       hp: 1, shootTimer: Math.random() * 1.5,
       frame: 0, frameTimer: 0,
@@ -1957,9 +1953,10 @@
     }
 
     // ── PLAYING PATH ─────────────────────────────────────────────────────────────
-    // SAFEGUARD TOTAL: Eliminar cualquier bloque (Y < 190), moneda (Y < 150) o enemigo volador (Y < 170) que intente subir a la zona del HUD
-    this.enemies = this.enemies.filter(e => (e.type !== 0 || e.y >= 190) && (e.type !== 1 || e.y >= 170));
-    this.coins = this.coins.filter(c => c.y >= 150);
+    // SAFEGUARD: Eliminar cualquier bloque o jefe que esté en la zona del HUD (por encima del 20% del canvas)
+    const hudSafeY = this.logicalHeight * 0.20; // HUD ocupa aprox. el 10%, damos margen al 20%
+    this.enemies = this.enemies.filter(e => e.type === 0 ? e.y >= hudSafeY : (e.type === 1 ? e.y >= hudSafeY : true));
+    this.coins = this.coins.filter(c => c.y >= hudSafeY);
 
     this.gameTimer += dt;
     const remaining = Math.max(0, 180 - this.gameTimer);
@@ -2473,8 +2470,9 @@
     }
 
     // Monedas (Ignorar y nunca dibujar monedas en la zona del HUD)
+    const _hudSafeDrawY = this.logicalHeight * 0.20;
     this.coins.forEach(c => {
-      if (c.y < 150) return; // NUNCA dibujar monedas por encima de Y = 150
+      if (c.y < _hudSafeDrawY) return; // NUNCA dibujar monedas en zona del HUD
       const img = this.coinFrames[c.frame % this.coinFrames.length];
       if (img && img.loaded) {
         const imgRatio = img.width / img.height;
