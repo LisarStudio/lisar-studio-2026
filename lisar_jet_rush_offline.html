@@ -499,9 +499,12 @@
           capcomText = "¡Letra obtenida!";
         } else if (text.includes("Word Lisar Complete")) {
           capcomText = "¡Increíble! ¡Descuento de palabra completado!";
-        } else if (text.includes("Emergency Energy Boost") || text.includes("Energy Restored") || text.includes("Poder de Lu")) {
-          // Prioridad baja para ayudas
+        } else if (text.includes("Emergency Energy Boost") || text.includes("Poder de Lu")) {
+          // Solo cuando Lu viene en la nube
           capcomText = "¡Poder de Lu!";
+        } else if (text.includes("Energy Restored")) {
+          // Bote de energía normal
+          capcomText = "¡Energía!";
         } else if (text.includes("PAUSA") || text.includes("pausado") || text.includes("paused")) {
           capcomText = "¡Juego pausado!";
         } else if (text.includes("VICTORY") || text.includes("MAXIMUM DISCOUNT")) {
@@ -1600,10 +1603,10 @@
     const floorBlockY = this.logicalHeight - 70 - 70; // 70px block, 70px above ground line
 
     if (challengeIndex === 0) {
-      // 0. PLATAFORMA SUELO + monedas a altura del bloque verde
+      // 0. PLATAFORMA SUELO + monedas exactamente sobre el bloque
       this.enemies.push({ type: 0, x: startX, y: floorBlockY, width: 320, height: 70, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + 20 + i * 45, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 45, y: floorBlockY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 1) {
       // 1. HAZARD VOLADOR + arco de monedas a la altura del bloque verde
@@ -1644,11 +1647,11 @@
         this.coins.push({ x: startX + i * 42, y: greenCenterY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 6) {
-      // 6. PARKOUR DE CUBOS: Dos bloques en suelo + monedas a la altura del bloque verde
+      // 6. PARKOUR DE CUBOS: Dos bloques en suelo + monedas exactamente encima
       this.enemies.push({ type: 0, x: startX, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
       this.enemies.push({ type: 0, x: startX + 200, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 52, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 52, y: floorBlockY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 7) {
       // 7. COIN RUSH: Doble hélice centrada en el bloque verde
@@ -1658,12 +1661,14 @@
         this.coins.push({ x: startX + i * 40, y: greenCenterY - Math.sin(i * 0.8) * 35, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 8) {
-      // 8. PASOS ESCALONADOS: Dos plataformas a la altura del bloque verde + monedas encima
-      this.enemies.push({ type: 0, x: startX, y: platY, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 180, y: platY, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      // 8. PASOS ESCALONADOS: Dos plataformas flotantes a la altura del bloque verde (una abajo, otra arriba)
+      const plat1Y = greenCenterY + 15 - (platH / 2);
+      const plat2Y = greenCenterY - 15 - (platH / 2);
+      this.enemies.push({ type: 0, x: startX, y: plat1Y, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 180, y: plat2Y, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 3; i++) {
-        this.coins.push({ x: startX + 15 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
-        this.coins.push({ x: startX + 195 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 15 + i * 42, y: plat1Y - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 195 + i * 42, y: plat2Y - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 9) {
       // 9. PLATAFORMA FLOTANTE LARGA + monedas encima + rodante en suelo
@@ -2484,7 +2489,77 @@
       this.ctx.fillRect(0, this.logicalHeight - 70, this.logicalWidth, 70);
     }
 
-    // Monedas (Ignorar y nunca dibujar monedas en la zona del HUD)
+    // Enemigos con auras y transparencia limpia (DIBUJAR PRIMERO PARA QUE QUEDEN DETRÁS DE LAS MONEDAS)
+    this.enemies.forEach(e => {
+      if (e.type === 0) {
+        if (e.y < 190) return; // NUNCA dibujar plataformas por encima de Y = 190
+        // Obstáculo cyber ciberpunk con degradado translúcido y bordes neón
+        this.ctx.save();
+        const flash = Math.floor(performance.now() / 180) % 2 === 0;
+        
+        const grad = this.ctx.createLinearGradient(e.x, e.y, e.x + e.width, e.y + e.height);
+        grad.addColorStop(0, flash ? 'rgba(90, 10, 110, 0.82)' : 'rgba(35, 5, 55, 0.78)');
+        grad.addColorStop(1, flash ? 'rgba(160, 20, 190, 0.82)' : 'rgba(65, 10, 95, 0.78)');
+        
+        this.ctx.fillStyle = grad;
+        this.ctx.strokeStyle = flash ? '#ff00ff' : '#00ffff';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 14;
+        this.ctx.shadowColor = flash ? '#ff00ff' : '#00ffff';
+        
+        this.ctx.beginPath();
+        if (this.ctx.roundRect) {
+          this.ctx.roundRect(e.x, e.y, e.width, e.height, 8);
+        } else {
+          this.ctx.rect(e.x, e.y, e.width, e.height);
+        }
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(e.x + 8, e.y + 8);
+        this.ctx.lineTo(e.x + e.width - 8, e.y + e.height - 8);
+        this.ctx.moveTo(e.x + e.width - 8, e.y + 8);
+        this.ctx.lineTo(e.x + 8, e.y + e.height - 8);
+        this.ctx.stroke();
+        this.ctx.restore();
+      } else if (e.type === 1) {
+        let img = this.enemy1FlyFrames[e.frame % this.enemy1FlyFrames.length];
+        if (e.isShooting && e.isShooting > 0) {
+          img = this.enemy1FireImg;
+        } else if (e.isHit && e.isHit > 0) {
+          img = this.enemy1DamageImg;
+        }
+        if (img && img.loaded) {
+          const imgRatio = img.width / img.height;
+          const drawW = e.height * imgRatio;
+          const drawH = e.height;
+          const drawX = e.x + (e.width - drawW) / 2;
+          const drawY = e.y;
+          this.ctx.save();
+          this.ctx.shadowBlur = 12;
+          this.ctx.shadowColor = '#00f3ff';
+          this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          this.ctx.restore();
+        }
+      } else if (e.type === 2) {
+        let img = this.enemy2BallFrames[e.frame % this.enemy2BallFrames.length];
+        if (img && img.loaded) {
+          const imgRatio = img.width / img.height;
+          const drawW = e.height * imgRatio;
+          const drawH = e.height;
+          const drawX = e.x + (e.width - drawW) / 2;
+          const drawY = e.y;
+          this.ctx.save();
+          this.ctx.shadowBlur = 14;
+          this.ctx.shadowColor = '#ff4400';
+          this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          this.ctx.restore();
+        }
+      }
+    });
+
+    // Monedas (DIBUJAR SOBRE LOS BLOQUES)
     const _hudSafeDrawY = this.logicalHeight * 0.20;
     this.coins.forEach(c => {
       if (c.y < _hudSafeDrawY) return; // NUNCA dibujar monedas en zona del HUD
@@ -2572,76 +2647,6 @@
       this.ctx.fill();
       
       this.ctx.restore();
-    });
-
-    // Enemigos con auras y transparencia limpia
-    this.enemies.forEach(e => {
-      if (e.type === 0) {
-        if (e.y < 190) return; // NUNCA dibujar plataformas por encima de Y = 190
-        // Obstáculo cyber ciberpunk con degradado translúcido y bordes neón
-        this.ctx.save();
-        const flash = Math.floor(performance.now() / 180) % 2 === 0;
-        
-        const grad = this.ctx.createLinearGradient(e.x, e.y, e.x + e.width, e.y + e.height);
-        grad.addColorStop(0, flash ? 'rgba(90, 10, 110, 0.82)' : 'rgba(35, 5, 55, 0.78)');
-        grad.addColorStop(1, flash ? 'rgba(160, 20, 190, 0.82)' : 'rgba(65, 10, 95, 0.78)');
-        
-        this.ctx.fillStyle = grad;
-        this.ctx.strokeStyle = flash ? '#ff00ff' : '#00ffff';
-        this.ctx.lineWidth = 3;
-        this.ctx.shadowBlur = 14;
-        this.ctx.shadowColor = flash ? '#ff00ff' : '#00ffff';
-        
-        this.ctx.beginPath();
-        if (this.ctx.roundRect) {
-          this.ctx.roundRect(e.x, e.y, e.width, e.height, 8);
-        } else {
-          this.ctx.rect(e.x, e.y, e.width, e.height);
-        }
-        this.ctx.fill();
-        this.ctx.stroke();
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(e.x + 8, e.y + 8);
-        this.ctx.lineTo(e.x + e.width - 8, e.y + e.height - 8);
-        this.ctx.moveTo(e.x + e.width - 8, e.y + 8);
-        this.ctx.lineTo(e.x + 8, e.y + e.height - 8);
-        this.ctx.stroke();
-        this.ctx.restore();
-      } else if (e.type === 1) {
-        let img = this.enemy1FlyFrames[e.frame % this.enemy1FlyFrames.length];
-        if (e.isShooting && e.isShooting > 0) {
-          img = this.enemy1FireImg;
-        } else if (e.isHit && e.isHit > 0) {
-          img = this.enemy1DamageImg;
-        }
-        if (img && img.loaded) {
-          const imgRatio = img.width / img.height;
-          const drawW = e.height * imgRatio;
-          const drawH = e.height;
-          const drawX = e.x + (e.width - drawW) / 2;
-          const drawY = e.y;
-          this.ctx.save();
-          this.ctx.shadowBlur = 12;
-          this.ctx.shadowColor = '#00f3ff';
-          this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
-          this.ctx.restore();
-        }
-      } else if (e.type === 2) {
-        let img = this.enemy2BallFrames[e.frame % this.enemy2BallFrames.length];
-        if (img && img.loaded) {
-          const imgRatio = img.width / img.height;
-          const drawW = e.height * imgRatio;
-          const drawH = e.height;
-          const drawX = e.x + (e.width - drawW) / 2;
-          const drawY = e.y;
-          this.ctx.save();
-          this.ctx.shadowBlur = 14;
-          this.ctx.shadowColor = '#ff4400';
-          this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
-          this.ctx.restore();
-        }
-      }
     });
 
     // Proyectiles
@@ -2841,8 +2846,8 @@
       const panelW = Math.min(620, this.logicalWidth * 0.82);
       const panelH = 142;
       const panelX = (this.logicalWidth - panelW) / 2;
-      // PANEL_REFERENCE_Y: mismo eje que todos los paneles (53.06% de logicalHeight = centro del bloque verde)
-      const panelY = this.logicalHeight * 0.5306 - (panelH / 2);
+      const playableTopY = 185 / this.scale;
+      const panelY = playableTopY + 15;
 
       this.ctx.save();
       this.ctx.globalAlpha = alpha;
