@@ -1531,15 +1531,17 @@
         
         if (noObstaclesNear && noPowerupsNear) {
           // Rango de altura media ideal
-          const randomY = 225 + Math.random() * 15; // Y = 225 a 240 (EXACTAMENTE en el centro del bloque verde)
-          const randomW = 100 + Math.random() * 150; // Ancho entre 100 y 250
+          // centerY(obstáculo_superior) = 238.75 (Centro exacto del rectángulo verde de referencia)
+          const platHeight = 35;
+          const platY = 238.75 - (platHeight / 2); // Y = 221.25 (Centro visual = 238.75)
+          const randomW = 100 + Math.random() * 150;
           
           this.enemies.push({
             type: 0,
             x: startX,
-            y: randomY,
+            y: platY,
             width: randomW,
-            height: 35, // Plataforma horizontal delgada
+            height: platHeight,
             vx: -this.floorSpeed,
             hp: 9999
           });
@@ -1610,11 +1612,12 @@
         this.coins.push({ x: startX + i * 50, y: startY + Math.sin(i * 0.9) * 16, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 4) {
-      // 4. PLATAFORMA FLOTANTE LARGA (EXACTA AL BLOQUE VERDE): width: 300, height: 35 en Y = 230
-      const randomY = 230; // Y = 230 (centro exacto del bloque verde)
-      this.enemies.push({ type: 0, x: startX, y: randomY, width: 300, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      // 4. PLATAFORMA SUPERIOR: centerY = 238.75 (Centro exacto del rectángulo verde)
+      const platHeight = 35;
+      const platY = 238.75 - (platHeight / 2); // Y = 221.25
+      this.enemies.push({ type: 0, x: startX, y: platY, width: 300, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + 20 + i * 46, y: randomY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 46, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 5) {
       // 5. DOBLE AMENAZA: Robot OVNI en el centro + rodante en el suelo + monedas intermedias
@@ -1642,20 +1645,23 @@
         this.coins.push({ x: startX + i * 40, y: centerY - Math.sin(i * 0.8) * 22, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 8) {
-      // 8. PASOS ESCALONADOS: Dos plataformas flotantes a la altura del bloque verde (Y = 245 y Y = 220)
-      this.enemies.push({ type: 0, x: startX, y: 245, width: 140, height: 35, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 180, y: 220, width: 140, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      // 8. PLATAFORMAS SUPERIORES: centerY = 238.75 (Centro exacto del rectángulo verde)
+      const platHeight = 35;
+      const platY = 238.75 - (platHeight / 2); // Y = 221.25
+      this.enemies.push({ type: 0, x: startX, y: platY, width: 140, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 180, y: platY, width: 140, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 3; i++) {
-        this.coins.push({ x: startX + 15 + i * 42, y: 245 - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
-        this.coins.push({ x: startX + 195 + i * 42, y: 220 - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 15 + i * 42, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 195 + i * 42, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 9) {
-      // 9. PLATAFORMA FLOTANTE INTERMEDIA: Plataforma en Y = 230 + monedas arriba + enemigo rodando abajo
-      const platformY = 230; // Y = 230
-      this.enemies.push({ type: 0, x: startX, y: platformY, width: 240, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      // 9. PLATAFORMA SUPERIOR: centerY = 238.75 (Centro exacto del rectángulo verde)
+      const platHeight = 35;
+      const platY = 238.75 - (platHeight / 2); // Y = 221.25
+      this.enemies.push({ type: 0, x: startX, y: platY, width: 240, height: platHeight, vx: -this.floorSpeed, hp: 9999 });
       this.spawnEnemy2(progress, 60);
       for (let i = 0; i < 5; i++) {
-        this.coins.push({ x: startX + 20 + i * 42, y: platformY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 42, y: platY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     }
   }
