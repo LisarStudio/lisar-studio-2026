@@ -276,9 +276,10 @@ class LisarArcade2D {
     this.instructionCardEl = document.createElement('div');
     Object.assign(this.instructionCardEl.style, {
       position: 'absolute',
-      top: '185px',
+      // PANEL_REFERENCE_Y: mismo eje que el panel de pausa (53% = centro del bloque verde)
+      top: '53%',
       left: '50%',
-      transform: 'translateX(-50%)',
+      transform: 'translate(-50%, -50%)',
       width: '88%',
       maxWidth: '440px',
       background: 'rgba(10, 12, 28, 0.97)',
@@ -904,10 +905,14 @@ class LisarArcade2D {
 
     this.msgOverlay = document.createElement('div');
     Object.assign(this.msgOverlay.style, {
-      position: 'absolute', top: '185px', left: '0', right: '0', bottom: '0',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-      paddingTop: '10px', boxSizing: 'border-box',
-      background: 'rgba(5,6,15,0.45)', color: '#ffffff', zIndex: '40', pointerEvents: 'none'
+      position: 'absolute',
+      // PANEL_REFERENCE_Y: mismo eje que el panel de pausa (53% = centro del bloque verde)
+      top: '53%', left: '0', right: '0',
+      transform: 'translateY(-50%)',
+      height: 'auto',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      paddingTop: '0', boxSizing: 'border-box',
+      background: 'none', color: '#ffffff', zIndex: '40', pointerEvents: 'none'
     });
     this.container.appendChild(this.msgOverlay);
 
@@ -1031,8 +1036,9 @@ class LisarArcade2D {
   showTemporaryAlert(title, subtitle, seconds) {
     const alertEl = document.createElement('div');
     Object.assign(alertEl.style, {
-      position: 'absolute', top: '200px', left: '50%',
-      transform: 'translateX(-50%)',
+      // PANEL_REFERENCE_Y: mismo eje que todos los paneles del juego (53% = centro del bloque verde)
+      position: 'absolute', top: '53%', left: '50%',
+      transform: 'translate(-50%, -50%)',
       background: 'rgba(5, 6, 15, 0.68)',
       backdropFilter: 'blur(6px)',
       webkitBackdropFilter: 'blur(6px)',
@@ -1054,7 +1060,7 @@ class LisarArcade2D {
     this.container.appendChild(alertEl);
     setTimeout(() => {
       alertEl.style.opacity = '0';
-      alertEl.style.top = '185px';
+      // mantener top en 53% durante fade-out
       setTimeout(() => alertEl.remove(), 400);
     }, seconds * 1000);
   }
@@ -2731,8 +2737,8 @@ class LisarArcade2D {
       const panelW = Math.min(620, this.logicalWidth * 0.82);
       const panelH = 142;
       const panelX = (this.logicalWidth - panelW) / 2;
-      const playableTopY = 185 / this.scale;
-      const panelY = playableTopY + 15;
+      // PANEL_REFERENCE_Y: mismo eje que todos los paneles (53.06% de logicalHeight = centro del bloque verde)
+      const panelY = this.logicalHeight * 0.5306 - (panelH / 2);
 
       this.ctx.save();
       this.ctx.globalAlpha = alpha;
