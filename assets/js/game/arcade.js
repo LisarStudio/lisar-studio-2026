@@ -1122,6 +1122,7 @@ class LisarArcade2D {
     this.player.vy             = 0;
     this.player.angle          = 0;
     this.introActive           = true;
+    this.introTimer            = 0;
     this.introAlpha            = 0;
     this.lastCountStep         = -1;
     this.player.invulnerable   = 0;
@@ -1636,15 +1637,18 @@ class LisarArcade2D {
   }
 
   update(dt) {
-    if (this.state !== 'playing') return;
+    if (this.state !== 'playing' && this.state !== 'celebration') return;
 
     if (this.introActive) {
+      this.introTimer = (this.introTimer || 0) + dt;
       this.player.x += dt * 110;
+      if (this.player.x >= 80) this.player.x = 80;
+
       this.activeAnim = this.runFrames;
       this.loopAnim = true;
       this.animSpeed = 0.11;
       
-      // Fade in del mensaje
+      // Fade in del mensaje inicial
       this.introAlpha = Math.min(1, (this.introAlpha || 0) + dt * 1.5);
       
       this.player.frameTimer += dt;
@@ -1656,10 +1660,11 @@ class LisarArcade2D {
       const floorY = this.logicalHeight - this.player.height - 70;
       this.player.y = floorY;
       
-      if (this.player.x >= 80) {
-        this.player.x = 80;
+      // Mantiene el banner de misión inicial legible durante 4.0 segundos completos
+      if (this.introTimer >= 4.0) {
         this.introActive = false;
         this.gameTimer = 0;
+        this.introTimer = 0;
       }
       
       // Suelo scrolling
