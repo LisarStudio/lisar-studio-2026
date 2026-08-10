@@ -378,30 +378,55 @@ class LisarArcade2D {
     }
   }
 
-    speak(text) {
-    // 1. Web Audio Techno Synth Chime (Marvel vs Capcom 90s style)
+  speak(text) {
+    // 1. Efecto de Arpegio Techno Synth de Capcom clásico de los 90s
     this.playArcadeAnnouncerChime();
 
-    // 2. High-Pitched Energetic Female Vocal Synthesizer
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'en-US';
-        utterance.rate = 1.35;
-        utterance.pitch = 1.60; // High pitch energetic female voice
+        
+        // Mapear diálogos a estilo Capcom Latino Neutro enérgico
+        let capcomText = text;
+        if (text.includes("percent discount") || text.includes("discount unlocked")) {
+          capcomText = "¡Excelente! ¡Descuento aumentado!";
+        } else if (text.includes("Letter") || text.includes("collected")) {
+          // Prioridad secundaria para letras
+          capcomText = "¡Letra obtenida!";
+        } else if (text.includes("Word Lisar Complete")) {
+          capcomText = "¡Increíble! ¡Descuento de palabra completado!";
+        } else if (text.includes("Emergency Energy Boost") || text.includes("Energy Restored") || text.includes("Poder de Lu")) {
+          // Prioridad baja para ayudas
+          capcomText = "¡Poder de Lu!";
+        } else if (text.includes("VICTORY") || text.includes("MAXIMUM DISCOUNT")) {
+          capcomText = "¡Victoria máxima! ¡Gracias por jugar!";
+        } else if (text.includes("MISSION FAILED") || text.includes("GAME OVER")) {
+          capcomText = "¡Fin del juego! ¡Gracias por jugar!";
+        } else if (text === "3") { capcomText = "¡Tres!"; }
+        else if (text === "2") { capcomText = "¡Dos!"; }
+        else if (text === "1") { capcomText = "¡Uno!"; }
+        else if (text === "Ready!") { capcomText = "¡Prepárate! ¡Vuela!"; }
+
+        const utterance = new SpeechSynthesisUtterance(capcomText);
+        utterance.lang = 'es-MX'; // Español Latino Neutro
+        utterance.rate = 1.30;   // Rápido y dinámico
+        utterance.pitch = 1.45;  // Agudo pero natural de anunciadora de Capcom
         utterance.volume = 1.0;
 
         const loadAndSpeakVoice = () => {
           const voices = window.speechSynthesis.getVoices();
-          const femaleVoice = voices.find(v => 
-            v.lang.startsWith('en') && (
-              v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Zira') || 
-              v.name.includes('Female') || v.name.includes('Karen') || v.name.includes('Fiona') || 
-              v.name.includes('Google US English') || v.name.includes('Siri') || v.name.includes('Susan')
+          // Intentar elegir una voz en español neutro (México, US o España) que sea femenina
+          const spanishVoice = voices.find(v => 
+            v.lang.startsWith('es') && (
+              v.name.includes('Sabina') || v.name.includes('Helena') || v.name.includes('Paulina') || 
+              v.name.includes('Google') || v.name.includes('Monica') || v.name.includes('Zira') ||
+              v.name.includes('Female') || v.name.includes('femenina')
             )
-          );
-          if (femaleVoice) utterance.voice = femaleVoice;
+          ) || voices.find(v => v.lang.startsWith('es'));
+          
+          if (spanishVoice) {
+            utterance.voice = spanishVoice;
+          }
           window.speechSynthesis.speak(utterance);
         };
 
@@ -411,7 +436,9 @@ class LisarArcade2D {
           window.speechSynthesis.onvoiceschanged = loadAndSpeakVoice;
           window.speechSynthesis.speak(utterance);
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error("Vocal synth error:", e);
+      }
     }
   }
 
