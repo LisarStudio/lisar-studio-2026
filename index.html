@@ -725,7 +725,7 @@
      <script src="assets/js/game/runner.js?v=999"></script>
      <script>
        (function() {
-         const time = Date.now();
+         const time = Date.now() + '_' + Math.random().toString(36).substring(2, 7);
          const scripts = [
            'assets/js/game/arcade.js?v=' + time,
            'assets/js/chatbot.js?v=' + time,

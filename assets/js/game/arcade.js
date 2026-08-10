@@ -299,7 +299,7 @@ class LisarArcade2D {
         🎮 LISAR JET RUSH — GUÍA DE VUELO
       </h3>
       <div style="font-size:0.75rem; color:#ffd700; margin-bottom:10px; font-weight:900; text-shadow:0 0 6px rgba(255, 215, 0, 0.4); letter-spacing:0.5px;">
-        VERSIÓN 3.3 - ALTURA FIJA BLOQUE VERDE (HUD CLEAN)
+        VERSIÓN 3.4 - HUD TOTALMENTE DESPEJADO (100% SAFEGUARD)
       </div>
       <div style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(0,243,255,0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; text-align:left;">
         <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#ffd700;">🚀 VUELO / JETPACK:</span> <b style="color:#ffffff;">Espacio</b> / <b style="color:#ffffff;">Flecha Arriba</b> / <b style="color:#ffffff;">Touch</b></p>
@@ -1858,6 +1858,10 @@ class LisarArcade2D {
     }
 
     // ── PLAYING PATH ─────────────────────────────────────────────────────────────
+    // SAFEGUARD: Eliminar de inmediato cualquier bloque o moneda que intente existir en la mitad superior (HUD)
+    this.enemies = this.enemies.filter(e => e.type !== 0 || e.y >= 240);
+    this.coins = this.coins.filter(c => c.y >= 210);
+
     this.gameTimer += dt;
     const remaining = Math.max(0, 180 - this.gameTimer);
     const progress = Math.min(1, this.gameTimer / 180);
@@ -2369,8 +2373,9 @@ class LisarArcade2D {
       this.ctx.fillRect(0, this.logicalHeight - 70, this.logicalWidth, 70);
     }
 
-    // Monedas
+    // Monedas (Ignorar y nunca dibujar monedas en la zona del HUD)
     this.coins.forEach(c => {
+      if (c.y < 210) return;
       const img = this.coinFrames[c.frame % this.coinFrames.length];
       if (img && img.loaded) {
         const imgRatio = img.width / img.height;
@@ -2460,6 +2465,7 @@ class LisarArcade2D {
     // Enemigos con auras y transparencia limpia
     this.enemies.forEach(e => {
       if (e.type === 0) {
+        if (e.y < 240) return; // NUNCA dibujar plataformas en la mitad superior (HUD)
         // Obstáculo cyber ciberpunk con degradado translúcido y bordes neón
         this.ctx.save();
         const flash = Math.floor(performance.now() / 180) % 2 === 0;
