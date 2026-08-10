@@ -1225,7 +1225,7 @@ class LisarArcade2D {
       this.lastTime = performance.now();
       requestAnimationFrame(t => this.loop(t));
     }
-    this.startWatchdog();
+
     this.audio.play().catch(() => {});
   }
 
@@ -1411,8 +1411,8 @@ class LisarArcade2D {
       });
     }
 
-    // Spacing interval: 2.5s between challenge waves ensures zero screen clutter!
-    if (this.spawnTimer < 2.5) return;
+    // Spacing interval: 1.8s between challenge waves makes the level dense and dynamic!
+    if (this.spawnTimer < 1.8) return;
     this.spawnTimer = 0;
 
     // Select a random challenge index that is not the same as the last one
@@ -1427,11 +1427,11 @@ class LisarArcade2D {
     const playableTopY = 185 / this.scale;
 
     if (challengeIndex === 0) {
-      // 0. PLATAFORMA SUELO: Cubo en el suelo + 4 monedas arriba
+      // 0. PLATAFORMA SUELO LARGA: Bloque horizontal terrestre ancho (width: 320) + 6 monedas arriba
       const cubeY = this.logicalHeight - 200 - 70;
-      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 140, height: 200, vx: -this.floorSpeed, hp: 9999 });
-      for (let i = 0; i < 4; i++) {
-        this.coins.push({ x: startX + 15 + i * 30, y: cubeY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 320, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      for (let i = 0; i < 6; i++) {
+        this.coins.push({ x: startX + 20 + i * 45, y: cubeY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 1) {
       // 1. HAZARD VOLADOR: Enemigo volador + arco parabólico de monedas
@@ -1460,10 +1460,10 @@ class LisarArcade2D {
         this.coins.push({ x: startX + i * 50, y: startY + Math.sin(i * 0.9) * 20, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 4) {
-      // 4. PLATAFORMA TECHO: Bloque de techo + monedas corriendo por el medio
-      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 140, height: 180, vx: -this.floorSpeed, hp: 9999 });
-      for (let i = 0; i < 5; i++) {
-        this.coins.push({ x: startX + i * 46, y: Math.max(playableTopY + 10, 245), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      // 4. PLATAFORMA TECHO LARGA: Bloque horizontal de techo ancho (width: 320) + monedas corriendo por debajo
+      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 320, height: 180, vx: -this.floorSpeed, hp: 9999 });
+      for (let i = 0; i < 6; i++) {
+        this.coins.push({ x: startX + i * 48, y: Math.max(playableTopY + 10, 245), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 5) {
       // 5. DOBLE AMENAZA: Un enemigo volador alto, uno rodante bajo, y monedas en zigzag intermedio
@@ -1475,12 +1475,12 @@ class LisarArcade2D {
         this.coins.push({ x: startX + i * 42, y: highY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 6) {
-      // 6. PARKOUR DE CUBOS: Dos cubos seguidos en el suelo con monedas flotando arriba
+      // 6. PARKOUR DE CUBOS: Dos plataformas seguidas en el suelo con monedas flotando arriba
       const cubeY = this.logicalHeight - 200 - 70;
-      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 100, height: 200, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 180, y: cubeY, width: 100, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 120, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 200, y: cubeY, width: 120, height: 200, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 46, y: cubeY - 80, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 52, y: cubeY - 80, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 7) {
       // 7. COIN RUSH: Sin enemigos, gran oleada de monedas en doble hélice + rayito de salud
@@ -1491,20 +1491,19 @@ class LisarArcade2D {
         this.coins.push({ x: startX + i * 40, y: centerY - Math.sin(i * 0.8) * 32, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 8) {
-      // 8. TÚNEL CORREDOR: Techo y suelo bloqueados a la vez, monedas por el centro
-      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 120, height: 110, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX, y: this.logicalHeight - 120 - 70, width: 120, height: 120, vx: -this.floorSpeed, hp: 9999 });
-      for (let i = 0; i < 4; i++) {
-        this.coins.push({ x: startX + 10 + i * 36, y: Math.max(playableTopY + 10, 240), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      // 8. TÚNEL CORREDOR ANCHO: Techo y suelo bloqueados a la vez (width: 240), monedas por el centro
+      this.enemies.push({ type: 0, x: startX, y: playableTopY + 10, width: 240, height: 110, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX, y: this.logicalHeight - 120 - 70, width: 240, height: 120, vx: -this.floorSpeed, hp: 9999 });
+      for (let i = 0; i < 5; i++) {
+        this.coins.push({ x: startX + 10 + i * 45, y: Math.max(playableTopY + 10, 240), width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 9) {
-      // 9. ATAQUE CONCENTRADO: Un volador que dispara rápido + anillo de monedas protectoras
-      this.spawnEnemy1(progress);
-      const centerY = Math.max(playableTopY + 10, 230);
-      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-        const cx = startX + 110 + Math.cos(angle) * 45;
-        const cy = centerY + Math.sin(angle) * 45;
-        this.coins.push({ x: cx, y: cy, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+      // 9. PLATAFORMA FLOTANTE INTERMEDIA: Plataforma flotante en medio (width: 260, height: 50) + monedas arriba + enemigo rodante abajo!
+      const platformY = this.logicalHeight - 150 - 70;
+      this.enemies.push({ type: 0, x: startX, y: platformY, width: 260, height: 50, vx: -this.floorSpeed, hp: 9999 });
+      this.spawnEnemy2(progress, 60); // Enemigo rodando abajo de la plataforma
+      for (let i = 0; i < 5; i++) {
+        this.coins.push({ x: startX + 20 + i * 45, y: platformY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     }
   }
@@ -2806,25 +2805,7 @@ class LisarArcade2D {
     }
   }
 
-  startWatchdog() {
-    // Clear any existing watchdog
-    if (this._watchdogId) clearInterval(this._watchdogId);
-    this._lastLoopTime = performance.now();
-    this._watchdogId = setInterval(() => {
-      const activeState = ['playing', 'paused', 'celebration', 'victory', 'gameover'].includes(this.state);
-      if (!activeState) {
-        clearInterval(this._watchdogId);
-        return;
-      }
-      const elapsed = performance.now() - (this._lastLoopTime || 0);
-      if (elapsed > 800) {
-        // Loop has been dead for 800ms - restart it
-        console.warn('[ArcadeWatchdog] Loop frozen for ' + Math.round(elapsed) + 'ms - restarting!');
-        this.lastTime = performance.now();
-        requestAnimationFrame(t => this.loop(t));
-      }
-    }, 500);
-  }
+
 
   destroy() {
     this.state = 'destroyed';
