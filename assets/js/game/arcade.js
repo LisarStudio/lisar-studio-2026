@@ -378,25 +378,39 @@ class LisarArcade2D {
     }
   }
 
-  speak(text) {
+    speak(text) {
+    // 1. Web Audio Techno Synth Chime (Marvel vs Capcom 90s style)
+    this.playArcadeAnnouncerChime();
+
+    // 2. High-Pitched Energetic Female Vocal Synthesizer
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
-        utterance.rate = 1.38;
-        utterance.pitch = 1.48;
+        utterance.rate = 1.35;
+        utterance.pitch = 1.60; // High pitch energetic female voice
         utterance.volume = 1.0;
 
-        const voices = window.speechSynthesis.getVoices();
-        const femaleVoice = voices.find(v => 
-          (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Zira') || 
-           v.name.includes('Female') || v.name.includes('Karen') || v.name.includes('Fiona') || v.name.includes('Google US English'))
-        );
-        if (femaleVoice) utterance.voice = femaleVoice;
+        const loadAndSpeakVoice = () => {
+          const voices = window.speechSynthesis.getVoices();
+          const femaleVoice = voices.find(v => 
+            v.lang.startsWith('en') && (
+              v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Zira') || 
+              v.name.includes('Female') || v.name.includes('Karen') || v.name.includes('Fiona') || 
+              v.name.includes('Google US English') || v.name.includes('Siri') || v.name.includes('Susan')
+            )
+          );
+          if (femaleVoice) utterance.voice = femaleVoice;
+          window.speechSynthesis.speak(utterance);
+        };
 
-        window.speechSynthesis.speak(utterance);
-        this.playArcadeAnnouncerChime();
+        if (window.speechSynthesis.getVoices().length > 0) {
+          loadAndSpeakVoice();
+        } else {
+          window.speechSynthesis.onvoiceschanged = loadAndSpeakVoice;
+          window.speechSynthesis.speak(utterance);
+        }
       } catch(e) {}
     }
   }
@@ -406,18 +420,18 @@ class LisarArcade2D {
       if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
       
-      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 90s Techno Arpeggio
+      const freqs = [523.25, 659.25, 783.99, 1046.50, 1318.51]; // C5, E5, G5, C6, E6 Marvel vs Capcom Arpeggio
       freqs.forEach((f, idx) => {
         const osc = this.audioCtx.createOscillator();
         const gain = this.audioCtx.createGain();
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(f, this.audioCtx.currentTime + idx * 0.04);
-        gain.gain.setValueAtTime(0.12, this.audioCtx.currentTime + idx * 0.04);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + idx * 0.04 + 0.15);
+        osc.frequency.setValueAtTime(f, this.audioCtx.currentTime + idx * 0.035);
+        gain.gain.setValueAtTime(0.14, this.audioCtx.currentTime + idx * 0.035);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + idx * 0.035 + 0.16);
         osc.connect(gain);
         gain.connect(this.audioCtx.destination);
-        osc.start(this.audioCtx.currentTime + idx * 0.04);
-        osc.stop(this.audioCtx.currentTime + idx * 0.04 + 0.15);
+        osc.start(this.audioCtx.currentTime + idx * 0.035);
+        osc.stop(this.audioCtx.currentTime + idx * 0.035 + 0.16);
       });
     } catch(e) {}
   }
@@ -1661,7 +1675,7 @@ class LisarArcade2D {
       this.player.y = floorY;
       
       // Mantiene el banner de misión inicial legible durante 4.0 segundos completos
-      if (this.introTimer >= 4.0) {
+      if (this.introTimer >= 5.0) {
         this.introActive = false;
         this.gameTimer = 0;
         this.introTimer = 0;
@@ -2894,14 +2908,22 @@ class LisarArcade2D {
     this.ctx.restore();
   }
 
-  loop(now) {
+    loop(now) {
     if (this.state !== 'playing' && this.state !== 'celebration') return;
     let dt = (now - this.lastTime) / 1000;
     if (dt > 0.1) dt = 0.1;
     this.lastTime = now;
-    this.update(dt);
-    this.draw();
-    requestAnimationFrame(t => this.loop(t));
+
+    try {
+      this.update(dt);
+      this.draw();
+    } catch(e) {
+      console.error('Arcade loop error:', e);
+    }
+
+    if (this.state === 'playing' || this.state === 'celebration') {
+      requestAnimationFrame(t => this.loop(t));
+    }
   }
 
   destroy() {
@@ -2932,7 +2954,7 @@ function initLisarArcadeBootstrap() {
       // Give the constructor time to finish resize & setup, then start
       setTimeout(() => {
         if (window.arcadeGame) {
-          window.arcadeGame.startGame();
+          window.arcadeGame.showInstructions();
         }
       }, 150);
     };
