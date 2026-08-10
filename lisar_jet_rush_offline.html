@@ -394,7 +394,7 @@
         🎮 LISAR JET RUSH — GUÍA DE VUELO
       </h3>
       <div style="font-size:0.75rem; color:#ffd700; margin-bottom:10px; font-weight:900; text-shadow:0 0 6px rgba(255, 215, 0, 0.4); letter-spacing:0.5px;">
-        VERSIÓN 3.2 - ALTURA MEDIA AJUSTADA (HUD SAFE)
+        VERSIÓN 3.3 - ALTURA FIJA BLOQUE VERDE (HUD CLEAN)
       </div>
       <div style="background:rgba(255,255,255,0.06); border:1.5px solid rgba(0,243,255,0.4); border-radius:8px; padding:10px 14px; margin-bottom:12px; text-align:left;">
         <p style="margin:5px 0; font-size:0.95rem; color:#ffffff; font-weight:bold;"><span style="color:#ffd700;">🚀 VUELO / JETPACK:</span> <b style="color:#ffffff;">Espacio</b> / <b style="color:#ffffff;">Flecha Arriba</b> / <b style="color:#ffffff;">Touch</b></p>
@@ -1508,7 +1508,7 @@
         if (this.gameTimer >= item.time && !this.spawnedLetters[item.letter]) {
           this.spawnedLetters[item.letter] = true;
           const playableTopY = 185 / this.scale;
-          const randomY = Math.max(playableTopY + 10, 210) + Math.random() * 70;
+          const randomY = 240 + Math.random() * 45; // Y entre 240 y 285
           this.letterItems.push({
             letter: item.letter,
             x: this.logicalWidth + 80,
@@ -1531,7 +1531,7 @@
         
         if (noObstaclesNear && noPowerupsNear) {
           // Rango de altura media ideal
-          const randomY = 205 + Math.random() * 40; // Y entre 205 y 245 (safe from HUD and exactly in the middle)
+          const randomY = 275 + Math.random() * 20; // Y entre 275 y 295 (safe from HUD and exactly in the green block height range)
           const randomW = 100 + Math.random() * 150; // Ancho entre 100 y 250
           
           this.enemies.push({
@@ -1577,30 +1577,30 @@
     const playableTopY = 185 / this.scale;
 
     if (challengeIndex === 0) {
-      // 0. PLATAFORMA SUELO LARGA: Bloque horizontal terrestre ancho (width: 320) + 6 monedas arriba
-      const cubeY = this.logicalHeight - 200 - 70;
-      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 320, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      // 0. PLATAFORMA SUELO LARGA: Bloque horizontal terrestre ancho (width: 320) + 6 monedas arriba (bajos)
+      const cubeY = this.logicalHeight - 100 - 70; // Y = 280 (coins at 220)
+      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 320, height: 100, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
         this.coins.push({ x: startX + 20 + i * 45, y: cubeY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 1) {
-      // 1. HAZARD VOLADOR: Enemigo volador + arco parabólico de monedas
+      // 1. HAZARD VOLADOR: Enemigo volador + arco parabólico de monedas (bajo)
       this.spawnEnemy1(progress);
       for (let i = 0; i < 5; i++) {
-        const archY = Math.max(playableTopY + 10, 240) - Math.sin((i / 4) * Math.PI) * 20;
+        const archY = 250 - Math.sin((i / 4) * Math.PI) * 25; // Y entre 225 y 250
         this.coins.push({ x: startX + i * 48, y: archY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 2) {
-      // 2. ENEMIGO RODANTE: Bola eléctrica rodante + rombo de monedas
+      // 2. ENEMIGO RODANTE: Bola eléctrica rodante + rombo de monedas (bajo)
       this.spawnEnemy2(progress);
-      const highY = Math.max(playableTopY + 10, 235);
+      const highY = 255;
       const diamondOffsets = [{ dx: 0, dy: 0 }, { dx: 36, dy: -14 }, { dx: 36, dy: 14 }, { dx: 72, dy: 0 }];
       diamondOffsets.forEach(off => {
         this.coins.push({ x: startX + 60 + off.dx, y: highY + off.dy, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       });
     } else if (challengeIndex === 3) {
-      // 3. REABASTECIMIENTO: Magnetic Boot (si está herido) o carga de Lu + onda de monedas
-      const startY = Math.max(playableTopY + 10, 235);
+      // 3. REABASTECIMIENTO: Magnetic Boot (si está herido) o carga de Lu + onda de monedas (bajo)
+      const startY = 255;
       if (this.player.hp < this.player.maxHp * 0.8) {
         this.powerups.push({ x: startX + 40, y: startY, width: 50, height: 50, vx: -(this.floorSpeed + 15), isBoot: true, frameTimer: 0 });
       } else if (this.luBoostCharges < 3 && Math.random() > 0.5) {
@@ -1610,49 +1610,49 @@
         this.coins.push({ x: startX + i * 50, y: startY + Math.sin(i * 0.9) * 20, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 4) {
-      // 4. PLATAFORMA FLOTANTE LARGA EN EL CENTRO: Bloque horizontal de centro ancho (width: 320) + monedas arriba
-      const randomY = 210 + Math.random() * 25; // Y entre 210 y 235 (centro exacto)
+      // 4. PLATAFORMA FLOTANTE LARGA EN EL CENTRO: Bloque horizontal de centro ancho (width: 320) + monedas arriba (bajo)
+      const randomY = 280; // Y = 280 (coins at 220)
       this.enemies.push({ type: 0, x: startX, y: randomY, width: 320, height: 35, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
         this.coins.push({ x: startX + 20 + i * 48, y: randomY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 5) {
-      // 5. DOBLE AMENAZA: Un enemigo volador alto, uno rodante bajo, y monedas en zigzag intermedio
+      // 5. DOBLE AMENAZA: Un enemigo volador alto, uno rodante bajo, y monedas en zigzag intermedio (bajo)
       this.spawnEnemy1(progress);
       this.spawnEnemy2(progress, 80); // Ligeramente desfasado
-      const highY = Math.max(playableTopY + 10, 230);
+      const highY = 265;
       for (let i = 0; i < 6; i++) {
         const offset = i % 2 === 0 ? -18 : 18;
         this.coins.push({ x: startX + i * 42, y: highY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 6) {
-      // 6. PARKOUR DE CUBOS: Dos plataformas seguidas en el suelo con monedas flotando arriba
-      const cubeY = this.logicalHeight - 200 - 70;
-      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 120, height: 200, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 200, y: cubeY, width: 120, height: 200, vx: -this.floorSpeed, hp: 9999 });
+      // 6. PARKOUR DE CUBOS: Dos plataformas seguidas en el suelo con monedas flotando arriba (bajo)
+      const cubeY = this.logicalHeight - 100 - 70; // Y = 280
+      this.enemies.push({ type: 0, x: startX, y: cubeY, width: 120, height: 100, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 200, y: cubeY, width: 120, height: 100, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 52, y: cubeY - 80, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 52, y: cubeY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 }); // Coins at 220
       }
     } else if (challengeIndex === 7) {
-      // 7. COIN RUSH: Sin enemigos, gran oleada de monedas en doble hélice + rayito de salud
-      const centerY = Math.max(playableTopY + 10, 230);
+      // 7. COIN RUSH: Sin enemigos, gran oleada de monedas en doble hélice + rayito de salud (bajo)
+      const centerY = 265;
       this.powerups.push({ x: startX + 120, y: centerY, width: 50, height: 50, vx: -this.floorSpeed, isBoot: Math.random() > 0.5, frameTimer: 0 });
       for (let i = 0; i < 8; i++) {
         this.coins.push({ x: startX + i * 40, y: centerY + Math.sin(i * 0.8) * 32, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
         this.coins.push({ x: startX + i * 40, y: centerY - Math.sin(i * 0.8) * 32, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 8) {
-      // 8. PASOS ESCALONADOS: Dos plataformas flotantes a diferente altura media, monedas sobre ellas
-      this.enemies.push({ type: 0, x: startX, y: 240, width: 150, height: 35, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 190, y: 205, width: 150, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      // 8. PASOS ESCALONADOS: Dos plataformas flotantes a diferente altura media, monedas sobre ellas (bajo)
+      this.enemies.push({ type: 0, x: startX, y: 295, width: 150, height: 35, vx: -this.floorSpeed, hp: 9999 });
+      this.enemies.push({ type: 0, x: startX + 190, y: 280, width: 150, height: 35, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 3; i++) {
-        this.coins.push({ x: startX + 15 + i * 45, y: 240 - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
-        this.coins.push({ x: startX + 205 + i * 45, y: 205 - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 15 + i * 45, y: 295 - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 }); // Coins at 235
+        this.coins.push({ x: startX + 205 + i * 45, y: 280 - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 }); // Coins at 220
       }
     } else if (challengeIndex === 9) {
-      // 9. PLATAFORMA FLOTANTE INTERMEDIA: Plataforma flotante en medio (width: 260, height: 50) + monedas arriba + enemigo rodante abajo!
-      const platformY = this.logicalHeight - 150 - 70;
-      this.enemies.push({ type: 0, x: startX, y: platformY, width: 260, height: 50, vx: -this.floorSpeed, hp: 9999 });
+      // 9. PLATAFORMA FLOTANTE INTERMEDIA: Plataforma flotante en medio + monedas arriba + enemigo rodante abajo! (bajo)
+      const platformY = 280; // Y = 280
+      this.enemies.push({ type: 0, x: startX, y: platformY, width: 260, height: 35, vx: -this.floorSpeed, hp: 9999 });
       this.spawnEnemy2(progress, 60); // Enemigo rodando abajo de la plataforma
       for (let i = 0; i < 5; i++) {
         this.coins.push({ x: startX + 20 + i * 45, y: platformY - 60, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
@@ -1673,10 +1673,9 @@
   }
 
   spawnEnemy1(progress, offsetX = 0) {
-    // Enemigos voladores únicamente en la franja del rectángulo verde (230px - 270px)
-    const playableTopY = 185 / this.scale;
-    const minY = Math.max(playableTopY + 10, 230);
-    const maxY = Math.max(playableTopY + 50, 270);
+    // Enemigos voladores únicamente en la franja de altura del bloque verde (250px - 290px)
+    const minY = 250;
+    const maxY = 290;
     const spawnY = minY + Math.random() * (maxY - minY);
     this.enemies.push({
       type: 1,
@@ -2071,7 +2070,7 @@
     if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
       this.luBoostActive = true; this.luBoostCooldown = 18; this.luBoostX = -180;
       const playableTopY = 185 / this.scale;
-      this.luBoostY = Math.max(playableTopY + 10, 225);
+      this.luBoostY = 255; // Y = 255 (fixed height at green block level)
       this.luBoostFrame = 0; this.luBoostTimer = 0; this.luBoostDropped = false;
       this.speak("Emergency Energy Boost!");
       this.showTemporaryAlert("\u26a1 \u00a1LU AL RESCATE!", "Lu vuela en su nube lanz\u00e1ndote energ\u00eda", 3.5);
