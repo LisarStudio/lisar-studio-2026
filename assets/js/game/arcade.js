@@ -625,14 +625,25 @@ class LisarArcade2D {
         this.input.right = true;
         e.preventDefault();
       }
-      if (e.code === 'Escape' || e.code === 'KeyP') this.togglePause();
+      if (e.code === 'Escape' || e.code === 'KeyP') {
+        // P/Escape must work in both 'playing' AND 'paused' states
+        if (this.state === 'playing' || this.state === 'paused') this.togglePause();
+      }
     });
 
     window.addEventListener('keyup', e => {
-      if (this.state !== 'playing') return;
+      // NOTE: Do NOT guard with state check here - keyup must ALWAYS reset input
+      // so the character never gets stuck flying when state changes while key is held
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') this.input.up = false;
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.input.left = false;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') this.input.right = false;
+    });
+
+    // Safety: also reset all inputs on window blur (tab switching, alt-tab)
+    window.addEventListener('blur', () => {
+      this.input.up = false;
+      this.input.left = false;
+      this.input.right = false;
     });
 
     // Touch/Mouse container handlers
@@ -1151,14 +1162,23 @@ class LisarArcade2D {
     this.luBoostCooldown = 0;
     this.lisarWordBonusGranted = false;
 
-    this.enemies     = [];
-    this.projectiles = [];
-    this.coins       = [];
-    this.particles   = [];
-    this.powerups    = [];
-    this.billboards  = [];
-    this.spawnTimer  = 0;
-    this.gameTimer   = 0;
+    this.enemies       = [];
+    this.projectiles   = [];
+    this.coins         = [];
+    this.particles     = [];
+    this.powerups      = [];
+    this.billboards    = [];
+    this.bgHills       = [];
+    this.letterItems   = [];
+    this.spawnedLetters = {};
+    this.collectedLisarLetters = {};
+    this.lisarWordBonusGranted = false;
+    this.extraDiscountBonus    = 0;
+    this.spawnTimer    = 0;
+    this.hillTimer     = 0;
+    this.billboardTimer = 0;
+    this.stageStep     = 0;
+    this.gameTimer     = 0;
 
     this.audio.currentTime = 0;
     requestAnimationFrame(t => this.loop(t));
@@ -1169,12 +1189,20 @@ class LisarArcade2D {
   togglePause() {
     if (this.state === 'playing') {
       this.state = 'paused';
+      // Reset all inputs so character doesn't keep flying when paused
+      this.input.up = false;
+      this.input.left = false;
+      this.input.right = false;
       this.audio.pause();
-      this.showMessage('PAUSA', 'El juego está pausado.', 'REANUDAR', () => this.togglePause());
+      this.showMessage(
+        '⏸ PAUSA',
+        '¡El juego está pausado! Presiona P o ESC para continuar.',
+        [{ text: '▶ REANUDAR', primary: true, action: () => this.togglePause() }]
+      );
     } else if (this.state === 'paused') {
-      this.state = 'playing';
-      this.audio.play();
       this.hideMessage();
+      this.state = 'playing';
+      this.audio.play().catch(() => {});
       this.lastTime = performance.now();
       requestAnimationFrame(t => this.loop(t));
     }
