@@ -1433,7 +1433,7 @@ class LisarArcade2D {
         
         if (noObstaclesNear && noPowerupsNear) {
           // Rango de altura media ideal
-          const randomY = 135 + Math.random() * 75; // Y entre 135 y 210
+          const randomY = 205 + Math.random() * 40; // Y entre 205 y 245 (safe from HUD and exactly in the middle)
           const randomW = 100 + Math.random() * 150; // Ancho entre 100 y 250
           
           this.enemies.push({
