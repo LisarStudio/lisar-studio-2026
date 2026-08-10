@@ -633,7 +633,7 @@ class LisarArcade2D {
       if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
       // P / Escape MUST work in both playing AND paused states — check BEFORE the state guard
-      if (e.code === 'Escape' || e.code === 'KeyP') {
+      if (e.code === 'Escape' || e.code === 'KeyP' || e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
         if (this.state === 'playing' || this.state === 'paused') {
           this.togglePause();
           e.preventDefault();
@@ -644,19 +644,19 @@ class LisarArcade2D {
       // All other keys only work while actively playing
       if (this.state !== 'playing') return;
 
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         this.input.up = true;
         e.preventDefault();
       }
-      if (e.code === 'KeyX' || e.code === 'KeyJ' || e.code === 'KeyZ' || e.code === 'KeyK') {
+      if (e.code === 'KeyX' || e.code === 'KeyJ' || e.code === 'KeyZ' || e.code === 'KeyK' || e.key === 'x' || e.key === 'X' || e.key === 'j' || e.key === 'J' || e.key === 'z' || e.key === 'Z' || e.key === 'k' || e.key === 'K') {
         this.performAttack();
         e.preventDefault();
       }
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA' || e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         this.input.left = true;
         e.preventDefault();
       }
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+      if (e.code === 'ArrowRight' || e.code === 'KeyD' || e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         this.input.right = true;
         e.preventDefault();
       }
@@ -665,9 +665,9 @@ class LisarArcade2D {
     window.addEventListener('keyup', e => {
       // NEVER guard keyup — must ALWAYS reset input flags regardless of state
       // Otherwise character stays flying if state changes while Space is held
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') this.input.up = false;
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.input.left = false;
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') this.input.right = false;
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW' || e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') this.input.up = false;
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA' || e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') this.input.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD' || e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') this.input.right = false;
     });
 
     // Reset all inputs on window/tab blur — prevents stuck keys
@@ -1554,7 +1554,7 @@ class LisarArcade2D {
     });
   }
 
-  checkCollisions() {
+  checkCollisions(dt) {
     // Tighter, accurate hitbox centered on character (pw: 80, ph: 110)
     const px = this.player.x + 80;
     const py = this.player.y + 65;
@@ -1818,7 +1818,7 @@ class LisarArcade2D {
     if (this.player.y > floorY) { this.player.y = floorY; this.player.vy = 0; }
     if (this.player.invulnerable > 0) this.player.invulnerable -= dt;
 
-    this.checkCollisions();
+    this.checkCollisions(dt);
 
     this.player.frameTimer += dt;
     const onGround = this.player.y >= floorY - 2 || this.player.onCube;
