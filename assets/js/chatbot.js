@@ -1,6 +1,6 @@
 // assets/js/chatbot.js
 
-document.addEventListener('DOMContentLoaded', () => {
+function initChatbot() {
   const toggler = document.getElementById('chatbot-toggler');
   const container = document.getElementById('chatbot-container');
   const closeBtn = document.getElementById('close-chatbot');
@@ -459,4 +459,11 @@ document.addEventListener('DOMContentLoaded', () => {
         footer.appendChild(btnNo);
     }, 1500);
   };
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initChatbot);
+} else {
+  initChatbot();
+}
+

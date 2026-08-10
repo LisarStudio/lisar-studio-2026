@@ -1724,66 +1724,81 @@ class LisarArcade2D {
   update(dt) {
     if (this.state !== 'playing' && this.state !== 'celebration') return;
 
+    // ── CELEBRATION PATH (completely isolated — no speedBoost, no gameTimer) ────
+    if (this.state === 'celebration') {
+      this.celebrationTimer -= dt;
+
+      if (Math.random() > 0.20) {
+        const fireworkColor = ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa', '#ff2266'][Math.floor(Math.random() * 5)];
+        const fx = Math.random() * this.logicalWidth;
+        const fy = Math.random() * (this.logicalHeight - 120);
+        for (let i = 0; i < 5; i++) {
+          this.particles.push({ x: fx, y: fy, vx: (Math.random()-0.5)*360, vy: (Math.random()-0.5)*360, life: 0.7+Math.random()*0.4, maxLife: 1.1, color: fireworkColor, size: 3+Math.random()*6 });
+        }
+      }
+
+      this.floorOffset -= this.floorSpeed * dt;
+      if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
+
+      if (this.celebrationTimer <= 5.5) {
+        this.isFlyToInfinity = true;
+        this.player.y -= 280 * dt;
+        for (let i = 0; i < 3; i++) {
+          this.particles.push({ x: this.player.x + this.player.width/2 + (Math.random()-0.5)*20, y: this.player.y + this.player.height, vx: (Math.random()-0.5)*80, vy: 300+Math.random()*200, life: 0.5, maxLife: 0.5, color: ['#00ffff','#ffd700','#ff00ff','#ffffff'][Math.floor(Math.random()*4)], size: 4+Math.random()*6 });
+        }
+      }
+
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+        if (p.life <= 0) this.particles.splice(i, 1);
+      }
+
+      if (this.celebrationTimer <= 0 || (this.isFlyToInfinity && this.player.y < -300)) {
+        this.endGame(true);
+      }
+      return;
+    }
+
+    // ── INTRO PATH ───────────────────────────────────────────────────────────────
     if (this.introActive) {
       this.introTimer = (this.introTimer || 0) + dt;
       this.player.x += dt * 110;
       if (this.player.x >= 80) this.player.x = 80;
-
       this.activeAnim = this.runFrames;
       this.loopAnim = true;
       this.animSpeed = 0.11;
-      
-      // Fade in del mensaje inicial
       this.introAlpha = Math.min(1, (this.introAlpha || 0) + dt * 1.5);
-      
       this.player.frameTimer += dt;
       if (this.player.frameTimer > this.animSpeed && this.activeAnim && this.activeAnim.length > 0) {
         this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
         this.player.frameTimer = 0;
       }
-      
       const floorY = this.logicalHeight - this.player.height - 70;
       this.player.y = floorY;
-      
-      // Mantiene el banner de misión inicial legible durante 4.0 segundos completos
-      if (this.introTimer >= 5.0) {
-        this.introActive = false;
-        this.gameTimer = 0;
-        this.introTimer = 0;
-      }
-      
-      // Suelo scrolling
+      if (this.introTimer >= 5.0) { this.introActive = false; this.gameTimer = 0; this.introTimer = 0; }
       this.floorOffset -= this.floorSpeed * dt;
       if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
-      
       this.updateHUD();
-      return; 
+      return;
     }
 
+    // ── PLAYING PATH ─────────────────────────────────────────────────────────────
     this.gameTimer += dt;
     const remaining = Math.max(0, 180 - this.gameTimer);
-    
-    // Aumento progresivo de velocidad a lo largo de los 3 minutos
     const progress = Math.min(1, this.gameTimer / 180);
     const speedBoost = 1.0 + progress * 0.90;
-    const rawDt = dt; // Keep raw dt for celebration timer (NOT affected by speedBoost)
-    dt *= 1.30 * speedBoost; // Game objects move faster
+    const rawDt = dt;
+    dt *= 1.30 * speedBoost;
 
-    // Físicas del jugador
     if (this.player.x < 80) {
       this.player.x += dt * 100;
       if (this.player.x > 80) this.player.x = 80;
     } else {
-      // Movimiento horizontal libre con controles (Teclado A/D, flechas, o D-Pad móvil)
       const moveSpeed = 280;
-      if (this.input.left) {
-        this.player.x -= moveSpeed * rawDt;
-      }
-      if (this.input.right) {
-        this.player.x += moveSpeed * rawDt;
-      }
-      // Limitar bordes del escenario lógico
-      if (this.player.x < 20) this.player.x = 20;
+      if (this.input.left)  { this.player.x -= moveSpeed * rawDt; }
+      if (this.input.right) { this.player.x += moveSpeed * rawDt; }
+      if (this.player.x < 20)  this.player.x = 20;
       if (this.player.x > 450) this.player.x = 450;
     }
 
@@ -1800,23 +1815,17 @@ class LisarArcade2D {
     this.player.y += this.player.vy * dt;
 
     const floorY = this.logicalHeight - this.player.height - 70;
-    if (this.player.y > floorY)   { this.player.y = floorY; this.player.vy = 0; }
-
+    if (this.player.y > floorY) { this.player.y = floorY; this.player.vy = 0; }
     if (this.player.invulnerable > 0) this.player.invulnerable -= dt;
 
     this.checkCollisions();
 
-    // ================================================================
-    // ANIMACIÓN DEL JUGADOR - MÁQUINA DE ESTADOS (CORRE, VUELA, ATACA)
-    // ================================================================
     this.player.frameTimer += dt;
     const onGround = this.player.y >= floorY - 2 || this.player.onCube;
 
     if (this.player.isAttacking) {
       this.player.attackTimer -= dt;
-      if (this.player.attackTimer <= 0) {
-        this.player.isAttacking = false;
-      }
+      if (this.player.attackTimer <= 0) this.player.isAttacking = false;
     }
 
     this.activeAnim = [];
@@ -1824,333 +1833,144 @@ class LisarArcade2D {
 
     if (this.player.isAttacking) {
       if (onGround) {
-        this.activeAnim = this.attackFrames;
-        this.loopAnim   = false;
+        this.activeAnim = this.attackFrames; this.loopAnim = false;
         const total = this.attackFrames.length || 8;
         this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.45) * total));
       } else {
-        this.activeAnim = this.flyAttackFrames;
-        this.loopAnim   = false;
+        this.activeAnim = this.flyAttackFrames; this.loopAnim = false;
         const total = this.flyAttackFrames.length || 9;
         this.player.frame = Math.min(total - 1, Math.floor((1 - this.player.attackTimer / 0.45) * total));
       }
     } else if (onGround) {
       this.player.angle = 0;
-      if (this.player.wasFlying) {
-        this.player.landTimer = 0.15;
-        this.player.wasFlying = false;
-        this.player.flyAscendIndex = 0;
-      }
-
+      if (this.player.wasFlying) { this.player.landTimer = 0.15; this.player.wasFlying = false; this.player.flyAscendIndex = 0; }
       if (this.player.landTimer > 0) {
         this.player.landTimer -= dt;
-        this.activeAnim = [this.flyLandImg];
-        this.loopAnim   = false;
+        this.activeAnim = [this.flyLandImg]; this.loopAnim = false;
       } else {
-        this.activeAnim = this.runFrames;
-        this.loopAnim   = true;
-        this.animSpeed  = 0.08;
-
+        this.activeAnim = this.runFrames; this.loopAnim = true; this.animSpeed = 0.08;
         if (speedBoost > 1.3 && this.particles.length < 40 && Math.random() > 0.45) {
-          this.particles.push({
-            x: this.player.x + this.player.width / 2 - 20 + Math.random() * 40,
-            y: floorY + this.player.height - 10,
-            vx: -this.floorSpeed - 20 - Math.random() * 50,
-            vy: -10 - Math.random() * 15,
-            life: 0.35 + Math.random() * 0.25,
-            maxLife: 0.6,
-            color: 'smoke',
-            size: 4 + Math.random() * 7
-          });
+          this.particles.push({ x: this.player.x + this.player.width/2 - 20 + Math.random()*40, y: floorY + this.player.height - 10, vx: -this.floorSpeed - 20 - Math.random()*50, vy: -10 - Math.random()*15, life: 0.35+Math.random()*0.25, maxLife: 0.6, color: 'smoke', size: 4+Math.random()*7 });
         }
       }
     } else {
-      this.player.wasFlying = true;
-      this.player.landTimer = 0;
-
+      this.player.wasFlying = true; this.player.landTimer = 0;
       if (this.player.vy > 80) {
-        this.activeAnim = [this.flyFallImg];
-        this.loopAnim   = false;
+        this.activeAnim = [this.flyFallImg]; this.loopAnim = false;
         this.player.angle = (this.player.angle || 0) + (0.12 - (this.player.angle || 0)) * dt * 6;
       } else {
-        this.activeAnim = [this.flyLoopFrames[0]];
-        this.loopAnim   = false;
-
+        this.activeAnim = [this.flyLoopFrames[0]]; this.loopAnim = false;
         const targetAngle = this.player.vy < -100 ? -0.14 : -0.05;
         this.player.angle = (this.player.angle || 0) + (targetAngle - (this.player.angle || 0)) * dt * 6;
-
         if (this.input.up && Math.random() > 0.35) {
-          this.particles.push({
-            x: this.player.x + 30 + Math.random() * 15,
-            y: this.player.y + this.player.height / 2 + 35,
-            vx: -220 - Math.random() * 80,
-            vy: 60 + (Math.random() - 0.5) * 50,
-            life: 0.2 + Math.random() * 0.15,
-            maxLife: 0.35,
-            color: Math.random() > 0.5 ? '#ff9900' : '#00ffff',
-            size: 3 + Math.random() * 6
-          });
+          this.particles.push({ x: this.player.x+30+Math.random()*15, y: this.player.y+this.player.height/2+35, vx: -220-Math.random()*80, vy: 60+(Math.random()-0.5)*50, life: 0.2+Math.random()*0.15, maxLife: 0.35, color: Math.random()>0.5?'#ff9900':'#00ffff', size: 3+Math.random()*6 });
         }
       }
     }
 
     if (!this.player.isAttacking) {
       if (this.loopAnim && this.activeAnim && this.activeAnim.length > 0) {
-        if (this.player.frameTimer > this.animSpeed) {
-          this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
-          this.player.frameTimer = 0;
-        }
-      } else {
-        this.player.frame = 0;
-      }
+        if (this.player.frameTimer > this.animSpeed) { this.player.frame = (this.player.frame + 1) % this.activeAnim.length; this.player.frameTimer = 0; }
+      } else { this.player.frame = 0; }
     }
 
-    // Generator de letreros pixel en el fondo (Lisar Studio billboards)
     this.billboardTimer = (this.billboardTimer || 0) + dt;
     if (this.billboardTimer > 6.5) {
       this.billboardTimer = 0;
       this.billboards = this.billboards || [];
       const texts = ['LISAR 3D', 'LISAR STUDIO', 'VFX REELS', 'JET RUSH', '3D MOTION'];
-      const txt = texts[Math.floor(Math.random() * texts.length)];
-      this.billboards.push({
-        x: this.logicalWidth + 40,
-        y: 35 + Math.random() * 110,
-        text: txt,
-        vx: -this.floorSpeed * 0.45,
-        hue: Math.floor(Math.random() * 360)
-      });
+      this.billboards.push({ x: this.logicalWidth+40, y: 35+Math.random()*110, text: texts[Math.floor(Math.random()*texts.length)], vx: -this.floorSpeed*0.45, hue: Math.floor(Math.random()*360) });
     }
     if (this.billboards) {
-      for (let i = this.billboards.length - 1; i >= 0; i--) {
-        const b = this.billboards[i];
-        b.x += b.vx * dt;
-        if (b.x < -180) this.billboards.splice(i, 1);
-      }
+      for (let i = this.billboards.length - 1; i >= 0; i--) { const b = this.billboards[i]; b.x += b.vx * dt; if (b.x < -180) this.billboards.splice(i, 1); }
     }
 
-    // Generator de Montañitas Dinámicas con los Sprites Oficiales de Lu y Peter (lu1..lu10, peter1..peter10)
     this.hillTimer = (this.hillTimer || 0) + dt;
     if (this.hillTimer > 12.0 + Math.random() * 8.0) {
       this.hillTimer = 0;
       this.bgHills = this.bgHills || [];
-      const quotes = [
-        "¡VAMOS LISAR!", "¡MENUDO COMBO!", "¡LISAR STUDIO!",
-        "¡SUPER COMBO!", "¡EXCELENTE VUELO!", "¡CASI LLEGAS!", "¡SIGUE ASÍ!", "¡AMAZING!"
-      ];
-      const txt = quotes[Math.floor(Math.random() * quotes.length)];
-      
-      // Tamaños de montaña: 0: Chica, 1: Mediana, 2: Grande
+      const quotes = ["\u00a1VAMOS LISAR!", "\u00a1MENUDO COMBO!", "\u00a1LISAR STUDIO!", "\u00a1SUPER COMBO!", "\u00a1EXCELENTE VUELO!", "\u00a1CASI LLEGAS!", "\u00a1SIGUE AS\u00cd!", "\u00a1AMAZING!"];
       const sizeType = Math.floor(Math.random() * 3);
-      const heights = [85, 130, 185];
-      const widths = [135, 195, 260];
-      const colors = ['#a200ff', '#00f3ff', '#ff00aa'];
-
-      // Personajes: 0: Solo Lu, 1: Solo Peter, 2: Lu y Peter juntos
-      const charType = Math.floor(Math.random() * 3);
-
-      this.bgHills.push({
-        x: this.logicalWidth + 80,
-        y: this.logicalHeight - 70 - heights[sizeType],
-        height: heights[sizeType],
-        width: widths[sizeType],
-        color: colors[sizeType],
-        charType: charType,
-        quote: txt,
-        vx: -this.floorSpeed * 0.40,
-        animFrame: 0,
-        frameTimer: 0
-      });
+      const heights = [85, 130, 185]; const widths = [135, 195, 260]; const colors = ['#a200ff', '#00f3ff', '#ff00aa'];
+      this.bgHills.push({ x: this.logicalWidth+80, y: this.logicalHeight-70-heights[sizeType], height: heights[sizeType], width: widths[sizeType], color: colors[sizeType], charType: Math.floor(Math.random()*3), quote: quotes[Math.floor(Math.random()*quotes.length)], vx: -this.floorSpeed*0.40, animFrame: 0, frameTimer: 0 });
     }
-
     if (this.bgHills) {
-      for (let i = this.bgHills.length - 1; i >= 0; i--) {
-        const h = this.bgHills[i];
-        h.x += h.vx * dt;
-        h.frameTimer += dt;
-        if (h.frameTimer > 0.09) {
-          h.animFrame = (h.animFrame + 1) % 10;
-          h.frameTimer = 0;
-        }
-        if (h.x < -300) this.bgHills.splice(i, 1);
-      }
+      for (let i = this.bgHills.length - 1; i >= 0; i--) { const h = this.bgHills[i]; h.x += h.vx*dt; h.frameTimer += dt; if (h.frameTimer > 0.09) { h.animFrame=(h.animFrame+1)%10; h.frameTimer=0; } if (h.x < -300) this.bgHills.splice(i, 1); }
     }
 
-    // ASISTENCIA DE ENERGÍA DE EMERGENCIA CON LU EN SU NUBE (Trigger a 3 barras de energía = hp <= 60)
     if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
-      this.luBoostActive = true;
-      this.luBoostCooldown = 18;
-      this.luBoostX = -180; // Inicia fuera de pantalla a la IZQUIERDA
+      this.luBoostActive = true; this.luBoostCooldown = 18; this.luBoostX = -180;
       const playableTopY = 185 / this.scale;
-      this.luBoostY = Math.max(playableTopY + 10, 225);  // Altura cómoda de vuelo medio (Y = 225px)
-      this.luBoostFrame = 0;
-      this.luBoostTimer = 0;
-      this.luBoostDropped = false;
+      this.luBoostY = Math.max(playableTopY + 10, 225);
+      this.luBoostFrame = 0; this.luBoostTimer = 0; this.luBoostDropped = false;
       this.speak("Emergency Energy Boost!");
-      this.showTemporaryAlert(
-        "⚡ ¡LU AL RESCATE!",
-        "Lu vuela en su nube de izquierda a derecha lanzándote energía",
-        3.5
-      );
+      this.showTemporaryAlert("\u26a1 \u00a1LU AL RESCATE!", "Lu vuela en su nube lanz\u00e1ndote energ\u00eda", 3.5);
     }
-
     if (this.luBoostCooldown > 0) this.luBoostCooldown -= dt;
-
     if (this.luBoostActive) {
-      this.luBoostX += 115 * dt; // Vuelo LENTO y fluido de izquierda a derecha
-      this.luBoostTimer += dt;
-      if (this.luBoostTimer > 0.08) {
-        this.luBoostFrame = (this.luBoostFrame + 1) % 10;
-        this.luBoostTimer = 0;
-      }
-
-      // Al aproximarse sobre el jugador, Lu le lanza la Bota de Energía hacia abajo
+      this.luBoostX += 115 * dt; this.luBoostTimer += dt;
+      if (this.luBoostTimer > 0.08) { this.luBoostFrame=(this.luBoostFrame+1)%10; this.luBoostTimer=0; }
       if (this.luBoostX >= (this.player.x + 30) && !this.luBoostDropped) {
         this.luBoostDropped = true;
-        this.powerups.push({
-          x: this.luBoostX + 20,
-          y: this.luBoostY + 40,
-          width: 60, height: 60,
-          vx: 0,
-          vy: 0,
-          isBoot: true,
-          frameTimer: 0
-        });
+        this.powerups.push({ x: this.luBoostX+20, y: this.luBoostY+40, width: 60, height: 60, vx: 0, vy: 0, isBoot: true, frameTimer: 0 });
       }
-
-      if (this.luBoostX > this.logicalWidth + 180) {
-        this.luBoostActive = false;
-      }
+      if (this.luBoostX > this.logicalWidth + 180) this.luBoostActive = false;
     }
 
-    // Suelo scrolling
     this.floorOffset -= this.floorSpeed * dt;
     if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
 
     this.spawnEntity(dt);
 
-    // Monedas
     for (let i = this.coins.length - 1; i >= 0; i--) {
-      const c = this.coins[i];
-      c.x += c.vx * dt;
-      c.frameTimer += dt;
-      if (c.frameTimer > 0.10) {
-        c.frame = (c.frame + 1) % this.coinFrames.length;
-        c.frameTimer = 0;
-      }
-      if (c.x < -c.width * 2) this.coins.splice(i, 1);
+      const c = this.coins[i]; c.x += c.vx*dt; c.frameTimer += dt;
+      if (c.frameTimer > 0.10) { c.frame=(c.frame+1)%this.coinFrames.length; c.frameTimer=0; }
+      if (c.x < -c.width*2) this.coins.splice(i, 1);
     }
 
-    // Movimiento de Letras Naranjas L-I-S-A-R
     for (let i = this.letterItems.length - 1; i >= 0; i--) {
-      const item = this.letterItems[i];
-      item.x += item.vx * dt;
-      if (item.x < -item.width * 2) this.letterItems.splice(i, 1);
+      const item = this.letterItems[i]; item.x += item.vx*dt;
+      if (item.x < -item.width*2) this.letterItems.splice(i, 1);
     }
 
-    // Powerups (Bota de Energía Magnética Homing / Rayitos)
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (p.isBoot) {
-        // HOMING MAGNÉTICO DIRECTO AL JUGADOR (Va directo al personaje automáticamente)
-        const targetX = this.player.x + 40;
-        const targetY = this.player.y + 45;
-        const dx = targetX - (p.x + p.width / 2);
-        const dy = targetY - (p.y + p.height / 2);
+        const dx = (this.player.x+40)-(p.x+p.width/2); const dy = (this.player.y+45)-(p.y+p.height/2);
         const dist = Math.hypot(dx, dy);
-
-        if (dist > 10) {
-          p.x += (dx / dist) * 480 * dt;
-          p.y += (dy / dist) * 480 * dt;
-        }
-
-        // Absorción Automática cuando está cerca del personaje
+        if (dist > 10) { p.x += (dx/dist)*480*dt; p.y += (dy/dist)*480*dt; }
         if (dist < 50) {
-          this.player.hp = Math.min(this.player.maxHp, this.player.hp + 35);
-          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 16);
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp+35);
+          this.createExplosion(p.x+p.width/2, p.y+p.height/2, '#00ffaa', 16);
           this.playCoinSound();
-          this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
-          this.speak("Energy Restored!");
-          this.powerups.splice(i, 1);
-          continue;
+          this.showTemporaryAlert("\u26a1 \u00a1ENERG\u00cdA RESTAURADA!", "\u00a1Bota de energ\u00eda recuper\u00f3 tu salud!", 2.5);
+          this.speak("Energy Restored!"); this.powerups.splice(i, 1); continue;
         }
-      } else {
-        p.x += p.vx * dt;
-        p.frameTimer += dt * 5;
-        p.y += Math.sin(p.frameTimer) * 1.8;
-      }
-      if (p.x < -p.width * 2) this.powerups.splice(i, 1);
+      } else { p.x += p.vx*dt; p.frameTimer += dt*5; p.y += Math.sin(p.frameTimer)*1.8; }
+      if (p.x < -p.width*2) this.powerups.splice(i, 1);
     }
 
-    // Enemigos
     for (let i = this.enemies.length - 1; i >= 0; i--) {
-      const e = this.enemies[i];
-      e.x += e.vx * dt;
-
-      if (e.vy) {
-        e.y += e.vy * dt;
-        const minY = 0;
-        const maxY = this.logicalHeight - e.height - 70;
-        if (e.y < minY) { e.y = minY; e.vy *= -1; }
-        if (e.y > maxY) { e.y = maxY; e.vy *= -1; }
-      }
-
-      if (e.type === 1) {
-        if (e.baseY) {
-          e.y = e.baseY + Math.sin(performance.now() / 400 + (e.sineOffset || 0)) * 30;
-        }
-      }
-
+      const e = this.enemies[i]; e.x += e.vx*dt;
+      if (e.vy) { e.y += e.vy*dt; const minY=0; const maxY=this.logicalHeight-e.height-70; if(e.y<minY){e.y=minY;e.vy*=-1;} if(e.y>maxY){e.y=maxY;e.vy*=-1;} }
+      if (e.type===1 && e.baseY) { e.y = e.baseY + Math.sin(performance.now()/400+(e.sineOffset||0))*30; }
       if (e.type !== 0) {
         e.frameTimer += dt;
-
-        if (e.type === 1) {
-          if (e.frameTimer > 0.12) {
-            e.frame = (e.frame + 1) % this.enemy1FlyFrames.length;
-            e.frameTimer = 0;
-          }
-          if (e.isShooting > 0) e.isShooting -= dt;
-          if (e.isHit > 0) e.isHit -= dt;
-        } else if (e.type === 2) {
-          if (e.frameTimer > 0.08) {
-            e.frame = (e.frame + 1) % this.enemy2BallFrames.length;
-            e.frameTimer = 0;
-          }
-        }
-
+        if (e.type===1) { if(e.frameTimer>0.12){e.frame=(e.frame+1)%this.enemy1FlyFrames.length;e.frameTimer=0;} if(e.isShooting>0)e.isShooting-=dt; if(e.isHit>0)e.isHit-=dt; }
+        else if (e.type===2) { if(e.frameTimer>0.08){e.frame=(e.frame+1)%this.enemy2BallFrames.length;e.frameTimer=0;} }
         e.shootTimer += dt;
-        const shootInterval = e.type === 1 ? 2.2 : 1.8;
+        const shootInterval = e.type===1 ? 2.2 : 1.8;
         if (e.shootTimer > shootInterval) {
           e.shootTimer = 0;
-          if (e.type === 1) {
-            e.isShooting = 0.35;
-            this.playEnemyShootSound();
-          }
-          this.projectiles.push({
-            x: e.x, y: e.y + e.height / 2,
-            width: e.type === 1 ? 65 : 36, height: 26,
-            vx: -380 - (e.type === 2 ? 80 : 0),
-            damage: e.type === 1 ? 10 : 15,
-            color: e.type === 1 ? 'enemy1_shot' : '#ff00ff'
-          });
+          if (e.type===1) { e.isShooting=0.35; this.playEnemyShootSound(); }
+          this.projectiles.push({ x:e.x, y:e.y+e.height/2, width:e.type===1?65:36, height:26, vx:-380-(e.type===2?80:0), damage:e.type===1?10:15, color:e.type===1?'enemy1_shot':'#ff00ff' });
         }
       }
-
-      if (e.x < -e.width * 2) this.enemies.splice(i, 1);
+      if (e.x < -e.width*2) this.enemies.splice(i, 1);
     }
 
-    for (let i = this.projectiles.length - 1; i >= 0; i--) {
-      const p = this.projectiles[i];
-      p.x += p.vx * dt;
-      if (p.x < -p.width) this.projectiles.splice(i, 1);
-    }
-
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.life -= dt;
-      if (p.life <= 0) this.particles.splice(i, 1);
-    }
+    for (let i = this.projectiles.length - 1; i >= 0; i--) { const p=this.projectiles[i]; p.x+=p.vx*dt; if(p.x<-p.width)this.projectiles.splice(i,1); }
+    for (let i = this.particles.length - 1; i >= 0; i--) { const p=this.particles[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt; if(p.life<=0)this.particles.splice(i,1); }
 
     this.updateHUD();
 
@@ -2161,56 +1981,7 @@ class LisarArcade2D {
       this.celebrationTimer = 8.0;
       this.isFlyToInfinity = false;
       this.speak("VICTORY! MAXIMUM DISCOUNT UNLOCKED! FLY TO INFINITY!");
-      this.showTemporaryAlert(
-        "🎉 ¡META ALCANZADA!",
-        "¡Lu y Peter te felicitan! ¡Volando al infinito!",
-        6.5
-      );
-    }
-
-    if (this.state === 'celebration') {
-      // CRITICAL: use rawDt (not speed-boosted dt) so celebration lasts the full real-time 8 seconds
-      this.celebrationTimer -= rawDt;
-
-      // Fuegos artificiales neón
-      if (Math.random() > 0.20) {
-        const fireworkColor = ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa', '#ff2266'][Math.floor(Math.random() * 5)];
-        const fx = Math.random() * this.logicalWidth;
-        const fy = Math.random() * (this.logicalHeight - 120);
-        for (let i = 0; i < 5; i++) {
-          this.particles.push({
-            x: fx, y: fy,
-            vx: (Math.random() - 0.5) * 360,
-            vy: (Math.random() - 0.5) * 360,
-            life: 0.7 + Math.random() * 0.4,
-            maxLife: 1.1,
-            color: fireworkColor,
-            size: 3 + Math.random() * 6
-          });
-        }
-      }
-
-      // Vuelo al Infinito - use rawDt for player movement too during celebration
-      if (this.celebrationTimer <= 5.5) {
-        this.isFlyToInfinity = true;
-        this.player.y -= 280 * rawDt; // Smooth ascent using real time
-        for (let i = 0; i < 3; i++) {
-          this.particles.push({
-            x: this.player.x + this.player.width / 2 + (Math.random() - 0.5) * 20,
-            y: this.player.y + this.player.height,
-            vx: (Math.random() - 0.5) * 80,
-            vy: 300 + Math.random() * 200,
-            life: 0.5,
-            maxLife: 0.5,
-            color: ['#00ffff', '#ffd700', '#ff00ff', '#ffffff'][Math.floor(Math.random() * 4)],
-            size: 4 + Math.random() * 6
-          });
-        }
-      }
-
-      if (this.celebrationTimer <= 0 || (this.isFlyToInfinity && this.player.y < -300)) {
-        this.endGame(true);
-      }
+      this.showTemporaryAlert("\ud83c\udf89 \u00a1META ALCANZADA!", "\u00a1Lu y Peter te felicitan! \u00a1Volando al infinito!", 6.5);
     }
   }
 

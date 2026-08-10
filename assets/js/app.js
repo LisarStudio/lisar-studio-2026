@@ -4,7 +4,7 @@
  * filtros de portafolio y sticky header.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   'use strict';
 
   // ============================================================
@@ -552,4 +552,11 @@ document.addEventListener('DOMContentLoaded', () => {
   sectionsToSpy.forEach(sec => {
       if(sec) persuasionObserver.observe(sec);
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+
