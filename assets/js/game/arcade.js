@@ -223,7 +223,11 @@ class LisarArcade2D {
       facing: 'right',
       wasFlying: false,
       landTimer: 0,
-      flyAscendIndex: 0
+      flyAscendIndex: 0,
+      flightEnergy: 100,
+      maxFlightEnergy: 100,
+      flightDrainRate: 22,
+      flightRechargeRate: 38
     };
 
     this.enemies     = [];
@@ -236,8 +240,12 @@ class LisarArcade2D {
     this.spawnedLetters = { L: false, I: false, S: false, A: false, R: false };
     this.extraDiscountBonus = 0;
     this.lisarWordBonusGranted = false;
-    this.celebrationTimer = 0;
     this.luBoostCharges = 3; // Máximo 3 ayudas de Lu por partida
+    this.goalApproachStarted = false;
+    this.goalMilestonesSpawned = {};
+    this.coinLogoSpawned = false;
+    this.goalSceneActive = false;
+    this.goalFlightActive = false;
 
     // Partículas de Lluvia Diagonal
     this.rainDrops = [];
@@ -637,6 +645,17 @@ class LisarArcade2D {
         this.playExplosionSound();
         this.enemies.splice(i, 1);
         this.coinsCollected += 1;
+        this.updateHUD();
+
+        // Items drop when enemies are destroyed
+        const r = Math.random();
+        if (r < 0.16) {
+          this.powerups.push({ x: e.x, y: e.y, width: 44, height: 44, vx: -this.floorSpeed * 0.6, isFlight: true, frameTimer: 0 });
+        } else if (r < 0.32) {
+          this.powerups.push({ x: e.x, y: e.y, width: 44, height: 44, vx: -this.floorSpeed * 0.6, isEnergy: true, frameTimer: 0 });
+        } else if (r < 0.45 && this.luBoostCharges < 3) {
+          this.powerups.push({ x: e.x, y: e.y, width: 46, height: 46, vx: -this.floorSpeed * 0.55, isLuHelp: true, frameTimer: 0 });
+        }
       }
     }
   }
@@ -843,7 +862,7 @@ class LisarArcade2D {
     coinRow.style.textShadow = '0 0 8px #ffb703';
     coinRow.innerHTML = `
       <div style="width:20px;height:20px;border-radius:50%;background:#ff8800;border:2px solid #ffd700;box-shadow:0 0 6px #ff8800;background-image:url('assets/img/logo-lisar-studio.png');background-size:cover;"></div>
-      <span id="arcade-coin-text" style="color:#ffd700;font-weight:bold;">0 / 100</span>
+      <span id="arcade-coin-text" style="color:#ffd700;font-weight:bold;">0</span>
     `;
 
     // TRACKER DE LETRAS LISAR EN EL HUD (Naranja Brillante)
@@ -902,6 +921,17 @@ class LisarArcade2D {
           <div id="arcade-discount-bar" style="width:0%; height:100%; background:linear-gradient(90deg, #ff8800, #ffd700, #00f3ff); transition:width 0.25s ease-out; box-shadow:0 0 10px #00f3ff;"></div>
         </div>
         <div id="arcade-discount-sub" style="font-size:0.58rem; color:#a0a0b0; margin-top:2px; letter-spacing:0.5px;">Próximo +5%: 0/20</div>
+        <!-- BARRA DE ENERGÍA DE VUELO (RESTAURADA) -->
+        <div id="arcade-flight-widget" aria-label="Energía de vuelo" style="width:120px; height:20px; margin-top:5px; display:flex; align-items:center; gap:5px; padding:2px 5px; box-sizing:border-box; background:rgba(5,12,20,0.56); border:1px solid rgba(0,243,255,0.32); border-radius:5px; opacity:0; transform:translateY(-2px); transition:opacity 0.35s ease, transform 0.35s ease;">
+          <svg id="arcade-flight-wings" width="15" height="11" viewBox="0 0 44 28" aria-hidden="true" style="flex:0 0 auto; filter:drop-shadow(0 0 3px #00f3ff);">
+            <path d="M20 23C12 22 5 17 2 7c7 1 13 4 18 10M24 23c8-1 15-6 18-16-7 1-13 4-18 10" fill="none" stroke="#7afcff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 18l2 6 2-6" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <div style="flex:1; height:5px; overflow:hidden; background:rgba(17,25,37,0.8); border-radius:4px;">
+            <div id="arcade-flight-bar" style="width:100%; height:100%; background:#24d9ee; box-shadow:0 0 7px #00f3ff; transition:width 0.14s linear, background-color 0.2s ease;"></div>
+          </div>
+          <span id="arcade-flight-percent" style="min-width:25px; color:#7afcff; font-size:0.48rem; line-height:1; font-weight:900; text-align:right;">100%</span>
+        </div>
       </div>
     `;
 
@@ -979,7 +1009,7 @@ class LisarArcade2D {
     }
 
     const coins = document.getElementById('arcade-coin-text');
-    if (coins) coins.innerText = this.coinsCollected + ' / ' + this.coinsRequired;
+    if (coins) coins.innerText = this.coinsCollected;
 
     // Actualización de la barra de progreso de descuento (Max 20% Monedas + 10% LISAR = 30% TOTAL)
     const currentTier = Math.min(4, Math.floor(this.coinsCollected / 20));
@@ -1007,6 +1037,30 @@ class LisarArcade2D {
         discountSubEl.innerText = `Próximo +5%: ${coinsInTier}/20`;
         discountSubEl.style.color = '#a0a0b0';
       }
+    }
+
+    const flightPercent = Math.round(Math.max(0, Math.min(100,
+      ((this.player.flightEnergy || 0) / (this.player.maxFlightEnergy || 100)) * 100
+    )));
+    const flightWidget = document.getElementById('arcade-flight-widget');
+    const flightBar = document.getElementById('arcade-flight-bar');
+    const flightPercentEl = document.getElementById('arcade-flight-percent');
+    const floorY = this.logicalHeight - this.player.height - 70;
+    const isGrounded = this.player.y >= floorY - 2;
+    const flightIndicatorActive = !isGrounded || flightPercent < 100;
+
+    if (flightWidget) {
+      flightWidget.style.opacity = flightIndicatorActive ? '1' : '0';
+      flightWidget.style.transform = flightIndicatorActive ? 'translateY(0)' : 'translateY(-2px)';
+    }
+
+    if (flightBar) {
+      flightBar.style.width = `${flightPercent}%`;
+      flightBar.style.backgroundColor = flightPercent <= 20 ? '#ff5b63' : flightPercent <= 50 ? '#ffb52e' : '#24d9ee';
+    }
+    
+    if (flightPercentEl) {
+      flightPercentEl.innerText = `${flightPercent}%`;
     }
 
     // Voz de Anunciador Arcade y Alerta Visual al completar cada +5% de descuento
@@ -1222,6 +1276,16 @@ class LisarArcade2D {
     this.luBoostActive  = false;
     this.luBoostCooldown = 0;
     this.lisarWordBonusGranted = false;
+    this.player.flightEnergy   = this.player.maxFlightEnergy;
+    this.goalApproachStarted = false;
+    this.goalMilestonesSpawned = {};
+    this.coinLogoSpawned = false;
+    this.victoryTriggered = false;
+    this.victoryCoin = null;
+    this.goalSceneActive = false;
+    this.goalFlightActive = false;
+    this.goalFlightElapsed = 0;
+    this.goalFlightScale = 1;
 
     this.enemies       = [];
     this.projectiles   = [];
@@ -1297,6 +1361,246 @@ class LisarArcade2D {
     this.enemies.push(e);
   }
 
+  playGoalCue(index = 0) {
+    try {
+      if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+      const notes = [523.25, 659.25, 783.99];
+      notes.forEach((frequency, noteIndex) => {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        const start = this.audioCtx.currentTime + noteIndex * 0.055;
+        osc.type = index >= 3 ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(frequency * (1 + index * 0.018), start);
+        gain.gain.setValueAtTime(0.001, start);
+        gain.gain.exponentialRampToValueAtTime(0.075, start + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.24);
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        osc.start(start);
+        osc.stop(start + 0.26);
+      });
+    } catch (e) {}
+  }
+
+  getFinaleSafeArea() {
+    const top = Math.max(190, this.logicalHeight * 0.30);
+    const bottom = Math.min(this.logicalHeight - 90, this.logicalHeight * 0.70);
+    return {
+      left: this.logicalWidth * 0.08,
+      right: this.logicalWidth * 0.92,
+      top,
+      bottom,
+      width: this.logicalWidth * 0.84,
+      height: Math.max(120, bottom - top)
+    };
+  }
+
+  spawnCoinText(lines, index = 0, isLogo = false) {
+    const glyphs = {
+      A:['010','101','111','101','101'], B:['110','101','110','101','110'],
+      C:['011','100','100','100','011'], D:['110','101','101','101','110'],
+      E:['111','100','110','100','111'], I:['111','010','010','010','111'],
+      J:['001','001','001','101','010'], K:['101','110','100','110','101'],
+      L:['100','100','100','100','111'], N:['101','111','111','111','101'],
+      O:['111','101','101','101','111'], R:['110','101','110','101','101'],
+      S:['011','100','010','001','110'], T:['111','010','010','010','010'],
+      U:['101','101','101','101','111'], 0:['111','101','101','101','111'],
+      3:['110','001','010','001','110'], '%':['101','001','010','100','101'],
+      5:['111','100','110','001','110'],
+      '!':['010','010','010','000','010'], ' ':['000','000','000','000','000']
+    };
+    const safe = this.getFinaleSafeArea();
+    const normalizedLines = (Array.isArray(lines) ? lines : [lines]).map(line =>
+      line.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+    );
+    const maxColumns = Math.max(...normalizedLines.map(line => Math.max(1, line.length * 4 - 1)));
+    const totalRows = normalizedLines.length * 5 + (normalizedLines.length - 1) * 2;
+    const cell = Math.max(9, Math.min(isLogo ? 28 : 24, safe.width / maxColumns, safe.height / totalRows));
+    const coinSize = Math.max(8, cell * 0.82);
+    const totalHeight = totalRows * cell;
+    const originY = safe.top + (safe.height - totalHeight) / 2;
+    let revealIndex = 0;
+
+    // Only one readable coin message occupies the safe area at a time.
+    this.coins = this.coins.filter(coin => !coin.finaleCoin);
+    normalizedLines.forEach((line, lineIndex) => {
+      const lineColumns = Math.max(1, line.length * 4 - 1);
+      const originX = safe.left + (safe.width - lineColumns * cell) / 2;
+      [...line].forEach((character, characterIndex) => {
+        const glyph = glyphs[character] || glyphs[' '];
+        glyph.forEach((row, rowIndex) => {
+          [...row].forEach((pixel, columnIndex) => {
+            if (pixel !== '1') return;
+            this.coins.push({
+              x: originX + (characterIndex * 4 + columnIndex) * cell,
+              y: originY + (lineIndex * 7 + rowIndex) * cell,
+              width: coinSize,
+              height: coinSize,
+              vx: 0,
+              frame: 0,
+              frameTimer: 0,
+              finaleCoin: true,
+              logoCoin: isLogo,
+              revealAt: this.gameTimer + revealIndex * 0.012
+            });
+            revealIndex += 1;
+          });
+        });
+      });
+    });
+    this.playGoalCue(index);
+  }
+
+  spawnGoalMilestone(text, index) {
+    this.spawnCoinText(text, index, false);
+  }
+
+  spawnLisarCoinLogo() {
+    this.spawnCoinText(['LISAR', 'STUDIO'], 5, true);
+  }
+
+  updateGoalApproach(dt) {
+    if (!this.goalApproachStarted) {
+      this.goalApproachStarted = true;
+      // The final stretch is celebratory and readable: no leftover threats.
+      this.enemies = [];
+      this.projectiles = [];
+      this.coins = [];
+      this.powerups = [];
+      this.bgHills = [];
+      this.billboards = [];
+      this.luBoostActive = false;
+      this.spawnTimer = 0;
+    }
+
+    const finaleProgress = Math.max(0, Math.min(1, (this.gameTimer - 150) / 30));
+    this.audio.volume = Math.min(1, 0.68 + finaleProgress * 0.30);
+    this.audio.playbackRate = 1 + finaleProgress * 0.075;
+
+    const milestones = [
+      { time: 150, text: 'LISAR' },
+      { time: 155, text: ['BUEN', 'TRABAJO!'] },
+      { time: 160, text: 'CRACK' },
+      { time: 165, text: '35%' },
+      { time: 170, text: ['ESTAS', 'CERCA!'] }
+    ];
+    milestones.forEach((milestone, index) => {
+      if (this.gameTimer >= milestone.time && !this.goalMilestonesSpawned[index]) {
+        this.goalMilestonesSpawned[index] = true;
+        this.spawnGoalMilestone(milestone.text, index);
+      }
+    });
+
+    if (this.gameTimer >= 175 && !this.coinLogoSpawned) {
+      this.coinLogoSpawned = true;
+      this.spawnLisarCoinLogo();
+    }
+  }
+
+  updateGoalSequence(dt) {
+    this.celebrationTimer = Math.max(0, this.celebrationTimer - dt);
+    this.goalFlightElapsed += dt;
+
+    if (this.goalFlightActive) {
+      const launchDelay = 0.28;
+      const launchDuration = 2.75;
+      const rawLaunch = Math.max(0, Math.min(1,
+        (this.goalFlightElapsed - launchDelay) / launchDuration
+      ));
+      const launchEase = rawLaunch * rawLaunch * (3 - 2 * rawLaunch);
+      const targetX = this.logicalWidth * 0.5 - this.player.width * 0.5;
+      const targetY = -this.player.height * 1.05;
+
+      this.player.x = this.goalFlightStartX + (targetX - this.goalFlightStartX) * launchEase;
+      this.player.y = this.goalFlightStartY + (targetY - this.goalFlightStartY) * launchEase;
+      this.player.angle = -0.22 * launchEase;
+      this.goalFlightScale = 1 - 0.82 * launchEase;
+
+      this.player.frameTimer += dt;
+      if (this.activeAnim && this.activeAnim.length && this.player.frameTimer >= this.animSpeed) {
+        this.player.frameTimer = 0;
+        this.player.frame = (this.player.frame + 1) % this.activeAnim.length;
+      }
+
+      if (rawLaunch > 0.04 && rawLaunch < 0.94 && Math.random() < Math.min(1, dt * 28)) {
+        this.particles.push({
+          x: this.player.x + this.player.width * 0.5 + (Math.random() - 0.5) * 24,
+          y: this.player.y + this.player.height * 0.72,
+          vx: (Math.random() - 0.5) * 45,
+          vy: 80 + Math.random() * 90,
+          life: 0.55,
+          maxLife: 0.55,
+          color: Math.random() > 0.45 ? '#00f3ff' : '#ffb000',
+          size: 3 + Math.random() * 5
+        });
+      }
+
+      if (rawLaunch >= 1) this.goalFlightActive = false;
+    }
+
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const particle = this.particles[i];
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.life -= dt;
+      if (particle.life <= 0) this.particles.splice(i, 1);
+    }
+
+    if (Math.random() < Math.min(1, dt * 13)) {
+      this.particles.push({
+        x: Math.random() * this.logicalWidth,
+        y: Math.random() * (this.logicalHeight - 90),
+        vx: (Math.random() - 0.5) * 220,
+        vy: (Math.random() - 0.5) * 220,
+        life: 0.8,
+        maxLife: 0.8,
+        color: ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa'][Math.floor(Math.random() * 4)],
+        size: 4 + Math.random() * 6
+      });
+    }
+
+    if (this.celebrationTimer <= 0) this.endGame(true);
+  }
+
+  startGoalSequence() {
+    if (this.goalSceneActive) return;
+    this.state = 'celebration';
+    this.goalSceneActive = true;
+    this.goalSequenceDuration = 7;
+    this.celebrationTimer = this.goalSequenceDuration;
+    this.goalFlightActive = true;
+    this.goalFlightElapsed = 0;
+    this.goalFlightScale = 1;
+    this.goalFlightStartX = this.player.x;
+    this.goalFlightStartY = this.player.y;
+
+    this.enemies = [];
+    this.projectiles = [];
+    this.coins = [];
+    this.particles = [];
+    this.powerups = [];
+    this.letterItems = [];
+    this.bgHills = [];
+    this.billboards = [];
+    this.luBoostActive = false;
+    this.input.up = false;
+    this.input.left = false;
+    this.input.right = false;
+    this.player.horizontalVelocity = 0;
+    this.player.facing = 'right';
+    this.player.frame = 0;
+    this.player.frameTimer = 0;
+    this.player.angle = 0;
+    this.isFlying = true;
+    this.activeAnim = this.flyLoopFrames;
+    this.loopAnim = true;
+    this.animSpeed = 0.08;
+    this.hud.style.display = 'none';
+    this.audio.volume = 1;
+    this.speak('Meta Lisar Studio. Mision completada.');
+  }
+
   endGame(victory) {
     this.state = victory ? 'victory' : 'gameover';
     this.audio.pause();
@@ -1319,7 +1623,7 @@ class LisarArcade2D {
         `<div style="font-size:0.95rem; color:#ffffff; font-weight:bold; margin-bottom:8px;">¡Lu y Peter celebran tu ascenso espacial!</div>` +
         `<div style="display:flex; justify-content:center; gap:15px; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; margin:8px 0;">` +
         `<div>Puntaje: <b style="color:#00ffaa; font-size:1.1rem;">${finalScore} Pts</b></div>` +
-        `<div>Monedas: <b style="color:#ffd700; font-size:1.1rem;">${this.coinsCollected} / 100</b></div>` +
+        `<div>Monedas: <b style="color:#ffd700; font-size:1.1rem;">${this.coinsCollected}</b></div>` +
         `</div>` +
         (extraBonus > 0 ? `<div style="color:#ffd700; font-weight:bold; margin:4px 0; font-size:0.9rem;">🔥 Bonus Palabra L-I-S-A-R (+10% Extra)</div>` : '') +
         `<div style="font-size:1.4rem; color:#00ffaa; font-weight:900; text-shadow:0 0 12px #00ffaa; margin:8px 0;">¡DESCUENTO TOTAL GANADO: ${totalDiscount}%!</div>` +
@@ -1415,7 +1719,7 @@ class LisarArcade2D {
     } else {
       let motivo = this.player.hp <= 0
         ? 'Personaje derivado (Fuera de combate).'
-        : 'Solo juntaste ' + this.coinsCollected + ' / ' + this.coinsRequired + ' monedas.';
+        : 'Solo juntaste ' + this.coinsCollected + ' monedas.';
       
       this.speak("MISSION FAILED! TRY AGAIN!");
       this.showMessage(
@@ -1655,17 +1959,24 @@ class LisarArcade2D {
   }
 
   checkCollisions(dt) {
-    // Tighter, accurate hitbox centered on character (pw: 80, ph: 110)
+    // Tighter, accurate hitbox centered on character (pw: 80, ph: 110) for cube platforming
     const px = this.player.x + 80;
     const py = this.player.y + 65;
     const pw = 80;
     const ph = 110;
+
+    // A more generous, full body hitbox centered on player (matching the visual sprite boundaries) for enemy & projectile collisions:
+    const epx = this.player.x + 50;
+    const epy = this.player.y + 35;
+    const epw = 140;
+    const eph = 195;
 
     const playerCenterX = this.player.x + 120;
     const playerCenterY = this.player.y + 110;
 
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const c = this.coins[i];
+      if (c.revealAt !== undefined && this.gameTimer < c.revealAt) continue;
       const coinCenterX = c.x + c.width / 2;
       const coinCenterY = c.y + c.height / 2;
       const dist = Math.hypot(playerCenterX - coinCenterX, playerCenterY - coinCenterY);
@@ -1720,15 +2031,33 @@ class LisarArcade2D {
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (px < p.x + p.width && px + pw > p.x && py < p.y + p.height && py + ph > p.y) {
-        const healAmt = p.isBoot ? 35 : 25;
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
-        this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
-        this.playCoinSound();
-        if (p.isBoot) {
-          this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
-          this.speak("Energy Restored!");
+        if (p.isLuHelp) {
+          this.luBoostCharges = Math.min(3, this.luBoostCharges + 1);
+          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#ffd700', 12);
+          this.playCoinSound();
+          this.showTemporaryAlert("⚡ ¡CARGA DE LU RECIBIDA!", "Recuperaste 1 rescate de Lu.", 2.6);
+          this.speak("Lu charges restored!");
+        } else if (p.isFlight) {
+          this.player.flightEnergy = this.player.maxFlightEnergy;
+          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffff', 10);
+          this.playCoinSound();
+          this.showTemporaryAlert("🚀 ¡ENERGÍA DE VUELO!", "Carga de jetpack restaurada al 100%.", 2.5);
+          this.speak("Flight energy restored!");
+        } else {
+          const healAmt = p.isBoot ? 35 : 25;
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + healAmt);
+          this.createExplosion(p.x + p.width / 2, p.y + p.height / 2, '#00ffaa', 14);
+          this.playCoinSound();
+          if (p.isBoot) {
+            this.showTemporaryAlert("⚡ ¡ENERGÍA RESTAURADA!", "¡Bota de energía recuperó tu salud!", 2.5);
+            this.speak("Energy Restored!");
+          } else if (p.isEnergy) {
+            this.showTemporaryAlert("⚡ ¡ENERGÍA RECUPERADA!", `Salud +${healAmt}.`, 2.2);
+            this.speak("Energy restored!");
+          }
         }
         this.powerups.splice(i, 1);
+        this.updateHUD();
       }
     }
 
@@ -1772,14 +2101,14 @@ class LisarArcade2D {
         }
       } else {
         if (this.player.invulnerable > 0) continue;
-        if (px < ex + ew - 20 && px + pw > ex + 10 && py < ey + eh - 20 && py + ph > ey + 10) {
+        if (epx < ex + ew - 20 && epx + epw > ex + 10 && epy < ey + eh - 20 && epy + eph > ey + 10) {
           this.player.hp -= 20;
           this.player.invulnerable = 1.2;
           if (e.type === 1) {
             this.createExplosion(ex + ew / 2, ey + eh / 2, 'enemy_explode', 1, ew);
             this.playExplosionSound();
           } else {
-            this.createExplosion(px + pw / 2, py + ph / 2, '#ff2200', 14);
+            this.createExplosion(epx + epw / 2, epy + eph / 2, '#ff2200', 14);
           }
           this.enemies.splice(i, 1);
         }
@@ -1788,10 +2117,10 @@ class LisarArcade2D {
 
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
-      if (px < p.x + p.width && px + pw > p.x && py < p.y + p.height && py + ph > p.y) {
+      if (epx < p.x + p.width && epx + epw > p.x && epy < p.y + p.height && epy + eph > p.y) {
         this.player.hp -= p.damage;
         this.player.invulnerable = 0.8;
-        this.createExplosion(px + pw / 2, py + ph / 2, '#ff9900', 10);
+        this.createExplosion(epx + epw / 2, epy + eph / 2, '#ff9900', 10);
         this.projectiles.splice(i, 1);
       }
     }
@@ -1879,6 +2208,11 @@ class LisarArcade2D {
       return;
     }
 
+    if (this.state === 'celebration') {
+      this.updateGoalSequence(dt);
+      return;
+    }
+
     // ── INTRO PATH ───────────────────────────────────────────────────────────────
     if (this.introActive) {
       this.introTimer = (this.introTimer || 0) + dt;
@@ -1929,7 +2263,9 @@ class LisarArcade2D {
     this.player.prevY = this.player.y;
     this.player.onCube = false;
 
-    if (this.input.up) {
+    const wantsFlight = this.input.up && (this.player.flightEnergy || 0) > 0;
+
+    if (wantsFlight) {
       this.player.vy += this.player.jumpForce * dt * 5;
       if (this.player.vy < -340) this.player.vy = -340;
     } else {
@@ -1938,8 +2274,22 @@ class LisarArcade2D {
     }
     this.player.y += this.player.vy * dt;
 
-    const floorY = this.logicalHeight - this.player.height - 70;
-    if (this.player.y > floorY) { this.player.y = floorY; this.player.vy = 0; }
+    if (this.player.y < 0)        { this.player.y = 0;      this.player.vy = 0; }
+    if (this.player.y > floorY)   { this.player.y = floorY; this.player.vy = 0; }
+
+    const isGroundedNow = this.player.y >= floorY - 2;
+    if (isGroundedNow || this.player.onCube) {
+      this.player.flightEnergy = Math.min(
+        this.player.maxFlightEnergy,
+        (this.player.flightEnergy || 0) + this.player.flightRechargeRate * rawDt
+      );
+    } else if (this.input.up) {
+      this.player.flightEnergy = Math.max(
+        0,
+        (this.player.flightEnergy || 0) - this.player.flightDrainRate * rawDt
+      );
+    }
+
     if (this.player.invulnerable > 0) this.player.invulnerable -= dt;
 
     this.checkCollisions(dt);
@@ -2022,13 +2372,15 @@ class LisarArcade2D {
       for (let i = this.bgHills.length - 1; i >= 0; i--) { const h = this.bgHills[i]; h.x += h.vx*dt; h.frameTimer += dt; if (h.frameTimer > 0.09) { h.animFrame=(h.animFrame+1)%10; h.frameTimer=0; } if (h.x < -300) this.bgHills.splice(i, 1); }
     }
 
-    if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0) {
+    if (this.player.hp <= 60 && !this.luBoostActive && (this.luBoostCooldown || 0) <= 0 && this.luBoostCharges > 0) {
+      this.luBoostCharges--;
       this.luBoostActive = true; this.luBoostCooldown = 18; this.luBoostX = -180;
       const playableTopY = 185 / this.scale;
       this.luBoostY = 210; // Y = 210 (vuela por el centro del bloque verde)
       this.luBoostFrame = 0; this.luBoostTimer = 0; this.luBoostDropped = false;
       this.speak("Emergency Energy Boost!");
-      this.showTemporaryAlert("\u26a1 \u00a1LU AL RESCATE!", "Lu vuela en su nube lanz\u00e1ndote energ\u00eda", 3.5);
+      this.showTemporaryAlert("⚡ ¡LU AL RESCATE!", "Lu vuela en su nube lanzándote energía", 3.5);
+      this.updateHUD();
     }
     if (this.luBoostCooldown > 0) this.luBoostCooldown -= dt;
     if (this.luBoostActive) {
@@ -2043,11 +2395,23 @@ class LisarArcade2D {
 
     this.floorOffset -= this.floorSpeed * dt;
     if (this.floorOffset <= -this.logicalWidth) this.floorOffset += this.logicalWidth;
-
+    
+    if (this.gameTimer >= 150) this.updateGoalApproach(dt);
     this.spawnEntity(dt);
 
     for (let i = this.coins.length - 1; i >= 0; i--) {
-      const c = this.coins[i]; c.x += c.vx*dt; c.frameTimer += dt;
+      const c = this.coins[i]; 
+      c.x += c.vx*dt;
+      
+      // Que ningún bloque cubra las monedas de texto
+      const coveringCube = this.enemies.find(e =>
+        e.type === 0 &&
+        c.x < e.x + e.width && c.x + c.width > e.x &&
+        c.y < e.y + e.height && c.y + c.height > e.y
+      );
+      if (coveringCube) c.y = coveringCube.y - c.height - 6;
+
+      c.frameTimer += dt;
       if (c.frameTimer > 0.10) { c.frame=(c.frame+1)%this.coinFrames.length; c.frameTimer=0; }
       if (c.x < -c.width*2) this.coins.splice(i, 1);
     }
@@ -2101,7 +2465,6 @@ class LisarArcade2D {
     if (this.player.hp <= 0 && this.state === 'playing') {
       this.endGame(false);
     } else if (this.gameTimer >= 180 && this.state === 'playing') {
-      this.state = 'celebration';
       this.celebrationTimer = 8.0;
       this.isFlyToInfinity = false;
       this.speak("VICTORY! MAXIMUM DISCOUNT UNLOCKED! FLY TO INFINITY!");
@@ -2493,6 +2856,10 @@ class LisarArcade2D {
     const _hudSafeDrawY = this.logicalHeight * 0.20;
     this.coins.forEach(c => {
       if (c.y < _hudSafeDrawY) return; // NUNCA dibujar monedas en zona del HUD
+      if (c.revealAt !== undefined && this.gameTimer < c.revealAt) return;
+      const revealAlpha = c.revealAt === undefined
+        ? 1
+        : Math.min(1, (this.gameTimer - c.revealAt) / 0.18);
       const img = this.coinFrames[c.frame % this.coinFrames.length];
       if (img && img.loaded) {
         const imgRatio = img.width / img.height;
@@ -2501,12 +2868,14 @@ class LisarArcade2D {
         const drawX = c.x + (c.width - drawW) / 2;
         const drawY = c.y;
         this.ctx.save();
+        this.ctx.globalAlpha = revealAlpha;
         this.ctx.shadowBlur = 14;
         this.ctx.shadowColor = '#ffd700';
         this.ctx.drawImage(img, drawX, drawY, drawW, drawH);
         this.ctx.restore();
       } else {
         this.ctx.save();
+        this.ctx.globalAlpha = revealAlpha;
         this.ctx.shadowBlur = 12;
         this.ctx.shadowColor = '#ffd700';
         this.ctx.fillStyle = 'gold';
@@ -2606,7 +2975,7 @@ class LisarArcade2D {
       // Calculate archX based on celebration progression
       let archX = this.logicalWidth * 0.50;
       if (this.state === 'celebration') {
-        const elapsed = Math.max(0, 8.0 - this.celebrationTimer);
+        const elapsed = Math.max(0, 7.0 - this.celebrationTimer);
         archX = Math.max(this.logicalWidth * 0.50, this.logicalWidth + 100 - elapsed * 240);
       }
       const floorY = this.logicalHeight - 70;
