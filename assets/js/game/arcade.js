@@ -1770,6 +1770,18 @@ class LisarArcade2D {
     if (this.player.x < 80) {
       this.player.x += dt * 100;
       if (this.player.x > 80) this.player.x = 80;
+    } else {
+      // Movimiento horizontal libre con controles (Teclado A/D, flechas, o D-Pad móvil)
+      const moveSpeed = 280;
+      if (this.input.left) {
+        this.player.x -= moveSpeed * rawDt;
+      }
+      if (this.input.right) {
+        this.player.x += moveSpeed * rawDt;
+      }
+      // Limitar bordes del escenario lógico
+      if (this.player.x < 20) this.player.x = 20;
+      if (this.player.x > 450) this.player.x = 450;
     }
 
     this.player.prevY = this.player.y;
