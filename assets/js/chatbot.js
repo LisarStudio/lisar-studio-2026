@@ -359,28 +359,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.triggerPromoChatbot = function(discount = 30) {
-    if (localStorage.getItem('lisar_discount_game2_claimed') === 'true') {
-      container.classList.add('show');
-      toggler.style.display = 'none';
-      body.innerHTML = '';
-      footer.innerHTML = '';
-      addBotMsg("🤖 ¡Hola! Ya has reclamado el cupón de descuento correspondiente a esta partida. Para obtener un nuevo beneficio debes jugar una partida nueva. 🚀");
-      
-      const btnReplay = document.createElement('button');
-      btnReplay.className = 'chat-option-btn';
-      btnReplay.innerText = '🎮 Jugar una nueva partida';
-      btnReplay.onclick = () => {
-        container.classList.remove('show');
-        toggler.style.display = 'flex';
-        const gameSec = document.getElementById('advergames');
-        if (gameSec) gameSec.scrollIntoView({ behavior: 'smooth' });
-      };
-      footer.appendChild(btnReplay);
-      return;
-    }
-
-    // Registrar reclamado para impedir acumulaciones múltiples en una misma partida
-    localStorage.setItem('lisar_discount_game2_claimed', 'true');
+    // Permitir reclamaciones múltiples reiniciando el estado para la experiencia de juego
+    localStorage.removeItem('lisar_discount_game2_claimed');
 
     container.classList.add('show');
     toggler.style.display = 'none';
@@ -392,24 +372,34 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         hideTyping();
         
-        let msg = `¡Felicidades! Has acumulado un ${discount}% de descuento para tu servicio en Lisar Studio. Este beneficio es válido por 1 sola partida jugada. ¿Deseas aplicarlo en tu cotización ahora? 🚀`;
+        let msg = `¡Felicidades! Has acumulado un ${discount}% de descuento para tu próximo proyecto en Lisar Studio. ¿Quieres canjear tus descuentos ahora mismo? 🚀`;
         
         addBotMsg("🤖 " + msg);
         
         const btnSi = document.createElement('button');
         btnSi.className = 'chat-option-btn';
-        btnSi.innerText = '¡Quiero cotizar con mi descuento! 💬';
+        btnSi.innerText = 'Sí, quiero canjear mis descuentos 🚀';
+        btnSi.style.fontWeight = 'bold';
         btnSi.onclick = () => {
-            addUserMsg('¡Quiero cotizar con mi descuento! 💬');
+            addUserMsg('Sí, quiero canjear mis descuentos 🚀');
             loadState('start');
         };
         
         const btnNo = document.createElement('button');
         btnNo.className = 'chat-option-btn';
-        btnNo.innerText = 'No, gracias';
+        btnNo.innerText = 'Aún no, gracias';
         btnNo.onclick = () => {
-            addUserMsg('No, gracias');
-            addBotMsg('🤖 ¡Entendido! Tu beneficio de esta partida ha sido registrado. Juega otra partida si deseas superar tu récord. 😉');
+            addUserMsg('Aún no, gracias');
+            addBotMsg('🤖 ¡Entendido! Tu descuento queda guardado en este navegador. Si quieres iniciar una cotización más tarde, solo pulsa el ícono de robot abajo a la derecha.');
+            footer.innerHTML = '';
+            
+            const btnCotizarMasTarde = document.createElement('button');
+            btnCotizarMasTarde.className = 'chat-option-btn';
+            btnCotizarMasTarde.innerText = '🚀 Cotizar en otro momento';
+            btnCotizarMasTarde.onclick = () => {
+              loadState('start');
+            };
+            footer.appendChild(btnCotizarMasTarde);
         };
         
         footer.appendChild(btnSi);

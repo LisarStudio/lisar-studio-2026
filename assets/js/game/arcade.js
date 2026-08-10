@@ -1282,20 +1282,34 @@ class LisarArcade2D {
         `</div>`,
         [
           {
-            text: '🎮 JUGAR DE NUEVO',
+            text: '🤖 RECLAMAR DESCUENTO CON NUESTRO ASISTENTE IA 🚀',
             primary: true,
-            action: () => this.startGame()
+            action: () => {
+              this.hideMessage();
+              if (window.triggerPromoChatbot) {
+                window.triggerPromoChatbot(totalDiscount);
+              } else {
+                alert(`¡Felicidades! Ganaste un ${totalDiscount}% de descuento.`);
+              }
+            }
           },
           {
-            text: '💬 RECLAMAR EN WHATSAPP CON PETER / LU',
+            text: '🎮 JUGAR DE NUEVO',
             primary: false,
-            action: () => {
-              const text = encodeURIComponent(`Hola Peter y Lu! Gané un ${totalDiscount}% de descuento jugando Lisar Jet Rush con ${finalScore} puntos. ¡Quiero cotizar mi proyecto!`);
-              window.open(`https://api.whatsapp.com/send?phone=56946509718&text=${text}`, '_blank');
-            }
+            action: () => this.startGame()
           }
         ]
       );
+
+      // Disparo automático de la IA a los 6 segundos de victoria para una experiencia fluida
+      setTimeout(() => {
+        if (this.state === 'victory') {
+          this.hideMessage();
+          if (window.triggerPromoChatbot) {
+            window.triggerPromoChatbot(totalDiscount);
+          }
+        }
+      }, 6000);
 
       // Handler para guardar el Instagram en el ranking local
       setTimeout(() => {
