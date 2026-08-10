@@ -33,6 +33,31 @@
         top.location = self.location;
     }
   </script>
+  <!-- Inyector de Reporte Visual de Errores -->
+  <script type="text/javascript">
+    window.addEventListener('error', function(e) {
+      var errDiv = document.getElementById('debug-error-console');
+      if (!errDiv) {
+        errDiv = document.createElement('div');
+        errDiv.id = 'debug-error-console';
+        Object.assign(errDiv.style, {
+          position: 'fixed',
+          top: '0', left: '0', right: '0',
+          background: 'rgba(220, 38, 38, 0.95)',
+          color: '#fff',
+          padding: '12px',
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          zIndex: '999999',
+          borderBottom: '3px solid #ff0000',
+          wordBreak: 'break-all',
+          whiteSpace: 'pre-wrap'
+        });
+        document.body.appendChild(errDiv);
+      }
+      errDiv.innerText = "❌ ERROR: " + e.message + "\nEn: " + e.filename + ":" + e.lineno + ":" + e.colno;
+    });
+  </script>
 
   <!-- Schema.org Microdata -->
   <script type="application/ld+json">
