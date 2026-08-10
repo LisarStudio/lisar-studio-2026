@@ -627,14 +627,22 @@ class LisarArcade2D {
     }
   }
 
-      setupControls() {
+  setupControls() {
     window.addEventListener('keydown', e => {
-      // CRITICAL FIX: Only process keyboard events for Game 2 if state is 'playing'
-      // This prevents Spacebar key events from Game 1 (Runner 3D) from starting or triggering Game 2!
-      if (this.state !== 'playing') return;
-
       // Ignore if typing inside form fields
       if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+      // P / Escape MUST work in both playing AND paused states — check BEFORE the state guard
+      if (e.code === 'Escape' || e.code === 'KeyP') {
+        if (this.state === 'playing' || this.state === 'paused') {
+          this.togglePause();
+          e.preventDefault();
+        }
+        return;
+      }
+
+      // All other keys only work while actively playing
+      if (this.state !== 'playing') return;
 
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
         this.input.up = true;
@@ -652,35 +660,30 @@ class LisarArcade2D {
         this.input.right = true;
         e.preventDefault();
       }
-      if (e.code === 'Escape' || e.code === 'KeyP') {
-        // P/Escape must work in both 'playing' AND 'paused' states
-        if (this.state === 'playing' || this.state === 'paused') this.togglePause();
-      }
     });
 
     window.addEventListener('keyup', e => {
-      // NOTE: Do NOT guard with state check here - keyup must ALWAYS reset input
-      // so the character never gets stuck flying when state changes while key is held
+      // NEVER guard keyup — must ALWAYS reset input flags regardless of state
+      // Otherwise character stays flying if state changes while Space is held
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') this.input.up = false;
       if (e.code === 'ArrowLeft' || e.code === 'KeyA') this.input.left = false;
       if (e.code === 'ArrowRight' || e.code === 'KeyD') this.input.right = false;
     });
 
-    // Safety: also reset all inputs on window blur (tab switching, alt-tab)
+    // Reset all inputs on window/tab blur — prevents stuck keys
     window.addEventListener('blur', () => {
       this.input.up = false;
       this.input.left = false;
       this.input.right = false;
     });
 
-    // Touch/Mouse container handlers
-    this.container.addEventListener('mousedown', e => { 
-      if (this.state === 'playing') {
-        this.input.up = true;  
-      }
+    // Mouse click = jump
+    this.container.addEventListener('mousedown', e => {
+      if (this.state === 'playing') this.input.up = true;
     });
     this.container.addEventListener('mouseup', () => { this.input.up = false; });
 
+    // Auto-pause on tab hidden
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.state === 'playing') this.togglePause();
     });
@@ -1229,9 +1232,9 @@ class LisarArcade2D {
     } else if (this.state === 'paused') {
       this.hideMessage();
       this.state = 'playing';
+      this.lastTime = performance.now(); // Reset dt so first frame after unpause is clean
       this.audio.play().catch(() => {});
-      this.lastTime = performance.now();
-      requestAnimationFrame(t => this.loop(t));
+      // No need to restart rAF — loop is still running, it will resume on next frame
     }
   }
 
@@ -2992,16 +2995,27 @@ class LisarArcade2D {
   }
 
   loop(now) {
-    // Reset watchdog every frame so it knows the loop is alive
+    // Reset watchdog timestamp every frame
     this._lastLoopTime = now;
 
-    if (this.state !== 'playing' && this.state !== 'celebration') {
+    // Determine if this is an active game session
+    const activeState = this.state === 'playing' || this.state === 'paused' || this.state === 'celebration';
+
+    // If game session has ended, stop the loop and music
+    if (!activeState) {
       if (this.audio && !this.audio.paused) this.audio.pause();
-      return;
+      return; // Do NOT re-queue rAF — loop is truly done
     }
 
+    // Re-queue next frame IMMEDIATELY so it NEVER stops regardless of errors below
+    requestAnimationFrame(t => this.loop(t));
+
+    // Skip update/draw while paused — loop continues running but does nothing
+    if (this.state === 'paused') return;
+
+    // Calculate delta time, clamped to safe range
     let dt = (now - this.lastTime) / 1000;
-    if (dt <= 0 || dt > 0.1) dt = 0.033; // Cap AND floor dt to safe range
+    if (dt <= 0 || dt > 0.1) dt = 0.033;
     this.lastTime = now;
 
     try {
@@ -3014,14 +3028,6 @@ class LisarArcade2D {
       this.draw();
     } catch(e) {
       console.error('[ArcadeCrash] draw() threw:', e);
-    }
-
-    // ALWAYS re-queue next frame if still in an active state
-    // This runs even if update() or draw() threw an error
-    if (this.state === 'playing' || this.state === 'celebration') {
-      requestAnimationFrame(t => this.loop(t));
-    } else {
-      if (this.audio && !this.audio.paused) this.audio.pause();
     }
   }
 
