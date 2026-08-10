@@ -2260,6 +2260,7 @@ class LisarArcade2D {
       if (this.player.x > 450) this.player.x = 450;
     }
 
+    const floorY = this.logicalHeight - this.player.height - 70;
     this.player.prevY = this.player.y;
     this.player.onCube = false;
 
