@@ -16,6 +16,10 @@ class LisarArcade2D {
 
     this.audio = new Audio('assets/audio/Level_2.mp3');
     this.audio.preload = 'auto';
+    // Precarga agresiva: solicita el buffer completo al servidor
+    this.audio.load();
+    this.audio.volume = 0.75;
+    this.audio.loop = true;
 
     this.audioCtx = null;
 
@@ -403,6 +407,8 @@ class LisarArcade2D {
         } else if (text.includes("Emergency Energy Boost") || text.includes("Energy Restored") || text.includes("Poder de Lu")) {
           // Prioridad baja para ayudas
           capcomText = "¡Poder de Lu!";
+        } else if (text.includes("PAUSA") || text.includes("pausado") || text.includes("paused")) {
+          capcomText = "¡Juego pausado!";
         } else if (text.includes("VICTORY") || text.includes("MAXIMUM DISCOUNT")) {
           capcomText = "¡Victoria máxima! ¡Gracias por jugar!";
         } else if (text.includes("MISSION FAILED") || text.includes("GAME OVER")) {
@@ -1036,31 +1042,34 @@ class LisarArcade2D {
   showTemporaryAlert(title, subtitle, seconds) {
     const alertEl = document.createElement('div');
     Object.assign(alertEl.style, {
-      // PANEL_REFERENCE_Y: mismo eje que todos los paneles del juego (53% = centro del bloque verde)
-      position: 'absolute', top: '53%', left: '50%',
-      transform: 'translate(-50%, -50%)',
-      background: 'rgba(5, 6, 15, 0.68)',
+      // NOTIFICATION_ZONE: esquina superior izquierda, debajo de "AYUDAS LU" (referencia visual verde)
+      position: 'absolute',
+      top: '22%',
+      left: '12px',
+      right: 'auto',
+      transform: 'none',
+      background: 'rgba(5, 6, 15, 0.82)',
       backdropFilter: 'blur(6px)',
       webkitBackdropFilter: 'blur(6px)',
       border: '1.5px solid rgba(0, 243, 255, 0.6)',
-      boxShadow: '0 0 12px rgba(0, 243, 255, 0.35)',
+      boxShadow: '0 0 10px rgba(0, 243, 255, 0.3)',
       color: '#fff',
       borderRadius: '6px',
-      padding: '8px 18px',
-      textAlign: 'center',
+      padding: '6px 12px',
+      textAlign: 'left',
+      maxWidth: '180px',
       fontFamily: "'Orbitron', sans-serif",
       zIndex: '99',
-      transition: 'all 0.4s ease-out',
+      transition: 'opacity 0.4s ease-out',
       pointerEvents: 'none'
     });
     alertEl.innerHTML = `
-      <h4 style="margin:0 0 2px 0; color:#00f3ff; font-size:0.88rem; font-weight:bold;">${title}</h4>
-      <p style="margin:0; font-size:0.75rem; opacity:0.95; font-weight:bold; color:#00ff00;">${subtitle}</p>
+      <h4 style="margin:0 0 2px 0; color:#00f3ff; font-size:0.75rem; font-weight:bold;">${title}</h4>
+      <p style="margin:0; font-size:0.65rem; opacity:0.95; font-weight:bold; color:#00ff00;">${subtitle}</p>
     `;
     this.container.appendChild(alertEl);
     setTimeout(() => {
       alertEl.style.opacity = '0';
-      // mantener top en 53% durante fade-out
       setTimeout(() => alertEl.remove(), 400);
     }, seconds * 1000);
   }
