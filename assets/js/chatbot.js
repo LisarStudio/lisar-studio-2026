@@ -379,6 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Registrar reclamado para impedir acumulaciones múltiples en una misma partida
+    localStorage.setItem('lisar_discount_game2_claimed', 'true');
+
     container.classList.add('show');
     toggler.style.display = 'none';
     
@@ -397,8 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSi.className = 'chat-option-btn';
         btnSi.innerText = '¡Quiero cotizar con mi descuento! 💬';
         btnSi.onclick = () => {
-            // Offering the prize does not consume it; only explicit acceptance does.
-            localStorage.setItem('lisar_discount_game2_claimed', 'true');
             addUserMsg('¡Quiero cotizar con mi descuento! 💬');
             loadState('start');
         };

@@ -98,17 +98,23 @@
 /* Pricing section title contrast */
 #precios .section-title { color: #fff; }
 
-/* Scroll to top button functionality (handled in JS files; removed accidental script tag) */
-
-/* Price centering for the popular plan */
-.plan-popular .display-4 {
-  display: block;
-  text-align: center;
-}
-.plan-popular .text-muted {
-  display: block;
-  text-align: center;
-}
+/* Scroll to top button functionality */
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const scrollBtn = document.getElementById('scrollTopBtn');
+  if (!scrollBtn) return;
+  scrollBtn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 200) {
+      scrollBtn.classList.add('show');
+    } else {
+      scrollBtn.classList.remove('show');
+    }
+  });
+});
+</script>
 
 /* Button color tweaks */
     .btn-instagram {
