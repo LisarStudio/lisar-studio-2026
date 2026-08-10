@@ -384,12 +384,42 @@ class LisarArcade2D {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-US';
-        utterance.rate = 1.2;
-        utterance.pitch = 1.1;
+        utterance.rate = 1.38;
+        utterance.pitch = 1.48;
         utterance.volume = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const femaleVoice = voices.find(v => 
+          (v.name.includes('Samantha') || v.name.includes('Victoria') || v.name.includes('Zira') || 
+           v.name.includes('Female') || v.name.includes('Karen') || v.name.includes('Fiona') || v.name.includes('Google US English'))
+        );
+        if (femaleVoice) utterance.voice = femaleVoice;
+
         window.speechSynthesis.speak(utterance);
+        this.playArcadeAnnouncerChime();
       } catch(e) {}
     }
+  }
+
+  playArcadeAnnouncerChime() {
+    try {
+      if (!this.audioCtx) this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
+      
+      const freqs = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 90s Techno Arpeggio
+      freqs.forEach((f, idx) => {
+        const osc = this.audioCtx.createOscillator();
+        const gain = this.audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, this.audioCtx.currentTime + idx * 0.04);
+        gain.gain.setValueAtTime(0.12, this.audioCtx.currentTime + idx * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + idx * 0.04 + 0.15);
+        osc.connect(gain);
+        gain.connect(this.audioCtx.destination);
+        osc.start(this.audioCtx.currentTime + idx * 0.04);
+        osc.stop(this.audioCtx.currentTime + idx * 0.04 + 0.15);
+      });
+    } catch(e) {}
   }
 
   loadSheetSprites() {
@@ -1141,21 +1171,46 @@ class LisarArcade2D {
     this.audio.pause();
     this.hud.style.display = 'none';
     if (this.mobileControls) this.mobileControls.style.display = 'none';
-    if (this.mobileControls) this.mobileControls.style.display = 'none';
 
-    // Descuento final (Max 20% por Monedas + 10% por Palabra L-I-S-A-R = 30% MÁXIMO TOTAL)
     const baseDiscount = Math.min(20, Math.floor(this.coinsCollected / 20) * 5);
     const extraBonus = (this.lisarWordBonusGranted ? 10 : 0);
     const totalDiscount = Math.min(30, baseDiscount + extraBonus);
+    const finalScore = (this.coinsCollected * 100) + Math.floor(this.gameTimer * 10) + (this.lisarWordBonusGranted ? 1000 : 0);
+    
     localStorage.setItem('lisar_discount_game2', totalDiscount.toString());
 
+    const shareText = `🔥 ¡Logré ${finalScore} Puntos y un ${totalDiscount}% DE DESCUENTO en Lisar Studio jugando Lisar Jet Rush! 🚀 Desafíame con tu @instagram en www.lisarstudio.cl @lisarstudio`;
+
     if (victory) {
+      this.speak("VICTORY! ENTER YOUR INSTAGRAM TO CLAIM YOUR REWARD!");
       this.showMessage(
-        '🎉 ¡DEMO JUGABLE COMPLETADA!',
-        `<div style="font-size:0.95rem; color:#ffffff; font-weight:bold; margin-bottom:6px;">¡Lu y Peter te felicitan por sobrevivir los 3:00 minutos de juego!</div>` +
-        `Monedas recolectadas: <b>${this.coinsCollected} / 100</b><br>` +
-        (extraBonus > 0 ? `<div style="color:#ffd700; font-weight:bold; margin:6px 0; font-size:0.95rem;">🔥 Bonus Palabra L-I-S-A-R (+10% Extra) Incluido</div>` : '') +
-        `<div style="font-size:1.35rem; color:#00ffaa; font-weight:900; text-shadow:0 0 10px #00ffaa; margin-top:8px;">¡DESCUENTO TOTAL GANADO: ${totalDiscount}%!</div>`,
+        '🚀 ¡VUELO AL INFINITO Y VICTORIA!',
+        `<div style="font-size:0.95rem; color:#ffffff; font-weight:bold; margin-bottom:8px;">¡Lu y Peter celebran tu ascenso espacial!</div>` +
+        `<div style="display:flex; justify-content:center; gap:15px; background:rgba(0,0,0,0.5); padding:10px; border-radius:8px; margin:8px 0;">` +
+        `<div>Puntaje: <b style="color:#00ffaa; font-size:1.1rem;">${finalScore} Pts</b></div>` +
+        `<div>Monedas: <b style="color:#ffd700; font-size:1.1rem;">${this.coinsCollected} / 100</b></div>` +
+        `</div>` +
+        (extraBonus > 0 ? `<div style="color:#ffd700; font-weight:bold; margin:4px 0; font-size:0.9rem;">🔥 Bonus Palabra L-I-S-A-R (+10% Extra)</div>` : '') +
+        `<div style="font-size:1.4rem; color:#00ffaa; font-weight:900; text-shadow:0 0 12px #00ffaa; margin:8px 0;">¡DESCUENTO TOTAL GANADO: ${totalDiscount}%!</div>` +
+        
+        // Formulario de Registro de Instagram Competitivo
+        `<div style="background:rgba(15,23,42,0.85); border:1px solid #00ffaa; padding:12px; border-radius:10px; margin-top:10px;">` +
+        `<div style="font-size:0.85rem; color:#ffd700; font-weight:bold; margin-bottom:6px;">🏆 REGISTRA TU INSTAGRAM PARA COMPETIR EN EL RANKING:</div>` +
+        `<div style="display:flex; gap:8px; justify-content:center; align-items:center;">` +
+        `<input id="arcade-ig-input" type="text" placeholder="@tu_instagram" style="padding:8px 12px; border-radius:6px; border:1px solid #00ffaa; background:#000; color:#fff; font-family:'Orbitron',monospace; font-size:0.9rem; width:65%; text-align:center;">` +
+        `<button id="arcade-ig-save-btn" style="padding:8px 12px; background:linear-gradient(90deg,#00ffaa,#00aa66); color:#000; font-weight:bold; border:none; border-radius:6px; cursor:pointer; font-family:'Orbitron',sans-serif; font-size:0.8rem;">GUARDAR</button>` +
+        `</div>` +
+        `<div id="arcade-ig-status" style="font-size:0.8rem; color:#00ffaa; margin-top:6px; display:none;"></div>` +
+        `</div>` +
+        
+        // Botón Viral de Compartir en Redes
+        `<div style="margin-top:12px; display:flex; flex-direction:column; gap:8px; align-items:center;">` +
+        `<button id="arcade-share-viral-btn" style="width:100%; padding:10px; background:linear-gradient(90deg,#ff00ff,#8800ff); color:#fff; font-weight:bold; border:1px solid #fff; border-radius:8px; cursor:pointer; font-family:'Orbitron',sans-serif; font-size:0.85rem; box-shadow:0 0 12px #ff00ff;">📲 COPIAR TEXTO VIRAL PARA HISTORIA INSTAGRAM (+5% EXTRA)</button>` +
+        `<div style="display:flex; gap:10px; width:100%;">` +
+        `<a href="https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}" target="_blank" style="flex:1; text-align:center; padding:8px; background:#25D366; color:#fff; font-weight:bold; border-radius:6px; text-decoration:none; font-size:0.8rem; font-family:'Orbitron',sans-serif;">💬 WHATSAPP</a>` +
+        `<a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}" target="_blank" style="flex:1; text-align:center; padding:8px; background:#1DA1F2; color:#fff; font-weight:bold; border-radius:6px; text-decoration:none; font-size:0.8rem; font-family:'Orbitron',sans-serif;">🐦 X (TWITTER)</a>` +
+        `</div>` +
+        `</div>`,
         [
           {
             text: '🎮 JUGAR DE NUEVO',
@@ -1163,22 +1218,56 @@ class LisarArcade2D {
             action: () => this.startGame()
           },
           {
-            text: '📲 RECLAMAR PREMIO',
+            text: '💬 RECLAMAR EN WHATSAPP CON PETER / LU',
             primary: false,
             action: () => {
-              this.destroy();
-              const ov = document.getElementById('arcade-overlay');
-              if (ov) ov.style.display = 'flex';
-              if (window.triggerPromoChatbot) window.triggerPromoChatbot(totalDiscount);
+              const text = encodeURIComponent(`Hola Peter y Lu! Gané un ${totalDiscount}% de descuento jugando Lisar Jet Rush con ${finalScore} puntos. ¡Quiero cotizar mi proyecto!`);
+              window.open(`https://api.whatsapp.com/send?phone=56946509718&text=${text}`, '_blank');
             }
           }
         ]
       );
+
+      // Handler para guardar el Instagram en el ranking local
+      setTimeout(() => {
+        const igSaveBtn = document.getElementById('arcade-ig-save-btn');
+        const igInput = document.getElementById('arcade-ig-input');
+        const igStatus = document.getElementById('arcade-ig-status');
+        const viralBtn = document.getElementById('arcade-share-viral-btn');
+
+        if (igSaveBtn && igInput) {
+          igSaveBtn.addEventListener('click', () => {
+            const igTag = igInput.value.trim();
+            if (!igTag) return;
+            let leaderboard = JSON.parse(localStorage.getItem('lisar_arcade_leaderboard') || '[]');
+            leaderboard.push({ ig: igTag.startsWith('@') ? igTag : '@' + igTag, score: finalScore, discount: totalDiscount, date: new Date().toLocaleDateString() });
+            leaderboard.sort((a,b) => b.score - a.score);
+            localStorage.setItem('lisar_arcade_leaderboard', JSON.stringify(leaderboard.slice(0, 10)));
+
+            if (igStatus) {
+              igStatus.style.display = 'block';
+              igStatus.innerHTML = `✅ ¡Puntaje de ${igTag} guardado con éxito en el Ranking Top!`;
+            }
+          });
+        }
+
+        if (viralBtn) {
+          viralBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(shareText).then(() => {
+              alert("✅ ¡Texto de victoria copiado al portapapeles! Pégalo en tu Historia de Instagram o red social favorita para desafiar a tus amigos.");
+            }).catch(() => {
+              prompt("Copia tu texto de victoria para compartir:", shareText);
+            });
+          });
+        }
+      }, 200);
+
     } else {
       let motivo = this.player.hp <= 0
         ? 'Personaje derivado (Fuera de combate).'
         : 'Solo juntaste ' + this.coinsCollected + ' / ' + this.coinsRequired + ' monedas.';
       
+      this.speak("MISSION FAILED! TRY AGAIN!");
       this.showMessage(
         'MISIÓN FALLIDA',
         `${motivo}<br><br>` +
@@ -1966,11 +2055,12 @@ class LisarArcade2D {
       this.endGame(false);
     } else if (this.gameTimer >= 180 && this.state === 'playing') {
       this.state = 'celebration';
-      this.celebrationTimer = 7.0;
-      this.speak("Congratulations on finishing our playable demo!");
+      this.celebrationTimer = 8.0;
+      this.isFlyToInfinity = false;
+      this.speak("VICTORY! MAXIMUM DISCOUNT UNLOCKED! FLY TO INFINITY!");
       this.showTemporaryAlert(
         "🎉 ¡META ALCANZADA!",
-        "¡Lu y Peter te felicitan por terminar nuestro Demo jugable!",
+        "¡Lu y Peter te felicitan! ¡Volando al infinito!",
         6.5
       );
     }
@@ -1978,21 +2068,46 @@ class LisarArcade2D {
     if (this.state === 'celebration') {
       this.celebrationTimer -= dt;
 
-      // Fuegos artificiales neón de celebración
-      if (Math.random() > 0.35) {
-        this.particles.push({
-          x: Math.random() * this.logicalWidth,
-          y: Math.random() * (this.logicalHeight - 90),
-          vx: (Math.random() - 0.5) * 220,
-          vy: (Math.random() - 0.5) * 220,
-          life: 0.8,
-          maxLife: 0.8,
-          color: ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa'][Math.floor(Math.random() * 4)],
-          size: 4 + Math.random() * 6
-        });
+      // Fuegos artificiales neón de celebración estallando en el cielo
+      if (Math.random() > 0.20) {
+        const fireworkColor = ['#00ffff', '#ff00ff', '#ffd700', '#00ffaa', '#ff2266'][Math.floor(Math.random() * 5)];
+        const fx = Math.random() * this.logicalWidth;
+        const fy = Math.random() * (this.logicalHeight - 120);
+        for (let i = 0; i < 5; i++) {
+          this.particles.push({
+            x: fx, y: fy,
+            vx: (Math.random() - 0.5) * 360,
+            vy: (Math.random() - 0.5) * 360,
+            life: 0.7 + Math.random() * 0.4,
+            maxLife: 1.1,
+            color: fireworkColor,
+            size: 3 + Math.random() * 6
+          });
+        }
       }
 
-      if (this.celebrationTimer <= 0) {
+      // Animación Vuelo al Infinito (Ascenso directo al espacio)
+      if (this.celebrationTimer <= 5.5) {
+        this.isFlyToInfinity = true;
+        this.player.vy = -680;
+        this.player.y += this.player.vy * dt;
+
+        // Estela de propulsor neón del personaje volando al infinito
+        for (let i = 0; i < 3; i++) {
+          this.particles.push({
+            x: this.player.x + this.player.width / 2 + (Math.random() - 0.5) * 20,
+            y: this.player.y + this.player.height,
+            vx: (Math.random() - 0.5) * 80,
+            vy: 300 + Math.random() * 200,
+            life: 0.5,
+            maxLife: 0.5,
+            color: ['#00ffff', '#ffd700', '#ff00ff', '#ffffff'][Math.floor(Math.random() * 4)],
+            size: 4 + Math.random() * 6
+          });
+        }
+      }
+
+      if (this.celebrationTimer <= 0 || (this.isFlyToInfinity && this.player.y < -250)) {
         this.endGame(true);
       }
     }
