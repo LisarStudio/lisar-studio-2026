@@ -1050,30 +1050,39 @@ class LisarArcade2D {
       top: '22%',
       left: '12px',
       right: 'auto',
-      transform: 'none',
-      background: 'rgba(5, 6, 15, 0.82)',
-      backdropFilter: 'blur(6px)',
-      webkitBackdropFilter: 'blur(6px)',
-      border: '1.5px solid rgba(0, 243, 255, 0.6)',
-      boxShadow: '0 0 10px rgba(0, 243, 255, 0.3)',
+      opacity: '0',
+      transform: 'translateX(-12px)',
+      background: 'rgba(5, 6, 18, 0.76)',
+      backdropFilter: 'blur(8px)',
+      webkitBackdropFilter: 'blur(8px)',
+      border: '1px solid rgba(0, 243, 255, 0.35)',
+      boxShadow: '0 3px 10px rgba(0, 0, 0, 0.5)',
       color: '#fff',
       borderRadius: '6px',
-      padding: '6px 12px',
+      padding: '5px 10px',
       textAlign: 'left',
-      maxWidth: '180px',
+      maxWidth: '170px',
       fontFamily: "'Orbitron', sans-serif",
       zIndex: '99',
-      transition: 'opacity 0.4s ease-out',
+      transition: 'opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
       pointerEvents: 'none'
     });
     alertEl.innerHTML = `
-      <h4 style="margin:0 0 2px 0; color:#00f3ff; font-size:0.75rem; font-weight:bold;">${title}</h4>
-      <p style="margin:0; font-size:0.65rem; opacity:0.95; font-weight:bold; color:#00ff00;">${subtitle}</p>
+      <h4 style="margin:0 0 1px 0; color:#00f3ff; font-size:0.7rem; font-weight:bold; letter-spacing:0.5px;">${title}</h4>
+      <p style="margin:0; font-size:0.6rem; opacity:0.95; font-weight:bold; color:#00ffaa;">${subtitle}</p>
     `;
     this.container.appendChild(alertEl);
+    
+    // Smooth entrance next frame
+    requestAnimationFrame(() => {
+      alertEl.style.opacity = '1';
+      alertEl.style.transform = 'translateX(0)';
+    });
+
     setTimeout(() => {
       alertEl.style.opacity = '0';
-      setTimeout(() => alertEl.remove(), 400);
+      alertEl.style.transform = 'translateY(-8px)';
+      setTimeout(() => alertEl.remove(), 450);
     }, seconds * 1000);
   }
 
@@ -1273,6 +1282,21 @@ class LisarArcade2D {
     }
   }
 
+  pushEnemySafely(e) {
+    if (e.type === 0) {
+      // Evitar superposición entre bloques de distintas oleadas u obstáculos aleatorios
+      const margin = 135;
+      const overlaps = this.enemies.some(ex => 
+        ex.type === 0 && 
+        ex.x < this.logicalWidth - 50 && // Solo evaluar bloques activos en pantalla
+        (e.x < ex.x + ex.width + margin) && 
+        (e.x + e.width + margin > ex.x)
+      );
+      if (overlaps) return;
+    }
+    this.enemies.push(e);
+  }
+
   endGame(victory) {
     this.state = victory ? 'victory' : 'gameover';
     this.audio.pause();
@@ -1449,17 +1473,18 @@ class LisarArcade2D {
       this.randomBlockTimer = 0;
       if (Math.random() < 0.38) {
         const startX = this.logicalWidth + 30;
-        const noObstaclesNear = this.enemies.every(e => e.x < startX - 160);
+        const noObstaclesNear = this.enemies.every(e => Math.abs(e.x - startX) > 220);
         const noPowerupsNear = this.powerups.every(p => p.x < startX - 120);
         
-        if (noObstaclesNear && noPowerupsNear) {
+        // Evitar solapamientos con las oleadas de desafíos (spawnTimer entre 0.4 y 1.4 da espacio)
+        if (noObstaclesNear && noPowerupsNear && this.spawnTimer >= 0.4 && this.spawnTimer <= 1.4) {
           // Green box center = 53.06% of logicalHeight (measured from reference image)
           const platHeight = 35;
           const greenCenterY = this.logicalHeight * 0.5306;
           const platY = greenCenterY - (platHeight / 2); // top edge so center = greenCenterY
           const randomW = 100 + Math.random() * 150;
           
-          this.enemies.push({
+          this.pushEnemySafely({
             type: 0,
             x: startX,
             y: platY,
@@ -1508,10 +1533,10 @@ class LisarArcade2D {
     const floorBlockY = this.logicalHeight - 70 - 70; // 70px block, 70px above ground line
 
     if (challengeIndex === 0) {
-      // 0. PLATAFORMA SUELO + monedas exactamente sobre el bloque
-      this.enemies.push({ type: 0, x: startX, y: floorBlockY, width: 320, height: 70, vx: -this.floorSpeed, hp: 9999 });
+      // 0. PLATAFORMA SUELO + monedas exactamente sobre el bloque (sin intersección)
+      this.pushEnemySafely({ type: 0, x: startX, y: floorBlockY, width: 320, height: 70, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + 20 + i * 45, y: floorBlockY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 20 + i * 45, y: floorBlockY - 65, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 1) {
       // 1. HAZARD VOLADOR + arco de monedas a la altura del bloque verde
@@ -1539,7 +1564,7 @@ class LisarArcade2D {
       }
     } else if (challengeIndex === 4) {
       // 4. PLATAFORMA FLOTANTE en la altura exacta del bloque verde + monedas encima
-      this.enemies.push({ type: 0, x: startX, y: platY, width: 300, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      this.pushEnemySafely({ type: 0, x: startX, y: platY, width: 300, height: platH, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
         this.coins.push({ x: startX + 20 + i * 46, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
@@ -1552,11 +1577,11 @@ class LisarArcade2D {
         this.coins.push({ x: startX + i * 42, y: greenCenterY + offset, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 6) {
-      // 6. PARKOUR DE CUBOS: Dos bloques en suelo + monedas exactamente encima
-      this.enemies.push({ type: 0, x: startX, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 200, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
+      // 6. PARKOUR DE CUBOS: Dos bloques en suelo + monedas exactamente encima (sin intersección)
+      this.pushEnemySafely({ type: 0, x: startX, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
+      this.pushEnemySafely({ type: 0, x: startX + 200, y: floorBlockY, width: 120, height: 70, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 6; i++) {
-        this.coins.push({ x: startX + i * 52, y: floorBlockY - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + i * 52, y: floorBlockY - 65, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 7) {
       // 7. COIN RUSH: Doble hélice centrada en el bloque verde
@@ -1569,15 +1594,15 @@ class LisarArcade2D {
       // 8. PASOS ESCALONADOS: Dos plataformas flotantes a la altura del bloque verde (una abajo, otra arriba)
       const plat1Y = greenCenterY + 15 - (platH / 2);
       const plat2Y = greenCenterY - 15 - (platH / 2);
-      this.enemies.push({ type: 0, x: startX, y: plat1Y, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
-      this.enemies.push({ type: 0, x: startX + 180, y: plat2Y, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      this.pushEnemySafely({ type: 0, x: startX, y: plat1Y, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      this.pushEnemySafely({ type: 0, x: startX + 180, y: plat2Y, width: 140, height: platH, vx: -this.floorSpeed, hp: 9999 });
       for (let i = 0; i < 3; i++) {
-        this.coins.push({ x: startX + 15 + i * 42, y: plat1Y - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
-        this.coins.push({ x: startX + 195 + i * 42, y: plat2Y - 55, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 15 + i * 42, y: plat1Y - 65, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
+        this.coins.push({ x: startX + 195 + i * 42, y: plat2Y - 65, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
       }
     } else if (challengeIndex === 9) {
       // 9. PLATAFORMA FLOTANTE LARGA + monedas encima + rodante en suelo
-      this.enemies.push({ type: 0, x: startX, y: platY, width: 240, height: platH, vx: -this.floorSpeed, hp: 9999 });
+      this.pushEnemySafely({ type: 0, x: startX, y: platY, width: 240, height: platH, vx: -this.floorSpeed, hp: 9999 });
       this.spawnEnemy2(progress, 60);
       for (let i = 0; i < 5; i++) {
         this.coins.push({ x: startX + 20 + i * 42, y: coinAboveY, width: 60, height: 60, vx: -this.floorSpeed, frame: 0, frameTimer: 0 });
@@ -1587,7 +1612,7 @@ class LisarArcade2D {
 
   spawnEnemy0(offsetX = 0) {
     // Bloques solo en el suelo (NUNCA en el techo Y=0 para evitar tapar el HUD)
-    this.enemies.push({
+    this.pushEnemySafely({
       type: 0,
       x: this.logicalWidth + 30 + offsetX,
       y: this.logicalHeight - 200 - 40,
@@ -1602,7 +1627,7 @@ class LisarArcade2D {
     const greenCenterY = this.logicalHeight * 0.5306;
     const enemyH = 110;
     const spawnY = greenCenterY - (enemyH / 2); // centro visual = greenCenterY
-    this.enemies.push({
+    this.pushEnemySafely({
       type: 1,
       x: this.logicalWidth + 30 + offsetX,
       y: spawnY,
@@ -1618,7 +1643,7 @@ class LisarArcade2D {
   }
 
   spawnEnemy2(progress, offsetX = 0) {
-    this.enemies.push({
+    this.pushEnemySafely({
       type: 2,
       x: this.logicalWidth + 30 + offsetX,
       y: this.logicalHeight - 70 - 70, // 310 on the floor
